@@ -212,7 +212,7 @@ LLMs are used as a tool when they save time. The architecture decisions are mine
 **Recommended environment:** Debian 12/13 on Vultr VPS with root access, or Rocky Linux if u want the autoupdater.
 For shared hosting, read the file header before running anything.
 
-**In the near futuir, june 2026** i can do installations and updates for plex, but you register the vps, 5 minutes thing. I tell u how, and is for your data safety. I can put in my servers, but betetr is in yours.
+**In the near future, june 2026** i can do installations and updates for plex, but you register the vps and the domain, 5 minutes thing. I tell u how, and is for your data safety. I can put in my servers, but betetr is in yours.
 > **OVHcloud note:** Basic PHP works on OVHcloud. OAuth flows and session handling
 > may behave differently. OVHcloud uses an intermediate `debian` user instead of direct root,
 > which causes issues with some configurations. Tested primarily on Vultr.
@@ -235,12 +235,13 @@ For files that use a database:
 2. Create your `config.php` with your `$link` mysqli connection
 3. Set your EVE Online OAuth credentials where marked as `'YOUR_KEY_HERE'`
 
+This will be Automatized later.
 ---
 
 ## 📡 Contact In-Game
 
 If you have questions, ideas, or want to talk EVE development,
-find me in-game as **Alfonso Orozco Aguilar**, member of **Full Stack Developer io**.
+find me in-game as **Alfonso Orozco Aguilar**, member of **Full Stack Developer**. Corp
 
 You can also reach me on [Facebook](https://www.facebook.com/alfonso.orozcoaguilar),
 though I don't check it often.
