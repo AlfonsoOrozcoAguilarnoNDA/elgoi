@@ -171,7 +171,7 @@ LLMs are used as a tool when they save time. The architecture decisions are mine
 
 ## ⚠️ Self-Imposed Limitations
 
-1. **Minimize API mode usage** — reduces token security risks. Direct ESI calls are preferred where possible.
+1. **Minimize API mode usage** — reduces token security risks. Direct ESI calls are preferred where possible, but i rtry to use the token in the fewer number of files possible, and the token Keys are in a Database.
 2. **Files stay under 1,000 lines** — makes LLM-assisted debugging practical and keeps scope contained.
 3. **Inventory explosion is an on-demand screen** — loading full inventory into tables is slow and rarely needed. You call it when you need it (end of day, after a loss, after a big trade).
 4. **The system reacts to SDE phase changes and new skills lazily** — some data won't update until you open the relevant screen. This is intentional, not a bug.
