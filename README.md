@@ -31,7 +31,7 @@ ELGOI is also aimed at a specific market: players who have cPanel or a small VPS
 not people who want to run a 20-container infrastructure stack for a spreadsheet game.
 In the future, I plan to offer hosted installation in exchange for PLEX.
 
-Compared to tools like EAT — which is too large and too complex to install for most players —
+Compared to tools like SEAT — which is too large and too complex to install for most players —
 ELGOI is designed to run on a $5/month Vultr VPS or shared hosting without a fight.
 
 > 📝 A WordPress development blog (no open comments) covering EVE development topics
