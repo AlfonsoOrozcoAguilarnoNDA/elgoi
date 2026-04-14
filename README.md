@@ -11,7 +11,7 @@ Named after a planetary system in the game — easy to remember, easy to find.
 Built as part of the **[vibecodingmexico.com](https://vibecodingmexico.com)** experiment series,
 where real projects are developed with LLM assistance and documented honestly — model, date, and all.
 
-> ⚠️ This is a **two-phase project**. Sprint 1 is PHP. Sprint 2 is Python.
+> ⚠️ This is a **two-phase project**. Sprint 1 is PHP. Sprint 2 is Go.
 > Feature parity between phases is not guaranteed. That's intentional — it's part of the experiment.
 
 ---
@@ -21,10 +21,10 @@ where real projects are developed with LLM assistance and documented honestly �
 I've been playing EVE Online since 2015 and have built tools against all three EVE APIs —
 personal tools and alliance-level tools. That code isn't public for obvious reasons.
 
-When someone asked me about using vibecoding for Python, and I needed to properly test DeepSeek,
+When someone asked me about using vibecoding for Python/Go, and I needed to properly test DeepSeek,
 the cleanest move was a new repository — no legacy entanglements, no permission conflicts.
 
-The goal is to build something solid in PHP first, then migrate to Python on a timeline that makes sense.
+The goal is to build something solid in PHP first, then migrate to Python/Go on a timeline that makes sense.
 The workflow evolves based on my own needs as a player. This is a tool, not a demo.
 
 ELGOI is also aimed at a specific market: players who have cPanel or a small VPS,
@@ -48,12 +48,12 @@ they don't control.
 It runs on shared hosting or, preferably, a **Vultr VPS at $5/month**.
 No Composer. No dependency hell. Just PHP doing what PHP does best: running on anything.
 
-The Python phase will use a separate domain (elgoi.com) to serve live dashboards
-and explore what Python 3.x can do in a real, adversarial-audience environment.
+The next phase will use a separate domain (elgoi.com) to serve live dashboards
+and explore what Go can do in a real, adversarial-audience environment.
 
 **Why EVE Online as a test bench?**
 EVE players are, by definition, data auditors and resource optimizers.
-If a Python dashboard survives EVE Online's community, it'll survive any corporate client.
+If a Go dashboard survives EVE Online's community, it'll survive any corporate client.
 
 ---
 
@@ -67,15 +67,15 @@ If a Python dashboard survives EVE Online's community, it'll survive any corpora
 - Inventory explosion screen — on-demand process, not automatic
 - Installation without Composer — works on shared hosting and VPS
 
-### Sprint 2 — Python *(planned, no fixed date)*
-- Python 3.x rewrite using Flask or equivalent
+### Sprint 2 — Go *(planned, no fixed date)*
+- Go 3.x rewrite
 - Live dashboards served from [elgoi.com](https://elgoi.com)
 - Deeper ESI API integration
-- Real-world test of DeepSeek's Python capabilities
+- Real-world test of DeepSeek's Go capabilities
 
 > PHP comes first because any standard server runs PHP with zero extra configuration.
-> Python requires setup. Starting simple is not a compromise — it's engineering.
-> Python migration will not begin until the PHP version is stable.
+> Go requires setup. Starting simple is not a compromise — it's engineering.
+> Go migration will not begin until the PHP version is stable.
 
 ---
 
