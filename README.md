@@ -154,14 +154,16 @@ Neither, exactly.
 I've been writing EVE scripts since at least 2016. By 2023 I had a stable product
 running in my own null-sec alliance, where I'm a regular member.
 
-The need to test DeepSeek — and the complexity of Python — led me to take some shortcuts
+The need to test DeepSeek (already discarded)— and the complexity of go/Python — led me to take some shortcuts
 to reduce time. When I use an AI, I say which one. I use web mode only;
 paid API licenses like Kimi or Claude are not a practical option in Mexico.
+
+Deepseek is BAD for these things . CUrrently checking Qwen and Kimi.
 
 My usual tools:
 - **Gemini** — better handling of APIs, main LLM for this project
 - **Claude, Kimi, Grok** — specific tasks
-- **DeepSeek** — pending real test, specifically for Python
+- **DeepSeek** — Discarded, pending choose a new one, real test, specifically for Python/go
 
 The core table structure and the update engine — the part that writes directly
 to the database — are handwritten, with minor adjustments suggested by Gemini in June 2025.
@@ -246,7 +248,7 @@ find me in-game as **Alfonso Orozco Aguilar**, member of **Full Stack Developer*
 You can also reach me on [Facebook](https://www.facebook.com/alfonso.orozcoaguilar),
 though I don't check it often.
 
-I have around 90 pilots, had a titan once, and I'm not rushing Python —
+I have around 90 pilots, had a titan once, and I'm not rushing Python/go —
 PHP ships first.
 
 ---
@@ -256,7 +258,7 @@ PHP ships first.
 | Layer | Technology | Notes |
 |-------|------------|-------|
 | Backend (Sprint 1) | PHP 8.x procedural | No Composer, no frameworks |
-| Backend (Sprint 2) | Python 3.x + Flask | Separate domain, separate VPS |
+| Backend (Sprint 2) | Go                 | Separate domain, separate VPS |
 | Frontend | Bootstrap 4.6.x via jsDelivr | When applicable |
 | Database | MySQL / MariaDB via mysqli | Connection in `config.php` |
 | Auth | EVE Online OAuth (ESI) | Developer app registration required |
