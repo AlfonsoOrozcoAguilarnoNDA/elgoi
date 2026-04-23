@@ -193,6 +193,33 @@ LLMs are used as a tool when they save time. The architecture decisions are mine
 *(Table grows with each sprint)*
 
 ---
+## Planned Module Structure
+
+The ecosystem is designed as a modular suite of tools for the independent EVE Online pilot, focusing on data sovereignty, automation, and fleet-wide visibility. The architecture follows a "Service-Oriented Procedural" approach using PHP 8.4 and MariaDB.
+
+| Module | Scope & Functionality |
+| :--- | :--- |
+| **Core & DevOps** | Handles IP-based security, DB connectivity, and the `updater.php` engine for automated multi-node/VPS deployment. |
+| **Auth Bridge** | Manages OAuth2 flows, character hierarchies (`parent_toon_number`), and silent token refreshing via ESI. |
+| **Fleet Intel** | Advanced skill auditing (`thesix.php`), career profiling, and real-time synchronization of pilot status and specialties. |
+| **Pocket Economy** | Transactional ledger for managing ISK and assets across multiple "pockets" or specialized mission-critical accounts. |
+| **Abyssal Tracker** | Performance analytics for Abyssal Deadspace runs, including loot tracking, ship fit validation, and survival metrics. |
+| **Diplomatic Control** | Reputation management and auditing of interactions with external entities and corporation history. |
+
+## Future Roadmap
+
+* **Integrated Multi-Tenant Dashboard:** A unified entry point to manage multiple "Supergroups" under a single administrative interface.
+* **Advanced Analytics Engine:** Implementation of predictive models for market trends and industrial production efficiency based on historical pilot data.
+* **Mobile-Optimized PWA:** A lightweight progressive web app for real-time fleet monitoring and emergency status alerts on mobile devices.
+* **Headless Audit Mode:** Command-line interface for running deep integrity audits across large datasets without UI overhead.
+
+---
+
+## Project Status Notice (April 2026)
+
+> [!IMPORTANT]
+> **Development Pause:** Development and testing of certain AI-driven auditing modules are currently on hold. Due to significant reliability issues, high latency, and intermittent unavailability of public LLM services observed between **April 15th and April 22nd, 2026**, the integration of automated auditing features and AI-assisted data analysis has been paused until service stability is restored.
+---
 
 ## 🌐 Live Project
 
