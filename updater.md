@@ -2,6 +2,20 @@
 
 This guide explains how to prepare your server environment to use the **High-Security Synchronizer** PHP script for the `elgoi` repository.
 
+## Important Note
+
+I always recommend using **Debian** because of its simplicity, and occasionally I mention that I use **Rocky Linux** in certain environments.  
+
+If you want to simplify things, the best option is to go with **Debian 13**.  
+
+It is assumed that you already have the **LAMP stack** installed, and that you can copy the `updater.php` file from here into your project.  
+
+I suggest being careful to ensure you are working in the final directory. On Debian, my recommendation would be:  
+
+/var/www/yourdomain.com
+
+This works correctly, but if you try to replicate it identically on **Rocky Linux** or other distributions, you may encounter issues.
+
 ## 1. System Requirements
 
 Ensure Git is installed on your server:
@@ -29,17 +43,3 @@ git reset --hard origin/main
 
 # 5. Copy the updater.php to your directory, and run.
 
-# Important Note
-
-I always recommend using **Debian** because of its simplicity, and occasionally I mention that I use **Rocky Linux** in certain environments.  
-
-If you want to simplify things, the best option is to go with **Debian 13**.  
-
-It is assumed that you already have the **LAMP stack** installed, and that you can copy the `updater.php` file from here into your project.  
-
-I suggest being careful to ensure you are working in the final directory. On Debian, my recommendation would be:  
-
-/var/www/yourdomain.com
-
-
-This works correctly, but if you try to replicate it identically on **Rocky Linux** or other distributions, you may encounter issues.
