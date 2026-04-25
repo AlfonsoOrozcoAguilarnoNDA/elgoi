@@ -1,5 +1,6 @@
 <?php
-/* license mit
+/* 
+License GPL 3.0
 Alfobnso Orozco Aguilar
 */
 require "../config.php";
