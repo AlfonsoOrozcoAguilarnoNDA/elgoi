@@ -25,7 +25,7 @@ define('ESI_TOKEN_URL', 'https://login.eveonline.com/v2/oauth/token');
 define('ESI_VERIFY_URL', 'https://login.eveonline.com/oauth/verify');
 
 // Incluir configuración de BD
-require_once './abyss/config.php';
+require_once 'config.php';
 // Asume que $link ya está disponible como conexión MySQLi
 
 // ============================================
