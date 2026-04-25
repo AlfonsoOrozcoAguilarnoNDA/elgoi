@@ -526,6 +526,32 @@ sort($non_php_files);
         
         <!-- Variables de Sesión -->
         <section class="section">
+            <h2>🚀 Quick Access Mosaic</h2>
+            <div class="metro-grid">
+                <?php 
+                foreach ($tiles as $tile) {
+                    echo $tile;
+                }
+
+            echo "</div>";
+
+$tiles = [
+    showTile("abyss/crew.php", "fa-users", "primary"),
+    showTile("fleet/ships.php", "fa-rocket", "danger"),
+    showTile("mining/ores.php", "fa-gem", "warning"),
+    showTile("market/trade.php", "fa-chart-line", "success"),
+    showTile("combat/pvp.php", "fa-crosshairs", "danger"),
+    showTile("industry/blueprints.php", "fa-print", "info"),
+    showTile("exploration/scanner.php", "fa-satellite-dish", "primary"),
+    showTile("logistics/hauling.php", "fa-truck", "secondary"),
+    showTile("intel/spy.php", "fa-eye", "dark"),
+    showTile("wallet/balance.php", "fa-coins", "warning"),
+    showTile("skills/training.php", "fa-graduation-cap", "success"),
+    showTile("settings/config.php", "fa-cogs", "secondary")
+];
+?>
+        </section>    
+        <section class="section">
             <h2>🔐 Session Variables</h2>
             <table class="session-table">
                 <thead>
