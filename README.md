@@ -238,7 +238,7 @@ The ecosystem is designed as a modular suite of tools for the independent EVE On
 - EVE Online developer application registered at the EVE developer portal (required for OAuth scopes)
 - No Composer required
 
-**Recommended environment:** Debian 12/13 on Vultr VPS with root access, or Rocky Linux if u want the autoupdater.
+**Recommended environment:** Debian 12/13 on Vultr VPS with root access, or Rocky Linux if u want (need adapt the autoupdater maybe).
 For shared hosting, read the file header before running anything.
 
 **In the near future, june 2026** i can do installations and updates for plex, but you register the vps and the domain, 5 minutes thing. I tell u how, and is for your data safety. I can put in my servers, but betetr is in yours.
