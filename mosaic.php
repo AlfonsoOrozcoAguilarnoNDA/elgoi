@@ -63,6 +63,7 @@ $tiles = [
     showTile("industry/blueprints.php", "fa-print", "info"),
     showTile("abyss/crew.php", "fa-users", "primary"),
     showTile("logistics/hauling.php", "fa-truck", "secondary"),
+    showTile("specific/ships_and_5m.php", "fa-dolly-flatbed", "info"),  
     showTile("intel/spy.php", "fa-eye", "dark")  
     
 ];
