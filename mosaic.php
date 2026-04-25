@@ -40,6 +40,7 @@ Creamos mosaico
 */
 
 $tiles = [
+    showTile("crew/moneymakers.php", "fa-coins", "primary"),
     showTile("abyss/crew.php", "fa-users", "primary"),
     showTile("industry/crewplanets.php", "fa-globe", "secondary"),
     showTile("industry/inventory_pi.php", "fa-layer-group", "secondary"),
