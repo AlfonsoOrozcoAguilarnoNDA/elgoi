@@ -35,6 +35,27 @@ foreach ($_SESSION as $key => $value) {
     $session_vars[$key] = $value;
 }
 
+/*
+Creamos mosaico
+*/
+
+$tiles = [
+    showTile("abyss/crew.php", "fa-users", "primary"),
+    showTile("industry/planets.php", "fa-globe", "secondary"),
+    showTile("industry/planets2.php", "fa-globe", "secondary"),
+    
+    showTile("fleet/ships.php", "fa-rocket", "danger"),
+    showTile("mining/ores.php", "fa-gem", "warning"),
+    showTile("market/trade.php", "fa-chart-line", "success"),
+    showTile("combat/pvp.php", "fa-crosshairs", "danger"),
+    showTile("industry/blueprints.php", "fa-print", "info"),
+    showTile("exploration/scanner.php", "fa-satellite-dish", "primary"),
+    showTile("logistics/hauling.php", "fa-truck", "secondary"),
+    showTile("intel/spy.php", "fa-eye", "dark"),
+    showTile("wallet/balance.php", "fa-coins", "warning"),
+    showTile("skills/training.php", "fa-graduation-cap", "success"),
+    showTile("settings/config.php", "fa-cogs", "secondary")
+];
 // ============================================
 // LISTAR ARCHIVOS DEL DIRECTORIO
 // ============================================
@@ -534,24 +555,6 @@ sort($non_php_files);
                 }
 
             echo "</div>";
-
-$tiles = [
-    showTile("abyss/crew.php", "fa-users", "primary"),
-    showTile("industry/planets.php", "fa-globe", "secondary"),
-    showTile("industry/planets2.php", "fa-globe", "secondary"),
-    
-    showTile("fleet/ships.php", "fa-rocket", "danger"),
-    showTile("mining/ores.php", "fa-gem", "warning"),
-    showTile("market/trade.php", "fa-chart-line", "success"),
-    showTile("combat/pvp.php", "fa-crosshairs", "danger"),
-    showTile("industry/blueprints.php", "fa-print", "info"),
-    showTile("exploration/scanner.php", "fa-satellite-dish", "primary"),
-    showTile("logistics/hauling.php", "fa-truck", "secondary"),
-    showTile("intel/spy.php", "fa-eye", "dark"),
-    showTile("wallet/balance.php", "fa-coins", "warning"),
-    showTile("skills/training.php", "fa-graduation-cap", "success"),
-    showTile("settings/config.php", "fa-cogs", "secondary")
-];
 ?>
         </section>    
         <section class="section">
