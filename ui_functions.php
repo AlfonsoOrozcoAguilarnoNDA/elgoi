@@ -1,5 +1,6 @@
 <?php
-/* License MIT
+/*
+License GPL 3.0
 Alfonso Orozco Agbuilar
 */
 // ===============================================
