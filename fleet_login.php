@@ -3,7 +3,7 @@
  * Fleet Commander - Sistema de gestión de flota EVE Online
  * Login via ESI OAuth y gestión de pilotos secundarios
  * Deepseek modified
- * License Mit
+ * License GPL 3.0
  * Alfonso Orozco Aguilar
  * 30 marzo 2026
  */
