@@ -21,8 +21,8 @@ where real projects are developed with LLM assistance and documented honestly �
 I've been playing EVE Online since 2015 and have built tools against all three EVE APIs —
 personal tools and alliance-level tools. That code isn't public for obvious reasons.
 
-When someone asked me about using vibecoding for Python/Go, and I needed to properly test DeepSeek,
-the cleanest move was a new repository — no legacy entanglements, no permission conflicts.
+When someone asked me about using vibecoding for Python/Go, and I needed to properly test DeepSeek (deepseek python was TOTAL failure,
+instead using part of kimi / gemini), the cleanest move was a new repository — no legacy entanglements, no permission conflicts.
 
 The goal is to build something solid in PHP first, then migrate to Python/Go on a timeline that makes sense.
 The workflow evolves based on my own needs as a player. This is a tool, not a demo.
