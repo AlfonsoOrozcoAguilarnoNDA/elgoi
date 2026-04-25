@@ -228,7 +228,7 @@ $js_graficas_default = $mostrar_graficas_default ? 'true' : 'false';
 
                 <!-- Botón ACTUALIZAR -->
                 <div class="card-footer p-0 border-0">
-                    <a href="https://elgoi.com/devauthcallback.php?pilot_id=<?php echo $row['toon_number']; ?>"
+                    <a href="../devauthcallback.php?pilot_id=<?php echo $row['toon_number']; ?>"
                        target="_blank"
                        class="btn btn-block btn-update btn-dark rounded-0"
                        style="border-bottom: 3px solid <?php echo $color; ?>;">
