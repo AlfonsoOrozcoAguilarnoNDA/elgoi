@@ -56,14 +56,14 @@ $tiles = [
     showTile("industry/jobs.php", "fa-industry", "info"),
     
     
-    showTile("mining/ores.php", "fa-gem", "warning"),    
-    showTile("combat/pvp.php", "fa-crosshairs", "danger"),
+    showTile("mining/ores.php", "fa-gem", "warning"),
+    showTile("specific/settings.php", "fa-cogs", "secondary")
+    //showTile("combat/pvp.php", "fa-crosshairs", "danger"),
     showTile("industry/blueprints.php", "fa-print", "info"),
     showTile("abyss/crew.php", "fa-users", "primary"),
     showTile("logistics/hauling.php", "fa-truck", "secondary"),
-    showTile("intel/spy.php", "fa-eye", "dark"),   
+    showTile("intel/spy.php", "fa-eye", "dark")  
     
-    showTile("settings/config.php", "fa-cogs", "secondary")
 ];
 // ============================================
 // LISTAR ARCHIVOS DEL DIRECTORIO
