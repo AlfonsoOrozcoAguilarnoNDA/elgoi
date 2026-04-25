@@ -262,7 +262,7 @@ that's where the specific requirements live.
 For files that use a database:
 1. Run the `CREATE TABLE` included in the header or in the origin post
 2. Create your `config.php` with your `$link` mysqli connection
-3. Set your EVE Online OAuth credentials where marked as `'YOUR_KEY_HERE'`
+3. In old versions Set your EVE Online OAuth credentials where marked as `'YOUR_KEY_HERE'` in config.php, newer read it from fleet_config table in the database.
 
 This will be Automatized later.
 ---
@@ -290,7 +290,7 @@ PHP ships first.
 | Database | MySQL / MariaDB via mysqli | Connection in `config.php` |
 | Auth | EVE Online OAuth (ESI) | Developer app registration required |
 | Primary LLM | Gemini | API handling |
-| Test LLM | DeepSeek | Python phase — pending evaluation |
+| Test LLM | Kimi | Go/Python phase — pending evaluation |
 
 ---
 
