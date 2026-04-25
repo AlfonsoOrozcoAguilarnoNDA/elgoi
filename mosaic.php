@@ -57,13 +57,13 @@ $tiles = [
     showTile("industry/jobs.php", "fa-industry", "info"),
     
     
-    showTile("mining/ores.php", "fa-gem", "warning"),
+    showTile("mining/minerals_and_blueprints.php", "fa-gem", "warning"),
     showTile("specific/settings.php", "fa-cogs", "secondary"),
+    showTile("specific/ships_and_5m.php", "fa-id-badge", "secondary"),  
     //showTile("combat/pvp.php", "fa-crosshairs", "danger"),
     showTile("industry/blueprints.php", "fa-print", "info"),
     showTile("abyss/crew.php", "fa-users", "primary"),
-    showTile("logistics/hauling.php", "fa-truck", "secondary"),
-    showTile("specific/ships_and_5m.php", "fa-id-badge", "info"),  
+    showTile("logistics/hauling.php", "fa-truck", "secondary"),    
     showTile("intel/spy.php", "fa-eye", "dark")  
     
 ];
