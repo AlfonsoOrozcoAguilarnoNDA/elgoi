@@ -1,6 +1,6 @@
 <?php
 // for testing
-// MIT
+// License GPL 3.0
 // Alfonso Orozco Aguilar
 // para mostrar errores en php7
 
