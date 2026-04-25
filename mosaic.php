@@ -45,6 +45,7 @@ $tiles = [
     showTile("crew/biometrics.php", "fa-fingerprint", "primary"),
     showTile("crew/reputation.php", "fa-passport", "primary"),
     showTile("crew/graduation.php", "fa-graduation-cap", "success"),
+    showTile("crew/28_days_control.php", "fa-user-clock", "danger"),
     showTile("crew/career_plan.php", "fa-sitemap", "dark"),
     showTile("crew/compare.php", "fa-balance-scale", "light"),
     showTile("specific/balance.php", "fa-coins", "warning"),
