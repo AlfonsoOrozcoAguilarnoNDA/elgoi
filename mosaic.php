@@ -42,7 +42,7 @@ Creamos mosaico
 $tiles = [
     showTile("abyss/crew.php", "fa-users", "primary"),
     showTile("industry/crewplanets.php", "fa-globe", "secondary"),
-    showTile("industry/planets2.php", "fa-globe", "secondary"),
+    showTile("industry/inventory_pi.php", "fa-layer-group", "secondary"),
     showTile("industry/jobs.php", "fa-industry", "info"),
     
     showTile("fleet/ships.php", "fa-rocket", "danger"),
