@@ -742,7 +742,7 @@ function showTile($file, $icon, $color) {
         $tileHtml .= '</a>';
     } else {
         $tileHtml .= '<div class="tile-missing">⚠ Missing</div>';
-        return "";
+        //return "";
     }
     
     $tileHtml .= '</div>';
