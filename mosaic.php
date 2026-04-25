@@ -155,6 +155,78 @@ sort($non_php_files);
             font-size: 12px;
             color: #58a6ff;
         }
+        /* INICIA MOSAICO  */
+        /* ============================================
+           MOSAICO METRO / WINDOWS 8 STYLE
+           ============================================ */
+        .metro-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .metro-tile {
+            position: relative;
+            height: 120px;
+            border-radius: 4px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .metro-tile:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            filter: brightness(1.1);
+        }
+        
+        .tile-link {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        .tile-icon {
+            font-size: 32px;
+            opacity: 0.9;
+            align-self: flex-start;
+        }
+        
+        .tile-name {
+            font-size: 16px;
+            font-weight: 600;
+            text-transform: capitalize;
+            letter-spacing: 0.5px;
+            margin-top: auto;
+            line-height: 1.2;
+        }
+        
+        .tile-lines {
+            font-size: 11px;
+            opacity: 0.8;
+            font-family: 'Courier New', monospace;
+            margin-top: 4px;
+        }
+        
+        .tile-missing {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: #ffc107;
+        }
+        /* FIN MOSAICO */
         
         /* ============================================
            CONTENIDO PRINCIPAL
@@ -588,3 +660,57 @@ sort($non_php_files);
     </script>
 </body>
 </html>
+// ============================================
+// FUNCIÓN PARA GENERAR TILES DEL MOSAICO
+// ============================================
+function showTile($file, $icon, $color) {
+    $directory = __DIR__;
+    $filepath = $directory . DIRECTORY_SEPARATOR . $file;
+    $exists = file_exists($filepath) && is_file($filepath);
+    
+    // Quitar extensión y directorio para mostrar
+    $displayName = basename($file);
+    $displayName = pathinfo($displayName, PATHINFO_FILENAME);
+    
+    // Contar líneas si existe
+    $lineCount = $exists ? count(file($filepath)) : 0;
+    
+    // Colores Bootstrap válidos
+    $validColors = ['primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'];
+    $bgColor = in_array($color, $validColors) ? $color : 'primary';
+    
+    // Mapeo de colores Bootstrap a colores hex para el estilo Metro
+    $colorMap = [
+        'primary'   => '#0d6efd',
+        'secondary' => '#6c757d',
+        'success'   => '#198754',
+        'danger'    => '#dc3545',
+        'warning'   => '#ffc107',
+        'info'      => '#0dcaf0',
+        'light'     => '#f8f9fa',
+        'dark'      => '#212529'
+    ];
+    
+    $bgHex = $colorMap[$bgColor] ?? '#0d6efd';
+    $textColor = in_array($bgColor, ['warning', 'light', 'info']) ? '#212529' : '#ffffff';
+    
+    $tileHtml = '<div class="metro-tile" style="background-color: ' . $bgHex . '; color: ' . $textColor . ';">';
+    
+    if ($exists) {
+        $tileHtml .= '<a href="' . htmlspecialchars($file) . '" target="_blank" class="tile-link">';
+    }
+    
+    $tileHtml .= '<div class="tile-icon"><i class="fas ' . htmlspecialchars($icon) . '"></i></div>';
+    $tileHtml .= '<div class="tile-name">' . htmlspecialchars($displayName) . '</div>';
+    $tileHtml .= '<div class="tile-lines">' . $lineCount . ' lines</div>';
+    
+    if ($exists) {
+        $tileHtml .= '</a>';
+    } else {
+        $tileHtml .= '<div class="tile-missing">⚠ Missing</div>';
+    }
+    
+    $tileHtml .= '</div>';
+    
+    return $tileHtml;
+}
