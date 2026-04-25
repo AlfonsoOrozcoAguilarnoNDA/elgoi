@@ -1,5 +1,5 @@
 <?php
-// License MIT
+// License GPL 3.0
 // Alfonso Orozco Aguilar
 // 24 apr 2026
 //die ("installing now");
