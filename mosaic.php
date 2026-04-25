@@ -43,6 +43,7 @@ $tiles = [
     showTile("crew/moneymakers.php", "fa-coins", "primary"),
     showTile("crew/evermarks.php", "fa-medal", "primary"),
     showTile("crew/biometrics.php", "fa-fingerprint", "primary"),
+    showTile("crew/career_plan.php", "fa-sitemap", "dark"),
     showTile("abyss/crew.php", "fa-users", "primary"),
     showTile("industry/crewplanets.php", "fa-globe", "secondary"),
     showTile("industry/inventory_pi.php", "fa-layer-group", "secondary"),
