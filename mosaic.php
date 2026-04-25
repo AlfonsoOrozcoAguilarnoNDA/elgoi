@@ -192,7 +192,7 @@ sort($non_php_files);
            ============================================ */
         .metro-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
             gap: 15px;
             margin-bottom: 25px;
         }
