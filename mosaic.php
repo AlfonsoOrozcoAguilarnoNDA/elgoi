@@ -537,6 +537,9 @@ sort($non_php_files);
 
 $tiles = [
     showTile("abyss/crew.php", "fa-users", "primary"),
+    showTile("industry/planets.php", "fa-globe", "secondary"),
+    showTile("industry/planets2.php", "fa-globe", "secondary"),
+    
     showTile("fleet/ships.php", "fa-rocket", "danger"),
     showTile("mining/ores.php", "fa-gem", "warning"),
     showTile("market/trade.php", "fa-chart-line", "success"),
