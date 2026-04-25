@@ -57,7 +57,7 @@ $tiles = [
     
     
     showTile("mining/ores.php", "fa-gem", "warning"),
-    showTile("specific/settings.php", "fa-cogs", "secondary")
+    showTile("specific/settings.php", "fa-cogs", "secondary"),
     //showTile("combat/pvp.php", "fa-crosshairs", "danger"),
     showTile("industry/blueprints.php", "fa-print", "info"),
     showTile("abyss/crew.php", "fa-users", "primary"),
