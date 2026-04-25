@@ -132,7 +132,7 @@ They solve different problems and coexist in the same pilot record.
 ## 🛠️ Chosen Stack & Architecture
 
 **Entry point:** PHP — what most people can run immediately on any server.
-**Future:** Python 3.x — separate domain, separate phase, no fixed date.
+**Future:** Go 3.x — separate domain, separate phase, no fixed date.
 
 **All code is procedural. No OOP. This is a conscious decision.**
 
