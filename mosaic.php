@@ -686,6 +686,7 @@ $tiles = [
     </script>
 </body>
 </html>
+<?php
 // ============================================
 // FUNCIÓN PARA GENERAR TILES DEL MOSAICO
 // ============================================
@@ -739,4 +740,5 @@ function showTile($file, $icon, $color) {
     $tileHtml .= '</div>';
     
     return $tileHtml;
-}
+} // showtile
+?>
