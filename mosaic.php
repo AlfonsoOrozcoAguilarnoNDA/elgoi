@@ -44,6 +44,7 @@ $tiles = [
     showTile("crew/evermarks.php", "fa-medal", "primary"),
     showTile("crew/biometrics.php", "fa-fingerprint", "primary"),
     showTile("crew/reputation.php", "fa-passport", "primary"),
+    showTile("skills/training.php", "fa-graduation-cap", "success"),
     showTile("crew/career_plan.php", "fa-sitemap", "dark"),
     showTile("crew/compare.php", "fa-balance-scale", "light"),
     showTile("specific/balance.php", "fa-coins", "warning"),
@@ -60,9 +61,8 @@ $tiles = [
     showTile("industry/blueprints.php", "fa-print", "info"),
     showTile("exploration/scanner.php", "fa-satellite-dish", "primary"),
     showTile("logistics/hauling.php", "fa-truck", "secondary"),
-    showTile("intel/spy.php", "fa-eye", "dark"),
+    showTile("intel/spy.php", "fa-eye", "dark"),   
     
-    showTile("skills/training.php", "fa-graduation-cap", "success"),
     showTile("settings/config.php", "fa-cogs", "secondary")
 ];
 // ============================================
