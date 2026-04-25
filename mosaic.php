@@ -41,7 +41,7 @@ Creamos mosaico
 
 $tiles = [
     showTile("abyss/crew.php", "fa-users", "primary"),
-    showTile("industry/planets.php", "fa-globe", "secondary"),
+    showTile("industry/crewplanets.php", "fa-globe", "secondary"),
     showTile("industry/planets2.php", "fa-globe", "secondary"),
     
     showTile("fleet/ships.php", "fa-rocket", "danger"),
@@ -742,6 +742,7 @@ function showTile($file, $icon, $color) {
         $tileHtml .= '</a>';
     } else {
         $tileHtml .= '<div class="tile-missing">⚠ Missing</div>';
+        return "";
     }
     
     $tileHtml .= '</div>';
