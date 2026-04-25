@@ -43,7 +43,7 @@ $tiles = [
     showTile("abyss/crew.php", "fa-users", "primary"),
     showTile("industry/crewplanets.php", "fa-globe", "secondary"),
     showTile("industry/planets2.php", "fa-globe", "secondary"),
-    showTile("industry/jobs.php", "fa-factory", "info"),
+    showTile("industry/jobs.php", "fa-industry", "info"),
     
     showTile("fleet/ships.php", "fa-rocket", "danger"),
     showTile("mining/ores.php", "fa-gem", "warning"),
