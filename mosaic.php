@@ -1,6 +1,6 @@
 <?php
 /**
- * License Mit
+ * License GPL 3.0
  * Alfonso Orozco Aguilar
  * Fleet Commander - Mosaic Dashboard
  * Fecha: 2026-03-31 00:22
@@ -45,20 +45,22 @@ $tiles = [
     showTile("crew/biometrics.php", "fa-fingerprint", "primary"),
     showTile("crew/reputation.php", "fa-passport", "primary"),
     showTile("crew/career_plan.php", "fa-sitemap", "dark"),
+    showTile("specific/balance.php", "fa-coins", "warning"),
+    showTile("specific/get_market.php", "fa-chart-line", "success"),
+    showTile("specific/skybreaker.php", "fa-rocket", "danger"),
     showTile("abyss/crew.php", "fa-users", "primary"),
     showTile("industry/crewplanets.php", "fa-globe", "secondary"),
     showTile("industry/inventory_pi.php", "fa-layer-group", "secondary"),
     showTile("industry/jobs.php", "fa-industry", "info"),
     
-    showTile("fleet/ships.php", "fa-rocket", "danger"),
-    showTile("mining/ores.php", "fa-gem", "warning"),
-    showTile("market/trade.php", "fa-chart-line", "success"),
+    
+    showTile("mining/ores.php", "fa-gem", "warning"),    
     showTile("combat/pvp.php", "fa-crosshairs", "danger"),
     showTile("industry/blueprints.php", "fa-print", "info"),
     showTile("exploration/scanner.php", "fa-satellite-dish", "primary"),
     showTile("logistics/hauling.php", "fa-truck", "secondary"),
     showTile("intel/spy.php", "fa-eye", "dark"),
-    showTile("wallet/balance.php", "fa-coins", "warning"),
+    
     showTile("skills/training.php", "fa-graduation-cap", "success"),
     showTile("settings/config.php", "fa-cogs", "secondary")
 ];
