@@ -166,7 +166,7 @@ function geticons($toon_number) {
         <i class="fas fa-globe-asia '     . ($hasPlanets ? 'text-success' : 'text-secondary') . '" title="Planetas Activos"></i>
         <i class="fas fa-industry '       . ($hasJobs    ? 'text-warning' : 'text-secondary') . '" title="Trabajos de Fábrica"></i>
         <i class="fas fa-graduation-cap ' . $birrete                                          . '" title="Entrenamiento"></i>
-        <a href="devauthcallback.php?pilot_id=' . $toon_number . '" target="_blank">
+        <a href="../devauthcallback.php?pilot_id=' . $toon_number . '" target="_blank">
             <i class="fas fa-sync-alt text-secondary icon-action" title="Actualizar"></i>
         </a>
     </div>';
