@@ -1,5 +1,6 @@
 <?php
-/* License MIT
+/* 
+License GPL 3.0
 Alfonso Orozco Aguilar
 */
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
