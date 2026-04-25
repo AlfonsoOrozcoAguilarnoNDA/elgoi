@@ -1,7 +1,7 @@
 <?php
 /*
-License MIT
-Alfonso orozco Aguilar
+License GPL 3.0
+Alfonso Orozco Aguilar
 */
 // ============================================
 // ABYSSAL TRACKER - ARCHIVO CONSOLIDADO
