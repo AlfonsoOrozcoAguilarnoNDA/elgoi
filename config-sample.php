@@ -83,6 +83,35 @@ function db_connect() {
 // Conectar la base de datos inmediatamente al incluir el archivo
 db_connect();
 
+function aValues319b($Qx) {
+    global $link;
+    
+    $rsX = mysqli_query($link, $Qx) or die("<hr>Avalues 319<hr>$Qx<hr>" . mysqli_error($link));
+    $Qx2 = strtolower($Qx);
+    
+    if (substr($Qx2, 0, 6) !== 'select') {
+        return "";
+    }
+    
+    $rows = mysqli_num_rows($rsX);
+    if ($rows == 0) {
+        return ["", ""];
+    }
+    
+    $aDataX = [];
+    $Campos = mysqli_num_fields($rsX);
+    
+    while ($regX = mysqli_fetch_array($rsX)) {
+        for ($iX = 0; $iX < $Campos; $iX++) {
+            $finfo = mysqli_fetch_field_direct($rsX, $iX);
+            $name = $finfo->name;
+            $aDataX[] = $regX[$name];
+        }
+    }
+    
+    return $aDataX;
+}
+
 
 /**
  * geticons($toon_number) — Iconos de actividad de un piloto EVE Online
