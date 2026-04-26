@@ -58,6 +58,26 @@ $error=mysqli_error($link);
 if ($error=='') return; 
 die ("$message<hr>$error");
 }
+function aValues319($Qx){
+global $link;    
+    $rsX = mysqli_query($link,$Qx); sqlerror("error checking avalues<hr>$Qx"); //  or die("<hr>Avalues 319<hr>$Qx");
+    $Qx2=strtolower($Qx);
+    if (left($Qx2,6)<>'select') return "";    
+    $aDataX = array();
+    $rows=mysqli_num_rows($rsX);
+    if ($rows==0) return array("",""); 
+        
+        $Campos = mysqli_num_fields($rsX);
+        while ($regX = mysqli_fetch_array($rsX)) {
+            for($iX=0; $iX<$Campos; $iX++){
+               $finfo=mysqli_fetch_field_direct($rsX,$iX);
+               $name=$finfo->name;
+                $aDataX[] = $regX[ $name ];
+            }
+        }
+      // echo ($Qx ."/". $aDataX[0]);
+    return $aDataX;
+}
 function updatecorpnames(){
 global $link;
 $csh=0;
