@@ -51,6 +51,59 @@ foreach($xml->skills->item as $item){
 $sql="update PILOTS set acctype='$acctype' where toon_number='$who'";
 doaction($sql,"error inserting skills");  
 }// renewskills
+function json2xml($json) {
+// Copyright: Maurits van der Schee <maurits@vdschee.nl>
+// Description: Convert from JSON to XML and back.
+// License: MIT
+    $a = json_decode($json);
+    $d = new DOMDocument();
+    $c = $d->createElement("root");
+    $d->appendChild($c);
+    $t = function($v) {
+        $type = gettype($v);
+        switch($type) {
+            case 'integer': return 'number';
+            case 'double':  return 'number';
+            default: return strtolower($type);
+        }
+    };
+    $f = function($f,$c,$a,$s=false) use ($t,$d) {
+        $c->setAttribute('type', $t($a));
+        if ($t($a) != 'array' && $t($a) != 'object') {
+            if ($t($a) == 'boolean') {
+                $c->appendChild($d->createTextNode($a?'true':'false'));
+            } else {
+                if (!is_null($a)) $c->appendChild($d->createTextNode($a));
+            }
+        } else {
+            foreach($a as $k=>$v) {
+                if ($k == '__type' && $t($a) == 'object') {
+                    $c->setAttribute('__type', $v);
+                } else {
+                    if ($t($v) == 'object') {
+                        $ch = $c->appendChild($d->createElementNS(null, $s ? 'item' : $k));
+                        $f($f, $ch, $v);
+                    } else if ($t($v) == 'array') {
+                        $ch = $c->appendChild($d->createElementNS(null, $s ? 'item' : $k));
+                        $f($f, $ch, $v, true);
+                    } else {
+                        $va = $d->createElementNS(null, $s ? 'item' : $k);
+                        if ($t($v) == 'boolean') {
+                            $va->appendChild($d->createTextNode($v?'true':'false'));
+                        } else {
+                            $va->appendChild($d->createTextNode($v));
+                        }
+                        $ch = $c->appendChild($va);
+                        $ch->setAttribute('type', $t($v));
+                    }
+                }
+            }
+        }
+    };
+    $f($f,$c,$a,$t($a)=='array');
+    return $d->saveXML($d->documentElement);
+} //json2xml
+
 function doaction($sql,$errormessage){
 global $link;
 mysqli_query($link,$sql);
