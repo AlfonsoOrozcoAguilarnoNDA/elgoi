@@ -269,7 +269,7 @@ if ($resTodos) {
 		if($safeTrade=='Skills sin definir, cargue Dashboard') {
 			// renew the skills
 			$dummy=renewskills($p['toon_number']);
-			die($p['toon_number'].$p['toon_name']);
+			//die($p['toon_number'].$p['toon_name']);
 	    }
         mysqli_query($link, "UPDATE PILOTS SET tradefield = '$safeTrade' WHERE toon_name = '$safeName'");
         $actualizados++;
