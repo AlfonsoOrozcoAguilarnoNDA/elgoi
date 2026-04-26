@@ -49,7 +49,7 @@ foreach($xml->skills->item as $item){
 	list($thegroup)=avalues319("select groupid from invTypes2 where typeid='$what'");
 	list($group_name)=avalues319("select groupName from invGroups where groupid=$thegroup");;
     $sql="insert into EVE_CHARSKILLS (toon,toon_name,typeID,skillpoints,rank,description,group_name) values 
-       ('$who',$name,$what,$item->skillpoints_in_skill,$item->trained_skill_level,'$description','$group_name')";
+       ('$who','$name',$what,$item->skillpoints_in_skill,$item->trained_skill_level,'$description','$group_name')";
      doaction($sql,"error inserting skills");  
 }
 $sql="update PILOTS set acctype='$acctype' where toon_number='$who'";
