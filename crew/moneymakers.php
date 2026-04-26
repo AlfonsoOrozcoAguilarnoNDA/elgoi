@@ -52,6 +52,13 @@ global $link;
 mysqli_query($link,$sql);
 sqlerror("$errormessage<hr>$sql");
 }
+function left($str, $length) {
+     return substr($str, 0, $length);
+}
+
+function right($str, $length) {
+     return substr($str, -$length);
+}
 function sqlerror($message){
 global $link;
 $error=mysqli_error($link);
