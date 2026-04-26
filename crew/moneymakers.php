@@ -11,6 +11,53 @@ Alfonso Orozco Aguilar
  */
 require_once '../config.php';
 
+function renewskills($who){
+// who = toon number
+list($name,$pilot,$data)=avalues319("select toon_name,email_pilot,skills from PILOTS where toon_number='$who'");
+if ($name=="") die("The pilot $who ".PilotfromInternet($who)." is not in the database (4)");
+$name=addslashes($name);
+if ($data=='[]') die("no data(1) for $name");
+$where="in <a href='../devauthcallback.php?pilot_id=$who' target='_blank'>this link</a> when you do it, press f5 to reaload here";
+if (str_replace("Timeout contacting tranquility","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try update him/her later $where");
+if (str_replace("unexpected end of JSON","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try update him/her later $where");
+if (str_replace("504 Gateway","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try update him/her later $where");
+
+$sql="delete from EVE_CHARSKILLS where toon='$who'";
+doaction($sql,"error checking skills $who");
+list($dummy)=avalues319("select skills from PILOTS where toon_number='$who'");
+//echo "<h3>Pilot: $name (9)</h3>";     
+$acctype="Maybe Omega";
+foreach($xml->skills->item as $item){ 
+    $what=$item->skill_id;
+    $description=description($what);
+    if ($description=='') $description='n/a';    
+    
+    $active=$item->active_skill_level;
+    if ($active=='') $active=0;    
+    $dif=abs($item->trained_skill_level-$item->active_skill_level);
+    $sp +=$item->skillpoints_in_skill;
+    
+    if ($dif>0) $acctype='Alpha';            
+    list($maxalpha)=avalues319("select EXPANDED from ALPHA_CLONES where numberskill='$what'");
+    if ($active >$maxalpha and $active>0)  $acctype="Omega";
+    $sql="insert into EVE_CHARSKILLS (toon,typeID,skillpoints,rank,description) values 
+       ('$who',$what,$item->skillpoints_in_skill,$item->trained_skill_level,'$description')";
+     doaction($sql,"error inserting skills");  
+}
+$sql="update PILOTS set acctype='$acctype' where toon_number='$who'";
+doaction($sql,"error inserting skills");  
+}// renewskills
+function doaction($sql,$errormessage){
+global $link;
+mysqli_query($link,$sql);
+sqlerror("$errormessage<hr>$sql");
+}
+function sqlerror($message){
+global $link;
+$error=mysqli_error($link);
+if ($error=='') return; 
+die ("$message<hr>$error");
+}
 function updatecorpnames(){
 global $link;
 $csh=0;
@@ -110,7 +157,7 @@ function obtenerOficio($p) {
 // ==============================================================================
 // RECÁLCULO AUTOMÁTICO DE TRADEFIELD (todos, siempre, antes de mostrar)
 // ==============================================================================
-$sqlTodos = "SELECT toon_name, skillpoints FROM PILOTS WHERE toon_name NOT LIKE '%VPS%' AND toon_name NOT LIKE '%CATALOG%'";
+$sqlTodos = "SELECT toon_number,toon_name, skillpoints FROM PILOTS WHERE toon_name NOT LIKE '%VPS%' AND toon_name NOT LIKE '%CATALOG%'";
 $resTodos = mysqli_query($link, $sqlTodos);
 $actualizados = 0;
 
@@ -119,6 +166,10 @@ if ($resTodos) {
         $oficio    = obtenerOficio($p);
         $safeTrade = mysqli_real_escape_string($link, $oficio);
         $safeName  = mysqli_real_escape_string($link, $p['toon_name']);
+		if($safeTrade=='Skills sin definir, cargue Dashboard') {
+			// renew the skills
+			$dummy=renewskills($p['toon_number']); 
+	    }
         mysqli_query($link, "UPDATE PILOTS SET tradefield = '$safeTrade' WHERE toon_name = '$safeName'");
         $actualizados++;
     }
