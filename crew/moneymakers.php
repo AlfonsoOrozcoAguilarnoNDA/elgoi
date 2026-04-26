@@ -103,6 +103,21 @@ function json2xml($json) {
     $f($f,$c,$a,$t($a)=='array');
     return $d->saveXML($d->documentElement);
 } //json2xml
+function description($value){
+//http://eve-files.com/chribba/typeid.txt
+$sql="select typeName as description from invTypes where typeID='$value'";
+     list($pass)=avalues319($sql);
+/*     
+    if ($value==54818) $pass="Capsuleer Day XVII Cap and T-Shirt Crate";
+        
+    https://market.fuzzwork.co.uk/type/23061/
+    
+*/      
+        //if ($value==47911) $pass="Entropic Radiation Sink II";
+     if ($pass=='') $pass=$value;
+     $pass=addslashes($pass);
+return $pass;
+} // description
 
 function doaction($sql,$errormessage){
 global $link;
