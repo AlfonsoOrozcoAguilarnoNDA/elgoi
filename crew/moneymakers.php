@@ -38,8 +38,7 @@ foreach($xml->skills->item as $item){
     
     $active=$item->active_skill_level;
     if ($active=='') $active=0;    
-    $dif=abs($item->trained_skill_level-$item->active_skill_level);
-    $sp +=$item->skillpoints_in_skill;
+    $dif=abs($item->trained_skill_level-$item->active_skill_level);    
     
     if ($dif>0) $acctype='Alpha';            
     list($maxalpha)=avalues319("select EXPANDED from ALPHA_CLONES where numberskill='$what'");
@@ -161,7 +160,7 @@ function updatecorpnames(){
 global $link;
 $csh=0;
 // ==============================================================================
-// FUNCIÓN OBTENER OFICIO
+// FUNCIÓN OBTENER CORP NAME
 // ==============================================================================
 // Paso 1: Obtener todas las corporations únicas de la tabla
 $query = "SELECT DISTINCT corporation FROM PILOTS WHERE corporation IS NOT NULL";
@@ -222,7 +221,7 @@ return "
         <i class='fas fa-check-circle mr-1'></i>
         Corp Names actualizado — <strong>$csh</strong> corporaciones actualizadas al cargar.
     </div>";
-} // uopdate corpnames
+} // update corpnames
 
 
 // ==============================================================================
@@ -267,7 +266,8 @@ if ($resTodos) {
         $safeName  = mysqli_real_escape_string($link, $p['toon_name']);
 		if($safeTrade=='Skills sin definir, cargue Dashboard') {
 			// renew the skills
-			$dummy=renewskills($p['toon_number']); 
+			$dummy=renewskills($p['toon_number']);
+			die(['toon_number'].['toon_name']);
 	    }
         mysqli_query($link, "UPDATE PILOTS SET tradefield = '$safeTrade' WHERE toon_name = '$safeName'");
         $actualizados++;
