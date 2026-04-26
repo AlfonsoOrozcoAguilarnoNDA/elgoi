@@ -45,8 +45,11 @@ foreach($xml->skills->item as $item){
     if ($dif>0) $acctype='Alpha';            
     list($maxalpha)=avalues319("select EXPANDED from ALPHA_CLONES where numberskill='$what'");
     if ($active >$maxalpha and $active>0)  $acctype="Omega";
-    $sql="insert into EVE_CHARSKILLS (toon,typeID,skillpoints,rank,description) values 
-       ('$who',$what,$item->skillpoints_in_skill,$item->trained_skill_level,'$description')";
+	$toon_name=addslashes($name);
+	list($thegroup)=avalues319("select groupid from invTypes2 where typeid='$what'");
+	list($group_name)=avalues319("select groupName from invGroups where groupid=$thegroup");;
+    $sql="insert into EVE_CHARSKILLS (toon,toon_name,typeID,skillpoints,rank,description,group_name) values 
+       ('$who',$name,$what,$item->skillpoints_in_skill,$item->trained_skill_level,'$description','$group_name')";
      doaction($sql,"error inserting skills");  
 }
 $sql="update PILOTS set acctype='$acctype' where toon_number='$who'";
