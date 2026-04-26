@@ -23,7 +23,7 @@ if (str_replace("unexpected end of JSON","",$data)<>$data) die("Sorry, skills ar
 if (str_replace("504 Gateway","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try update him/her later $where");
 
 $data=stripslashes($data);
-echo "<li>	$name</li>";
+//echo "<li>	$name</li>";
 $xml=json2xml($data);
 	
 $xml = new SimpleXMLElement($xml);
@@ -269,7 +269,7 @@ if ($resTodos) {
 		if($safeTrade=='Skills sin definir, cargue Dashboard') {
 			// renew the skills
 			$dummy=renewskills($p['toon_number']);
-			die(['toon_number'].['toon_name']);
+			die($p['toon_number'].$p['toon_name']);
 	    }
         mysqli_query($link, "UPDATE PILOTS SET tradefield = '$safeTrade' WHERE toon_name = '$safeName'");
         $actualizados++;
