@@ -22,6 +22,10 @@ if (str_replace("Timeout contacting tranquility","",$data)<>$data) die("Sorry, s
 if (str_replace("unexpected end of JSON","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try update him/her later $where");
 if (str_replace("504 Gateway","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try update him/her later $where");
 
+$data=stripslashes($data);
+$xml=json2xml($data);
+$xml = new SimpleXMLElement($xml);
+	
 $sql="delete from EVE_CHARSKILLS where toon='$who'";
 doaction($sql,"error checking skills $who");
 list($dummy)=avalues319("select skills from PILOTS where toon_number='$who'");
