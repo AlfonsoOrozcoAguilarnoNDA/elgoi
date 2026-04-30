@@ -249,7 +249,7 @@ function obtenerOficio($p) {
         return $dato['group_name'];
     }
 	// si se va a guardar basura
-	// pero hay que avisr de reevaluar con dashboard
+	// pero hay que avisar de reevaluar con dashboard
     return "Skills sin definir, cargue Dashboard"; 
     $sp = (int)(($p['skillpoints'] ?? 0) / 1000000);
     //return $dato['group_name'];
@@ -260,7 +260,7 @@ function obtenerOficio($p) {
 // ==============================================================================
 // RECÁLCULO AUTOMÁTICO DE TRADEFIELD (todos, siempre, antes de mostrar)
 // ==============================================================================
-$sqlTodos = "SELECT toon_number,toon_name, skillpoints FROM PILOTS WHERE toon_name NOT LIKE '%VPS%' AND toon_name NOT LIKE '%CATALOG%'";
+$sqlTodos = "SELECT toon_number,toon_name, skillpoints FROM PILOTS WHERE toon_name NOT LIKE '%CATALOG%'";
 $resTodos = mysqli_query($link, $sqlTodos);
 $actualizados = 0;
 
