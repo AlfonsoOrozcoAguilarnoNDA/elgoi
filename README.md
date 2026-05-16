@@ -51,6 +51,10 @@ No Composer. No dependency hell. Just PHP doing what PHP does best: running on a
 The next phase will use a separate domain (elgoi.com) to serve live dashboards
 and explore what Go can do in a real, adversarial-audience environment.
 
+The project is alive but a little stalled. Mainly for the linux dirty frag and similar 
+CVE, but mainly because in apr 6 aprox, the quality of LLM go downhill. I think i use 
+KIMI in a payed account in may or june to ironing the issues.
+
 **Why EVE Online as a test bench?**
 EVE players are, by definition, data auditors and resource optimizers.
 If a Go dashboard survives EVE Online's community, it'll survive any corporate client.
