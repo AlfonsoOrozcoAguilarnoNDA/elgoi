@@ -57,7 +57,7 @@ KIMI in a payed account in may or june to ironing the issues.
 
 **Why EVE Online as a test bench?**
 EVE players are, by definition, data auditors and resource optimizers.
-If a Go dashboard survives EVE Online's community, it'll survive any corporate client.
+If a GO dashboard survives EVE Online's community, it'll survive any corporate client.
 
 ---
 
