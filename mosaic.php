@@ -66,6 +66,14 @@ $tiles = [
     showTile("intel/spy.php", "fa-eye", "dark")  
     
 ];
+
+$tiles2 = [    
+    showTile("abyss/crew.php", "fa-users", "primary"),
+    showTile("logistics/hauling.php", "fa-truck", "secondary"),    
+    showTile("intel/spy.php", "fa-eye", "dark")  
+    
+];
+
 // ============================================
 // LISTAR ARCHIVOS DEL DIRECTORIO
 // ============================================
@@ -562,6 +570,17 @@ sort($non_php_files);
             <div class="metro-grid">
                 <?php 
                 foreach ($tiles as $tile) {
+                    echo $tile;
+                }
+
+            echo "</div>";
+?>
+        </section>    
+		<section class="section">
+            <h2>🧪 Experimental — No warranty. May vanish into the void without warning</h2>
+            <div class="metro-grid">
+                <?php 
+                foreach ($tiles2 as $tile) {
                     echo $tile;
                 }
 
