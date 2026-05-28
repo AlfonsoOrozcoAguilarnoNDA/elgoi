@@ -2,7 +2,7 @@
 /**
  * EVE Pilot Skills Dashboard - Vibecoding Edition v2
  * Stack: PHP 8.x Procedural, MariaDB, Bootstrap 4.6.x, FontAwesome 5.15.4
- * License: GPL
+ * License: (especificar licencia deseada)
  * Alfonso Orozco Aguilar
  * Fleet Commander - Mosaic Dashboard
  * Fecha: 2026-05-28
@@ -69,9 +69,9 @@ function getGroupSP($link, $toon, $group_name) {
         }
         
         /* ============================================
-           NAVBAR SOBRIO - EXPERIMENTAL
+           NAVBAR SOBRIO
            ============================================ */
-        .navbar-experimental {
+        .navbar-main {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             border-bottom: 2px solid #e94560;
             padding: 0.8rem 1rem;
@@ -89,24 +89,58 @@ function getGroupSP($link, $toon, $group_name) {
             color: #a0a0a0;
             font-size: 0.85rem;
         }
-        .experimental-badge {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-            color: #fff;
-            font-size: 0.7rem;
-            padding: 4px 10px;
-            border-radius: 12px;
+        
+        /* ============================================
+           BANNER EXPERIMENTAL VISIBLE
+           ============================================ */
+        .experimental-banner {
+            background: linear-gradient(135deg, #2d1b1b 0%, #1a1a2e 100%);
+            border-left: 4px solid #e94560;
+            border-right: 4px solid #e94560;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .experimental-title {
+            color: #ff6b6b;
             font-weight: bold;
+            font-size: 1rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-left: 10px;
+            margin-bottom: 8px;
         }
-        .warning-text {
+        .experimental-title i {
+            margin-right: 8px;
+        }
+        .experimental-desc {
+            color: #b0b0b0;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .experimental-warning {
             color: #ffc107;
-            font-size: 0.8rem;
-            margin-left: 15px;
+            font-size: 0.85rem;
+            font-style: italic;
         }
-        .warning-text i {
-            margin-right: 5px;
+        .experimental-warning i {
+            margin-right: 6px;
+            color: #ff6b6b;
+        }
+        .experimental-features {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #333;
+        }
+        .feature-tag {
+            display: inline-block;
+            background: rgba(233, 69, 96, 0.2);
+            color: #ff6b6b;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin: 2px;
+            border: 1px solid rgba(233, 69, 96, 0.3);
         }
         
         .card-pilot { 
@@ -143,105 +177,123 @@ function getGroupSP($link, $toon, $group_name) {
 <body>
 
     <!-- ============================================
-         NAVBAR SOBRIO CON MENSAJE EXPERIMENTAL
+         NAVBAR SOBRIO
          ============================================ -->
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-experimental">
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-main">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">
                 <i class="fas fa-vial"></i>
                 Abyssal Tier 0 Ready Check
-                <span class="experimental-badge">
-                    <i class="fas fa-flask"></i> Experimental
-                </span>
             </a>
             <div class="d-flex align-items-center">
-                <span class="warning-text">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    No warranty. Data may be wiped without notice.
-                </span>
-                <span class="navbar-text ml-4">
+                <span class="navbar-text">
                     <i class="far fa-calendar-alt"></i> <?php echo date('d M Y'); ?>
                 </span>
             </div>
         </div>
     </nav>
 
-<div class="container-fluid py-4">
-    <div class="row">
-        <?php while($p = mysqli_fetch_assoc($res)): 
-            $t = $p['toon_number'];
-            // Skills de Turret
-            $hybrid = getSkillLevel($link, $t, 'Small Hybrid Turret');
-            $proj = getSkillLevel($link, $t, 'Small Projectile Turret');
-            $energy = getSkillLevel($link, $t, 'Small Energy Turret');
-            // Skills de Destroyer Específicos
-            $minmD = getSkillLevel($link, $t, 'Minmatar Destroyer');
-            $caldD = getSkillLevel($link, $t, 'Caldari Destroyer');
-            $gallD = getSkillLevel($link, $t, 'Gallente Destroyer');
-            // Amarr Frigate y Misiles
-            $amarrF = getSkillLevel($link, $t, 'Amarr Frigate');
-            $missileSP = getGroupSP($link, $t, 'Missile');
-        ?>
-            <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
-                <div class="card card-pilot h-100">
-                    <span class="badge badge-info pocket-badge"><?php echo htmlspecialchars($p['pocket6']); ?></span>
-                    <img src="https://images.evetech.net/characters/<?php echo $t; ?>/portrait?size=256" class="card-img-top" alt="Avatar">
-                    
-                    <div class="card-body p-2">
-                        <h6 class="text-info text-truncate"><?php echo $p['toon_name']; ?></h6>
-                        
-                        <table class="skill-grid mb-2">
-                            <thead>
-                                <tr>
-                                    <th class="skill-name">Hybrid</th>
-                                    <th class="skill-name">Proj</th>
-                                    <th class="skill-name">Energy</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="<?php echo ($hybrid == 5 ? 'level-v' : ''); ?>"><?php echo ($hybrid ?: '-'); ?></td>
-                                    <td class="<?php echo ($proj == 5 ? 'level-v' : ''); ?>"><?php echo ($proj ?: '-'); ?></td>
-                                    <td class="<?php echo ($energy == 5 ? 'level-v' : ''); ?>"><?php echo ($energy ?: '-'); ?></td>
-                                </tr>
-                            </tbody>
-                            <thead>
-                                <tr>
-                                    <th class="skill-name">Minm Dest</th>
-                                    <th class="skill-name">Cald Dest</th>
-                                    <th class="skill-name">Gall Dest</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="<?php echo ($minmD == 5 ? 'level-v' : ''); ?>"><?php echo ($minmD ?: '-'); ?></td>
-                                    <td class="<?php echo ($caldD == 5 ? 'level-v' : ''); ?>"><?php echo ($caldD ?: '-'); ?></td>
-                                    <td class="<?php echo ($gallD == 5 ? 'level-v' : ''); ?>"><?php echo ($gallD ?: '-'); ?></td>
-                                </tr>
-                            </tbody>
-                            <thead>
-                                <tr>
-                                    <th colspan="3" class="skill-name">Amarr Frigate</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td colspan="3" class="<?php echo ($amarrF == 5 ? 'level-v' : ''); ?>"><?php echo ($amarrF ?: '-'); ?></td>
-                                </tr>
-                            </tbody>
-                        </table>
+    <div class="container-fluid">
+        
+        <!-- ============================================
+             BANNER EXPERIMENTAL - VISIBLE EN PANTALLA
+             ============================================ -->
+        <div class="experimental-banner">
+            <div class="experimental-title">
+                <i class="fas fa-flask"></i>
+                Experimental Features
+            </div>
+            <div class="experimental-desc">
+                This section checks how suitable your pilots are for <strong>Abyssal Tier 0</strong> encounters. 
+                Skill requirements and thresholds are still being tested and may change based on fleet feedback.
+            </div>
+            <div class="experimental-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>No warranty.</strong> Data, thresholds, and even this entire section may be wiped or modified without prior notice. Use at your own risk.
+            </div>
+            <div class="experimental-features">
+                <span class="feature-tag"><i class="fas fa-crosshairs"></i> Turret Skills</span>
+                <span class="feature-tag"><i class="fas fa-rocket"></i> Destroyer Skills</span>
+                <span class="feature-tag"><i class="fas fa-shield-alt"></i> Frigate Skills</span>
+                <span class="feature-tag"><i class="fas fa-bomb"></i> Missile SP Check</span>
+            </div>
+        </div>
 
-                        <?php if($missileSP > 0): ?>
-                            <div class="small text-warning border border-warning p-1 text-center">
-                                <i class="fas fa-crosshairs"></i> MISSILES: <?php echo number_format($missileSP); ?> SP
-                            </div>
-                        <?php endif; ?>
+        <div class="row">
+            <?php while($p = mysqli_fetch_assoc($res)): 
+                $t = $p['toon_number'];
+                // Skills de Turret
+                $hybrid = getSkillLevel($link, $t, 'Small Hybrid Turret');
+                $proj = getSkillLevel($link, $t, 'Small Projectile Turret');
+                $energy = getSkillLevel($link, $t, 'Small Energy Turret');
+                // Skills de Destroyer Específicos
+                $minmD = getSkillLevel($link, $t, 'Minmatar Destroyer');
+                $caldD = getSkillLevel($link, $t, 'Caldari Destroyer');
+                $gallD = getSkillLevel($link, $t, 'Gallente Destroyer');
+                // Amarr Frigate y Misiles
+                $amarrF = getSkillLevel($link, $t, 'Amarr Frigate');
+                $missileSP = getGroupSP($link, $t, 'Missile');
+            ?>
+                <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+                    <div class="card card-pilot h-100">
+                        <span class="badge badge-info pocket-badge"><?php echo htmlspecialchars($p['pocket6']); ?></span>
+                        <img src="https://images.evetech.net/characters/<?php echo $t; ?>/portrait?size=256" class="card-img-top" alt="Avatar">
+                        
+                        <div class="card-body p-2">
+                            <h6 class="text-info text-truncate"><?php echo $p['toon_name']; ?></h6>
+                            
+                            <table class="skill-grid mb-2">
+                                <thead>
+                                    <tr>
+                                        <th class="skill-name">Hybrid</th>
+                                        <th class="skill-name">Proj</th>
+                                        <th class="skill-name">Energy</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="<?php echo ($hybrid == 5 ? 'level-v' : ''); ?>"><?php echo ($hybrid ?: '-'); ?></td>
+                                        <td class="<?php echo ($proj == 5 ? 'level-v' : ''); ?>"><?php echo ($proj ?: '-'); ?></td>
+                                        <td class="<?php echo ($energy == 5 ? 'level-v' : ''); ?>"><?php echo ($energy ?: '-'); ?></td>
+                                    </tr>
+                                </tbody>
+                                <thead>
+                                    <tr>
+                                        <th class="skill-name">Minm Dest</th>
+                                        <th class="skill-name">Cald Dest</th>
+                                        <th class="skill-name">Gall Dest</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="<?php echo ($minmD == 5 ? 'level-v' : ''); ?>"><?php echo ($minmD ?: '-'); ?></td>
+                                        <td class="<?php echo ($caldD == 5 ? 'level-v' : ''); ?>"><?php echo ($caldD ?: '-'); ?></td>
+                                        <td class="<?php echo ($gallD == 5 ? 'level-v' : ''); ?>"><?php echo ($gallD ?: '-'); ?></td>
+                                    </tr>
+                                </tbody>
+                                <thead>
+                                    <tr>
+                                        <th colspan="3" class="skill-name">Amarr Frigate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" class="<?php echo ($amarrF == 5 ? 'level-v' : ''); ?>"><?php echo ($amarrF ?: '-'); ?></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <?php if($missileSP > 0): ?>
+                                <div class="small text-warning border border-warning p-1 text-center">
+                                    <i class="fas fa-crosshairs"></i> MISSILES: <?php echo number_format($missileSP); ?> SP
+                                </div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
-            </div>
-        <?php endwhile; ?>
+            <?php endwhile; ?>
+        </div>
     </div>
-</div>
 
 </body>
 </html>
