@@ -2,14 +2,12 @@
 /**
  * EVE Pilot Skills Dashboard - Vibecoding Edition v2
  * Stack: PHP 8.x Procedural, MariaDB, Bootstrap 4.6.x, FontAwesome 5.15.4
- */
-/**
- * License GPL 3.0
+ * License: GPL
  * Alfonso Orozco Aguilar
  * Fleet Commander - Mosaic Dashboard
- * Fecha: 2026-03-31 00:22
+ * Fecha: 2026-05-28
  * 
- * This is A second experimental dashboard, using some of my test chars. Use yours.
+ * This is an experimental dashboard using some of my test chars. Use yours.
  */
 
 // 1. CONFIGURACIÓN Y CONEXIÓN
@@ -64,16 +62,109 @@ function getGroupSP($link, $toon, $group_name) {
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <style>
-        body { background-color: #0f0f0f; color: #d1d1d1; }
-        .card-pilot { background-color: #1a1a1a; border: 1px solid #333; }
-        .skill-grid { font-size: 0.65rem; border-collapse: collapse; width: 100%; }
-        .skill-grid td, .skill-grid th { border: 1px solid #333; padding: 3px; text-align: center; }
-        .skill-name { color: #888; text-transform: uppercase; font-size: 0.55rem; }
-        .level-v { color: #00ff00; font-weight: bold; }
-        .pocket-badge { position: absolute; top: 10px; right: 10px; z-index: 10; }
+        body { 
+            background-color: #0f0f0f; 
+            color: #d1d1d1; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* ============================================
+           NAVBAR SOBRIO - EXPERIMENTAL
+           ============================================ */
+        .navbar-experimental {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-bottom: 2px solid #e94560;
+            padding: 0.8rem 1rem;
+        }
+        .navbar-brand {
+            color: #e0e0e0 !important;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .navbar-brand i {
+            color: #e94560;
+            margin-right: 8px;
+        }
+        .navbar-text {
+            color: #a0a0a0;
+            font-size: 0.85rem;
+        }
+        .experimental-badge {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: #fff;
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-left: 10px;
+        }
+        .warning-text {
+            color: #ffc107;
+            font-size: 0.8rem;
+            margin-left: 15px;
+        }
+        .warning-text i {
+            margin-right: 5px;
+        }
+        
+        .card-pilot { 
+            background-color: #1a1a1a; 
+            border: 1px solid #333; 
+        }
+        .skill-grid { 
+            font-size: 0.65rem; 
+            border-collapse: collapse; 
+            width: 100%; 
+        }
+        .skill-grid td, .skill-grid th { 
+            border: 1px solid #333; 
+            padding: 3px; 
+            text-align: center; 
+        }
+        .skill-name { 
+            color: #888; 
+            text-transform: uppercase; 
+            font-size: 0.55rem; 
+        }
+        .level-v { 
+            color: #00ff00; 
+            font-weight: bold; 
+        }
+        .pocket-badge { 
+            position: absolute; 
+            top: 10px; 
+            right: 10px; 
+            z-index: 10; 
+        }
     </style>
 </head>
 <body>
+
+    <!-- ============================================
+         NAVBAR SOBRIO CON MENSAJE EXPERIMENTAL
+         ============================================ -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-experimental">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-vial"></i>
+                Abyssal Tier 0 Ready Check
+                <span class="experimental-badge">
+                    <i class="fas fa-flask"></i> Experimental
+                </span>
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="warning-text">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    No warranty. Data may be wiped without notice.
+                </span>
+                <span class="navbar-text ml-4">
+                    <i class="far fa-calendar-alt"></i> <?php echo date('d M Y'); ?>
+                </span>
+            </div>
+        </div>
+    </nav>
 
 <div class="container-fluid py-4">
     <div class="row">
