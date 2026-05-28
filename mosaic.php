@@ -68,7 +68,7 @@ $tiles = [
 ];
 
 $tiles2 = [
-	showTile("industry/slots.php", "fa-industry", "Factory Slots"),
+	showTile("industry/slots.php", "fa-industry", "Slots"),
     showTile("abyss/crew.php", "fa-users", "primary"),
     showTile("logistics/hauling.php", "fa-truck", "secondary"),    
     showTile("intel/spy.php", "fa-eye", "dark")  
