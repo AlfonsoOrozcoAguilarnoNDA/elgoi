@@ -67,6 +67,7 @@ $tiles = [
 ];
 
 $tiles2 = [
+	showTile("crew/skill_inspector.php", "fa-clipboard-check", "primary"),
 	showTile("industry/slots.php", "fa-industry", "info"),
 	showTile("experimental/tradehubs_ammo.php", "fa-chart-line", "success"),
 	showTile("experimental/whereare.php", "fa-globe", "success"),
