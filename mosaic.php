@@ -60,8 +60,7 @@ $tiles = [
     showTile("industry/jobs.php", "fa-industry", "info"),    
     showTile("specific/ships_and_5m.php", "fa-id-badge", "secondary"),  
     //showTile("combat/pvp.php", "fa-crosshairs", "danger"),
-    showTile("specific/explode.php", "fa-bomb", "light"),
-    showTile("abyss/crew.php", "fa-users", "primary"),
+    showTile("specific/explode.php", "fa-bomb", "light"),    
     showTile("logistics/hauling.php", "fa-truck", "secondary"),    
     showTile("intel/spy.php", "fa-eye", "dark")  
     
@@ -70,6 +69,7 @@ $tiles = [
 $tiles2 = [
 	showTile("industry/slots.php", "fa-industry", "info"),
 	showTile("experimental/tradehubs_ammo.php", "fa-chart-line", "success"),
+	showTile("experimental/whereare.php", "fa-globe", "success"),
     showTile("experimental/thesix.php", "fa-users", "primary"),
 	showTile("experimental/thesix2.php", "fa-users", "primary"),
     showTile("logistics/hauling.php", "fa-truck", "secondary"),    
