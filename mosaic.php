@@ -61,9 +61,7 @@ $tiles = [
     showTile("specific/ships_and_5m.php", "fa-id-badge", "secondary"),  
     //showTile("combat/pvp.php", "fa-crosshairs", "danger"),
     showTile("specific/explode.php", "fa-bomb", "light"),    
-    showTile("logistics/hauling.php", "fa-truck", "secondary"),    
-    showTile("intel/spy.php", "fa-eye", "dark")  
-    
+    showTile("logistics/hauling.php", "fa-truck", "secondary")    
 ];
 
 $tiles2 = [
@@ -75,8 +73,7 @@ $tiles2 = [
     showTile("experimental/thesix.php", "fa-users", "primary"),
 	showTile("experimental/thesix2.php", "fa-users", "primary"),
     showTile("logistics/hauling.php", "fa-truck", "secondary"),    
-    showTile("intel/spy.php", "fa-eye", "dark")  
-    
+    showTile("crew/spy.php", "fa-user-secret", "dark")    
 ];
 
 // ============================================
