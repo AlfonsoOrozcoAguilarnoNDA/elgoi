@@ -21,8 +21,8 @@ date_default_timezone_set('America/Mexico_City');
 // ---------------------------------------------------------------------
 // CONFIGURACIÓN INVENTARIO
 // ---------------------------------------------------------------------
-$verificando = "Corax,Catalyst,Cormorant,Kestrel,Caracal,Oxygen Isotopes,Hydrogen Isotopes,Nitrogen Isotopes,Helium Isotopes";
-$pilotos = "PI Organizer,Irma Lynn,Hypervisor";
+$verificando = "Corax,Catalyst,Cormorant,Kestrel,Caracal,Oxygen Isotopes,Hydrogen Isotopes,Nitrogen Isotopes,Helium Isotopes,Antimatter Charge M,Scourge Light Missile,Antimatter Charge S";
+$pilotos = "Abyssal Firestorm,Hypervisor,Sue Rtuda";
 
 // ---------------------------------------------------------------------
 // PROCESAR ACCIONES DE REASIGNACIÓN
