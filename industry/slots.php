@@ -9,7 +9,7 @@
 // Licencia: GPL
 // ============================================
 
-include 'config.php';
+include '../config.php';
 
 // Verificar conexión
 if (!isset($link) || $link === false) {
