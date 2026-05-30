@@ -51,7 +51,7 @@ $tiles = [
     showTile("specific/balance.php", "fa-coins", "warning"),
     showTile("specific/get_market.php", "fa-chart-line", "success"),
     showTile("specific/skybreaker.php", "fa-rocket", "danger"),
-    showTile("specific/settings.php", "fa-cogs", "secondary"),
+	showTile("specific/explode.php", "fa-bomb", "light"),    
     
     showTile("updater.php", "fa-satellite-dish", "dark"),    
     showTile("industry/crewplanets.php", "fa-globe", "secondary"),
@@ -59,9 +59,8 @@ $tiles = [
     showTile("industry/minerals_bpo_bpc.php", "fa-gem", "warning"),
     showTile("industry/jobs.php", "fa-industry", "info"),    
     showTile("specific/ships_and_5m.php", "fa-id-badge", "secondary"),  
-    //showTile("combat/pvp.php", "fa-crosshairs", "danger"),
-    showTile("specific/explode.php", "fa-bomb", "light"),    
-    showTile("logistics/hauling.php", "fa-truck", "secondary")    
+    //showTile("combat/pvp.php", "fa-crosshairs", "danger")    
+    
 ];
 
 $tiles2 = [
@@ -74,6 +73,7 @@ $tiles2 = [
     showTile("experimental/thesix.php", "fa-users", "primary"),
 	showTile("experimental/thesix2.php", "fa-users", "primary"),
     showTile("logistics/hauling.php", "fa-truck", "secondary"),    
+	showTile("specific/settings.php", "fa-cogs", "secondary"),
     showTile("crew/spy.php", "fa-user-secret", "dark")    
 ];
 
