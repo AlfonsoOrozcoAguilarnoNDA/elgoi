@@ -1,9 +1,9 @@
 <?php
 /*
- * EVE Online - Unified Audit Tool
- * License: MIT
+ * EVE Online - Unified CREW Audit Tool
+ * License: GPL
  * Author: Alfonso Orozco Aguilar
- * Tabs: Graduation | Reputation | Biometrics | Evermarks
+ * Tabs: Graduation | Reputation | Biometrics | Planet/flags | Evermarks
  * Stack: PHP 8.x Procedural, MariaDB, Bootstrap 4.6.2, Font Awesome 5.15.4
  */
 
@@ -771,7 +771,7 @@ echo crew_navbar();
 
         /* ── SHARED TABLE ── */
         .table-eve { background-color: #16191c; font-size: 0.82rem; border-collapse: separate; border-spacing: 0; }
-        .table-eve thead th { background-color: #212529; border-bottom: 2px solid #007bff; position: sticky; top: 40px; z-index: 10; color: #adb5bd !important; }
+        .table-eve thead th { background-color: #212529; border-bottom: 2px solid #007bff; position: sticky; top: 0px; z-index: 10; color: #adb5bd !important; }
         .table-eve td { vertical-align: middle; border-top: 1px solid #2d3238; }
 
         /* ── DATATABLES DARK OVERRIDES ── */
