@@ -1,7 +1,7 @@
 <?php
 /*
- * EVE Online - Unified Crew Audit Tool
- * License: GPL 2.0
+ * EVE Online - Unified Audit Tool
+ * License: MIT
  * Author: Alfonso Orozco Aguilar
  * Tabs: Graduation | Reputation | Biometrics | Evermarks
  * Stack: PHP 8.x Procedural, MariaDB, Bootstrap 4.6.2, Font Awesome 5.15.4
@@ -307,7 +307,7 @@ function renderTabReputation() {
                         <span class="trade-pill"><?php echo htmlspecialchars($tradefield); ?></span>
                     <?php else: ?><small class="text-muted">-</small><?php endif; ?>
                 </td>
-                <td style='color:#ffffff;'><?php echo htmlspecialchars($row['target_description']); ?></td>
+                <td><?php echo htmlspecialchars($row['target_description']); ?></td>
                 <td class="text-right reputation-num <?php echo $rep_class; ?>"><?php echo number_format($rep, 2); ?></td>
                 <td class="text-center">
                     <span class="pocket-badge-dip" style="background-color:<?php echo get_pocket_color($p6_val); ?>;color:<?php echo get_pocket_text($p6_val); ?>;">
@@ -736,7 +736,7 @@ echo crew_navbar();
             background-color: #0b0c0e;
             color: #ced4da;
             font-family: 'Segoe UI', sans-serif;
-            padding-top: 40px; /* navbar (~60px) + eve-tabs (~56px) */
+            padding-top: 120px; /* navbar (~60px) + eve-tabs (~56px) */
             padding-bottom: 70px;
         }
 
@@ -746,7 +746,7 @@ echo crew_navbar();
             border-bottom: 2px solid #007bff;
             padding: 0 20px;
             position: sticky;
-            top: 0;
+            top: 120;
             z-index: 100;
         }
         .eve-tabs .nav-link {
@@ -771,7 +771,7 @@ echo crew_navbar();
 
         /* ── SHARED TABLE ── */
         .table-eve { background-color: #16191c; font-size: 0.82rem; border-collapse: separate; border-spacing: 0; }
-        .table-eve thead th { background-color: #212529; border-bottom: 2px solid #007bff; position: sticky; top: 120px; z-index: 10; color: #adb5bd !important; }
+        .table-eve thead th { background-color: #212529; border-bottom: 2px solid #007bff; position: sticky; top: 40px; z-index: 10; color: #adb5bd !important; }
         .table-eve td { vertical-align: middle; border-top: 1px solid #2d3238; }
 
         /* ── DATATABLES DARK OVERRIDES ── */
