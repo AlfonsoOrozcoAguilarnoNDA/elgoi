@@ -1,9 +1,9 @@
 <?php
 /*
- * EVE Online - Unified Audit Tool
- * License: MIT
+ * EVE Online - Unified CREW Audit Tool
+ * License: GPL
  * Author: Alfonso Orozco Aguilar
- * Tabs: Graduation | Reputation | Biometrics | Evermarks
+ * Tabs: Graduation | Reputation | Biometrics | Planet/flags | Evermarks
  * Stack: PHP 8.x Procedural, MariaDB, Bootstrap 4.6.2, Font Awesome 5.15.4
  */
 
@@ -307,7 +307,7 @@ function renderTabReputation() {
                         <span class="trade-pill"><?php echo htmlspecialchars($tradefield); ?></span>
                     <?php else: ?><small class="text-muted">-</small><?php endif; ?>
                 </td>
-                <td style="color:#ffffff;"><?php echo htmlspecialchars($row['target_description']); ?></td>
+                <td style='color:#ffffff;'><?php echo htmlspecialchars($row['target_description']); ?></td>
                 <td class="text-right reputation-num <?php echo $rep_class; ?>"><?php echo number_format($rep, 2); ?></td>
                 <td class="text-center">
                     <span class="pocket-badge-dip" style="background-color:<?php echo get_pocket_color($p6_val); ?>;color:<?php echo get_pocket_text($p6_val); ?>;">
@@ -451,7 +451,138 @@ function renderTabBiometrics() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// TAB 4 — EVERMARKS: fleet audit with evermarks update
+// TAB 4 — PLANETS & FLAGS: industry logistics + GF review
+// ══════════════════════════════════════════════════════════════════════════════
+function renderPilotCard($p) {
+    $t = strtolower($p['acctype'] ?? '');
+    if ($t == 'omega')      { $accIcon = 'fa-crown';           $accColor = '#f1c40f'; $accLabel = 'OMEGA'; }
+    elseif ($t == 'alpha')  { $accIcon = 'fa-rocket';          $accColor = '#95a5a6'; $accLabel = 'ALPHA'; }
+    else                    { $accIcon = 'fa-question-circle'; $accColor = '#6c757d'; $accLabel = 'N/A';   }
+
+    $hasPlanets = ($p['planets'] != '[]' && !empty($p['planets']));
+    $hasJobs    = ($p['jobs']    != '[]' && !empty($p['jobs']));
+    $isGf       = (isset($p['gf']) && $p['gf'] == 1);
+    $flagColor  = $isGf ? '#e74c3c' : '#495057';
+    $flagTitle  = $isGf ? 'Under Review (GF)' : 'Normal';
+    ob_start();
+    ?>
+    <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
+        <div class="card card-logistica <?php echo $isGf ? 'card-gf' : ''; ?>">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="pocket-badge"><?php echo htmlspecialchars($p['pocket6'] ?? 'NO POCKET'); ?></span>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-flag mr-2" style="color:<?php echo $flagColor; ?>;font-size:0.95rem;" title="<?php echo $flagTitle; ?>"></i>
+                        <i class="fas <?php echo $accIcon; ?>" style="color:<?php echo $accColor; ?>;" title="<?php echo $accLabel; ?>"></i>
+                    </div>
+                </div>
+                <div class="d-flex align-items-start">
+                    <img src="https://images.evetech.net/characters/<?php echo $p['toon_number']; ?>/portrait?size=128" class="portrait-log mr-3">
+                    <div class="flex-grow-1 overflow-hidden">
+                        <h6 class="text-white text-truncate mb-0"><?php echo htmlspecialchars($p['toon_name']); ?></h6>
+                        <div class="corp-tag text-truncate">
+                            <i class="fas fa-building mr-1"></i><?php echo !empty($p['corporation_name']) ? htmlspecialchars($p['corporation_name']) : 'N/A'; ?>
+                        </div>
+                        <div class="mt-2 d-flex justify-content-between">
+                            <div class="industry-icons">
+                                <i class="fas fa-globe-asia mr-2 <?php echo $hasPlanets ? 'text-success' : 'text-dark'; ?>" title="Active Planets"></i>
+                                <i class="fas fa-tools <?php echo $hasJobs ? 'text-warning' : 'text-dark'; ?>" title="Factory Jobs"></i>
+                            </div>
+                            <div class="text-right">
+                                <small class="d-block text-muted">Evermarks</small>
+                                <span class="badge badge-secondary"><?php echo number_format($p['evermarks']); ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 pt-2 border-top border-secondary d-flex justify-content-between align-items-center">
+                    <small class="text-secondary">WALLET BALANCE:</small>
+                    <span class="val-money"><?php echo number_format($p['Wallet_M'], 2); ?> M ISK</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
+function renderTabPlanetsFlags() {
+    global $link;
+
+    $sqlLogistica = "SELECT *, (IFNULL(wallet,0)/1000000) as Wallet_M, ((skillpoints+IFNULL(unalloc,0))/1000000) as TotalSP_M
+                     FROM PILOTS
+                     WHERE (planets != '[]' AND planets IS NOT NULL) OR (jobs != '[]' AND jobs IS NOT NULL)
+                     ORDER BY acctype, pocket6 ASC, toon_name ASC";
+
+    $sqlGfNoPlanets = "SELECT *, (IFNULL(wallet,0)/1000000) as Wallet_M, ((skillpoints+IFNULL(unalloc,0))/1000000) as TotalSP_M
+                       FROM PILOTS
+                       WHERE gf = 1 AND (planets = '[]' OR planets IS NULL)
+                       ORDER BY acctype, pocket6 ASC, toon_name ASC";
+
+    $sqlGf = "SELECT *, (IFNULL(wallet,0)/1000000) as Wallet_M, ((skillpoints+IFNULL(unalloc,0))/1000000) as TotalSP_M
+              FROM PILOTS WHERE gf = 1
+              ORDER BY acctype, pocket6 ASC, toon_name ASC";
+
+    $resLogistica   = mysqli_query($link, $sqlLogistica);
+    $resGfNoPlanets = mysqli_query($link, $sqlGfNoPlanets);
+    $resGf          = mysqli_query($link, $sqlGf);
+
+    ob_start();
+    ?>
+    <!-- SECTION 1: Industrial / Planetary Activity -->
+    <div class="section-header sec-industry">
+        <h5 class="mb-0 text-white">
+            <i class="fas fa-industry mr-2"></i> Production & Colony Audit
+            <small class="text-muted ml-2" style="font-size:0.75rem;">Pilots with active planets or jobs</small>
+        </h5>
+    </div>
+    <div class="row">
+        <?php if ($resLogistica && mysqli_num_rows($resLogistica) > 0):
+            while ($p = mysqli_fetch_assoc($resLogistica)) echo renderPilotCard($p);
+        else: ?>
+            <div class="col-12"><p class="alert alert-dark">No pilots detected with industrial or planetary activity.</p></div>
+        <?php endif; ?>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- SECTION 2: Under Review — No Planets -->
+    <div class="section-header sec-gf-nopi">
+        <h5 class="mb-0 text-white">
+            <i class="fas fa-flag mr-2" style="color:#e74c3c;"></i> Under Review — No Planetary Activity
+            <small class="text-muted ml-2" style="font-size:0.75rem;">gf=1 and planets=[]</small>
+        </h5>
+    </div>
+    <div class="row">
+        <?php if ($resGfNoPlanets && mysqli_num_rows($resGfNoPlanets) > 0):
+            while ($p = mysqli_fetch_assoc($resGfNoPlanets)) echo renderPilotCard($p);
+        else: ?>
+            <div class="col-12"><p class="alert alert-dark">No pilots under review without planetary activity.</p></div>
+        <?php endif; ?>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- SECTION 3: All Pilots Under Review (gf=1) -->
+    <div class="section-header sec-gf-all">
+        <h5 class="mb-0 text-white">
+            <i class="fas fa-exclamation-triangle mr-2" style="color:#e74c3c;"></i> All Pilots Under Review
+            <small class="text-muted ml-2" style="font-size:0.75rem;">gf=1 (no additional filter)</small>
+        </h5>
+    </div>
+    <div class="row">
+        <?php if ($resGf && mysqli_num_rows($resGf) > 0):
+            while ($p = mysqli_fetch_assoc($resGf)) echo renderPilotCard($p);
+        else: ?>
+            <div class="col-12"><p class="alert alert-dark">No pilots marked under review.</p></div>
+        <?php endif; ?>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TAB 5 — EVERMARKS: fleet audit with evermarks update
 // ══════════════════════════════════════════════════════════════════════════════
 function getAccTypeStyle($type) {
     $t = strtolower($type);
@@ -615,7 +746,7 @@ echo crew_navbar();
             border-bottom: 2px solid #007bff;
             padding: 0 20px;
             position: sticky;
-            top: 0;
+            top: 120;
             z-index: 100;
         }
         .eve-tabs .nav-link {
@@ -727,6 +858,17 @@ echo crew_navbar();
         .btn-tool-dark  { background-color: #1c1c1c; color: #bbb; border-color: #444; }
         .btn-tool-white { background-color: #f0f0f0; color: #111; border-color: #ccc; }
 
+        /* ── PLANETS & FLAGS ── */
+        .card-logistica { background-color: #1a1d21; border: 1px solid #343a40; border-left: 4px solid #007bff; border-radius: 0; margin-bottom: 20px; }
+        .card-logistica.card-gf { border-left-color: #e74c3c; background-color: #1e1618; }
+        .portrait-log { width: 70px; height: 70px; border: 1px solid #444; }
+        .val-money { color: #f39c12; font-family: monospace; font-weight: bold; }
+        .section-header { border-left: 4px solid; padding: 8px 16px; margin-bottom: 20px; background-color: #12141a; }
+        .section-header.sec-industry { border-color: #007bff; }
+        .section-header.sec-gf-nopi  { border-color: #e67e22; }
+        .section-header.sec-gf-all   { border-color: #e74c3c; }
+        hr.section-divider { border-color: #2c3138; margin: 30px 0; }
+
         /* ── TAB CONTENT ── */
         .tab-content-eve { padding: 25px 20px; }
     </style>
@@ -752,6 +894,11 @@ echo crew_navbar();
             </a>
         </li>
         <li class="nav-item">
+            <a class="nav-link <?php echo ($active_tab == 'planets') ? 'active' : ''; ?>" href="?tab=planets">
+                <i class="fas fa-globe"></i> Planets &amp; Flags
+            </a>
+        </li>
+        <li class="nav-item">
             <a class="nav-link <?php echo ($active_tab == 'evermarks') ? 'active' : ''; ?>" href="?tab=evermarks">
                 <i class="fas fa-medal"></i> Evermarks
             </a>
@@ -766,6 +913,7 @@ echo crew_navbar();
         case 'graduation': echo renderTabGraduation(); break;
         case 'reputation': echo renderTabReputation(); break;
         case 'biometrics': echo renderTabBiometrics(); break;
+        case 'planets':    echo renderTabPlanetsFlags(); break;
         case 'evermarks':  echo renderTabEvermarks();  break;
         default:           echo renderTabGraduation();
     }
