@@ -40,10 +40,8 @@ Creamos mosaico
 */
 
 $tiles = [
-    showTile("crew/moneymakers.php", "fa-coins", "primary"),
-    showTile("crew/evermarks.php", "fa-medal", "primary"),
-    showTile("crew/biometrics.php", "fa-fingerprint", "primary"),
-    showTile("crew/reputation.php", "fa-passport", "primary"),
+    showTile("crew/moneymakers.php", "fa-coins", "primary"),    
+    showTile("crew/biometrics.php", "fa-fingerprint", "primary"),    
     showTile("crew/skill_inspector.php", "fa-clipboard-check", "primary"),
 	showTile("specific/settings.php", "fa-cogs", "secondary"),
     showTile("crew/28_days_control.php", "fa-user-clock", "danger"),
