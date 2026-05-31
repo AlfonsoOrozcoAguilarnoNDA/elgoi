@@ -307,7 +307,7 @@ function renderTabReputation() {
                         <span class="trade-pill"><?php echo htmlspecialchars($tradefield); ?></span>
                     <?php else: ?><small class="text-muted">-</small><?php endif; ?>
                 </td>
-                <td><?php echo htmlspecialchars($row['target_description']); ?></td>
+                <td style="color:'#ffffff;'><?php echo htmlspecialchars($row['target_description']); ?></td>
                 <td class="text-right reputation-num <?php echo $rep_class; ?>"><?php echo number_format($rep, 2); ?></td>
                 <td class="text-center">
                     <span class="pocket-badge-dip" style="background-color:<?php echo get_pocket_color($p6_val); ?>;color:<?php echo get_pocket_text($p6_val); ?>;">
