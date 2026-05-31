@@ -1,27 +1,27 @@
 <?php
 /**
  * EVE Online Skill Inspector
- * Identifica pilotos con/sin una habilidad específica
+ * Identifies pilots with/without a specific skill
  * 
  * @author    Alfonso Orozco Aguilar (VibeCodingMexico.com) 
  * @coauthor  Kimi K2.6 (Moonshot AI)
  * @license   GPL-2.0-or-later
- * @version   1.1.0
- * @date      2026-05-26
+ * @version   1.2.0
+ * @date      2026-05-31
  */
 
 require_once '../config.php';
 
 // ---------------------------------------------------------------------------
-// CONFIGURACIÓN Y VALIDACIÓN
+// CONFIGURATION & VALIDATION
 // ---------------------------------------------------------------------------
 $selected_skill = isset($_GET['skill']) ? trim($_GET['skill']) : '';
 $selected_pocket = isset($_GET['pocket6']) ? trim($_GET['pocket6']) : 'ALL';
 
-// Filtro de exclusión: personajes de administración/inventario
+// Exclusion filter: admin/inventory characters
 $exclusion_sql = "LOWER(p.toon_name) NOT LIKE '%catalog%' AND LOWER(p.toon_name) NOT LIKE '%vps%'";
 
-// Obtener lista de skills disponibles
+// Get available skills list
 $skills_available = [];
 $q_skills = "SELECT DISTINCT TRIM(Description) as Description FROM EVE_CHARSKILLS WHERE Description != '' ORDER BY TRIM(Description) ASC";
 $r_skills = $link->query($q_skills);
@@ -31,7 +31,7 @@ if ($r_skills) {
     }
 }
 
-// Obtener lista de Pocket6 disponibles (para el combo)
+// Get available Pocket6 list (for the dropdown)
 $pockets_available = [];
 $q_pockets = "SELECT DISTINCT Pocket6 FROM PILOTS WHERE Pocket6 IS NOT NULL AND Pocket6 != '' ORDER BY Pocket6 ASC";
 $r_pockets = $link->query($q_pockets);
@@ -42,7 +42,7 @@ if ($r_pockets) {
 }
 
 // ---------------------------------------------------------------------------
-// CONSULTA: PILOTOS QUE SÍ TIENEN LA SKILL
+// QUERY: PILOTS WITH THE SKILL
 // ---------------------------------------------------------------------------
 $have_skill = [];
 if ($selected_skill !== '') {
@@ -80,7 +80,7 @@ if ($selected_skill !== '') {
 }
 
 // ---------------------------------------------------------------------------
-// CONSULTA: PILOTOS QUE NO TIENEN LA SKILL
+// QUERY: PILOTS WITHOUT THE SKILL
 // ---------------------------------------------------------------------------
 $missing_skill = [];
 if ($selected_skill !== '') {
@@ -119,7 +119,7 @@ if ($selected_skill !== '') {
 }
 
 // ---------------------------------------------------------------------------
-// CÁLCULO DE NIVEL APROXIMADO (EVE Online skill level formula)
+// APPROXIMATE LEVEL CALCULATION (EVE Online skill level formula)
 // ---------------------------------------------------------------------------
 function eve_skill_level($skillpoints, $rank) {
     if ($rank <= 0 || $skillpoints <= 0) return 0;
@@ -134,11 +134,26 @@ function eve_skill_level($skillpoints, $rank) {
 }
 
 // ---------------------------------------------------------------------------
-// HEADER HTML
+// POCKET6 COLOR FUNCTIONS
+// ---------------------------------------------------------------------------
+function get_pocket_color($val) {
+    return match(strtoupper(trim($val ?? ''))) {
+        'EXPER' => '#28a745', 'CLEAN' => '#0078d7', 'SANGO' => '#ffc107',
+        'LUCKY' => '#6f42c1', 'NOKIA' => '#e81123', 'YENN'  => '#cccccc',
+        'OTHER' => '#fd7e14', default => '#444444'
+    };
+}
+
+function get_pocket_text($val) {
+    return in_array(strtoupper(trim($val ?? '')), ['SANGO','YENN']) ? '#111' : '#fff';
+}
+
+// ---------------------------------------------------------------------------
+// HTML HEADER
 // ---------------------------------------------------------------------------
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -180,11 +195,22 @@ function eve_skill_level($skillpoints, $rank) {
             line-height: 50px;
             z-index: 1030;
         }
+        .pocket-badge-dip {
+            display: inline-block;
+            padding: 0.25em 0.6em;
+            font-size: 75%;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: baseline;
+            border-radius: 0.375rem;
+        }
     </style>
 </head>
 <body>
 
-<!-- NAVBAR FIJA -->
+<!-- FIXED NAVBAR -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <div class="container-fluid">
         <a class="navbar-brand" href="#">
@@ -192,27 +218,27 @@ function eve_skill_level($skillpoints, $rank) {
             <span class="badge badge-info ml-2">Kimi K2.6</span>
         </a>
         <span class="navbar-text text-light">
-            <i class="fas fa-robot"></i> Coautor: Kimi K2.6 (Moonshot AI)
+            <i class="fas fa-robot"></i> Co-author: Kimi K2.6 (Moonshot AI)
         </span>
     </div>
 </nav>
 
-<!-- CONTENIDO PRINCIPAL -->
+<!-- MAIN CONTENT -->
 <div class="container-fluid">
 
-    <!-- FORMULARIO DE FILTROS -->
+    <!-- FILTER FORM -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
                 <div class="card-header bg-primary text-white">
-                    <i class="fas fa-filter"></i> Filtros de Búsqueda
+                    <i class="fas fa-filter"></i> Search Filters
                 </div>
                 <div class="card-body">
                     <form method="GET" action="" class="form-inline">
                         <div class="form-group mr-3">
-                            <label for="skill" class="mr-2"><strong>Habilidad:</strong></label>
+                            <label for="skill" class="mr-2"><strong>Skill:</strong></label>
                             <select name="skill" id="skill" class="form-control" required>
-                                <option value="">-- Selecciona una skill --</option>
+                                <option value="">-- Select a skill --</option>
                                 <?php foreach ($skills_available as $skill): ?>
                                     <option value="<?php echo htmlspecialchars($skill); ?>" 
                                         <?php echo ($selected_skill === $skill) ? 'selected' : ''; ?>>
@@ -226,7 +252,7 @@ function eve_skill_level($skillpoints, $rank) {
                             <label for="pocket6" class="mr-2"><strong>Pocket6:</strong></label>
                             <select name="pocket6" id="pocket6" class="form-control">
                                 <option value="ALL" <?php echo ($selected_pocket === 'ALL') ? 'selected' : ''; ?>>
-                                    -- Todos los Pockets --
+                                    -- All Pockets --
                                 </option>
                                 <?php foreach ($pockets_available as $pocket): ?>
                                     <option value="<?php echo htmlspecialchars($pocket); ?>" 
@@ -238,12 +264,12 @@ function eve_skill_level($skillpoints, $rank) {
                         </div>
 
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-search"></i> Consultar
+                            <i class="fas fa-search"></i> Search
                         </button>
 
                         <?php if ($selected_skill !== ''): ?>
                             <a href="?" class="btn btn-secondary ml-2">
-                                <i class="fas fa-undo"></i> Limpiar
+                                <i class="fas fa-undo"></i> Clear
                             </a>
                         <?php endif; ?>
                     </form>
@@ -254,28 +280,28 @@ function eve_skill_level($skillpoints, $rank) {
 
     <?php if ($selected_skill !== ''): ?>
 
-    <!-- NOTA DE EXCLUSIÓN -->
+    <!-- EXCLUSION NOTE -->
     <div class="row">
         <div class="col-12">
             <div class="exclusion-note">
                 <i class="fas fa-exclamation-triangle text-warning"></i>
-                <strong>Exclusión activa en ambos paneles:</strong> Los personajes con los términos 
-                <code>"catalog"</code> o <code>"vps"</code> en su nombre han sido excluidos 
-                intencionalmente de AMBOS paneles ya que corresponden a cuentas de 
-                administración/inventario del usuario y no a pilotos operativos.
+                <strong>Exclusion active on both panels:</strong> Characters with the terms 
+                <code>"catalog"</code> or <code>"vps"</code> in their name have been intentionally 
+                excluded from BOTH panels as they correspond to administration/inventory accounts 
+                and not operational pilots.
             </div>
         </div>
     </div>
 
-    <!-- RESULTADOS EN DOS PANELES -->
+    <!-- RESULTS IN TWO PANELS -->
     <div class="row">
 
-        <!-- PANEL IZQUIERDO: PILOTOS CON LA SKILL -->
+        <!-- LEFT PANEL: PILOTS WITH THE SKILL -->
         <div class="col-md-6">
             <div class="card have-skill">
                 <div class="panel-header bg-success">
                     <i class="fas fa-check-circle"></i> 
-                    Pilotos CON "<?php echo htmlspecialchars($selected_skill); ?>"
+                    Pilots WITH "<?php echo htmlspecialchars($selected_skill); ?>"
                     <span class="badge badge-light float-right"><?php echo count($have_skill); ?></span>
                 </div>
                 <div class="card-body p-0">
@@ -285,22 +311,27 @@ function eve_skill_level($skillpoints, $rank) {
                                 <thead class="thead-dark">
                                     <tr>
                                         <th>#</th>
-                                        <th>Piloto</th>
+                                        <th>Pilot</th>
                                         <th>Pocket6</th>
                                         <th>Rank</th>
                                         <th>Skillpoints</th>
-                                        <th>Nivel</th>
+                                        <th>Level</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php $i = 1; foreach ($have_skill as $pilot): 
                                         $level = eve_skill_level($pilot['skillpoints'], $pilot['rank']);
                                         $level_class = ($level >= 4) ? 'badge-success' : (($level >= 2) ? 'badge-warning' : 'badge-secondary');
+                                        $p6_val = $pilot['Pocket6'];
                                     ?>
                                     <tr>
                                         <td><?php echo $i++; ?></td>
                                         <td><strong><?php echo htmlspecialchars($pilot['toon_name']); ?></strong></td>
-                                        <td><span class="badge badge-info"><?php echo htmlspecialchars($pilot['Pocket6']); ?></span></td>
+                                        <td>
+                                            <span class="pocket-badge-dip" style="background-color:<?php echo get_pocket_color($p6_val); ?>;color:<?php echo get_pocket_text($p6_val); ?>;">
+                                                <?php echo htmlspecialchars($p6_val); ?>
+                                            </span>
+                                        </td>
                                         <td><?php echo $pilot['rank']; ?></td>
                                         <td><span class="badge badge-dark sp-badge"><?php echo number_format($pilot['skillpoints']); ?></span></td>
                                         <td><span class="badge <?php echo $level_class; ?> level-badge"><?php echo $level; ?></span></td>
@@ -311,20 +342,20 @@ function eve_skill_level($skillpoints, $rank) {
                         </div>
                     <?php else: ?>
                         <div class="p-3 text-center text-muted">
-                            <i class="fas fa-info-circle"></i> Ningún piloto operativo posee esta habilidad 
-                            <?php echo ($selected_pocket !== 'ALL') ? 'en el Pocket seleccionado' : ''; ?>.
+                            <i class="fas fa-info-circle"></i> No operational pilot has this skill 
+                            <?php echo ($selected_pocket !== 'ALL') ? 'in the selected Pocket' : ''; ?>.
                         </div>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
 
-        <!-- PANEL DERECHO: PILOTOS SIN LA SKILL -->
+        <!-- RIGHT PANEL: PILOTS WITHOUT THE SKILL -->
         <div class="col-md-6">
             <div class="card missing-skill">
                 <div class="panel-header bg-danger">
                     <i class="fas fa-times-circle"></i> 
-                    Pilotos SIN "<?php echo htmlspecialchars($selected_skill); ?>"
+                    Pilots WITHOUT "<?php echo htmlspecialchars($selected_skill); ?>"
                     <span class="badge badge-light float-right"><?php echo count($missing_skill); ?></span>
                 </div>
                 <div class="card-body p-0">
@@ -334,24 +365,30 @@ function eve_skill_level($skillpoints, $rank) {
                                 <thead class="thead-dark">
                                     <tr>
                                         <th>#</th>
-                                        <th>Piloto</th>
+                                        <th>Pilot</th>
                                         <th>Pocket6</th>
-                                        <th>SP Total</th>
-                                        <th>SP Sin Asignar</th>
+                                        <th>Total SP</th>
+                                        <th>Unallocated SP</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php $j = 1; foreach ($missing_skill as $pilot): ?>
+                                    <?php $j = 1; foreach ($missing_skill as $pilot): 
+                                        $p6_val = $pilot['Pocket6'];
+                                    ?>
                                     <tr>
                                         <td><?php echo $j++; ?></td>
                                         <td><strong><?php echo htmlspecialchars($pilot['toon_name']); ?></strong></td>
-                                        <td><span class="badge badge-info"><?php echo htmlspecialchars($pilot['Pocket6']); ?></span></td>
+                                        <td>
+                                            <span class="pocket-badge-dip" style="background-color:<?php echo get_pocket_color($p6_val); ?>;color:<?php echo get_pocket_text($p6_val); ?>;">
+                                                <?php echo htmlspecialchars($p6_val); ?>
+                                            </span>
+                                        </td>
                                         <td><span class="badge badge-dark sp-badge"><?php echo number_format($pilot['total_sp']); ?></span></td>
                                         <td>
                                             <?php if ($pilot['unalloc'] > 0): ?>
                                                 <span class="badge badge-warning sp-badge">
                                                     <?php echo number_format($pilot['unalloc']); ?> 
-                                                    <i class="fas fa-bolt" title="SP disponible para inyección"></i>
+                                                    <i class="fas fa-bolt" title="SP available for injection"></i>
                                                 </span>
                                             <?php else: ?>
                                                 <span class="badge badge-secondary sp-badge">0</span>
@@ -364,9 +401,9 @@ function eve_skill_level($skillpoints, $rank) {
                         </div>
                     <?php else: ?>
                         <div class="p-3 text-center text-muted">
-                            <i class="fas fa-info-circle"></i> Todos los pilotos operativos 
-                            <?php echo ($selected_pocket !== 'ALL') ? 'en este Pocket ' : ''; ?>
-                            poseen esta habilidad (o han sido excluidos por filtro).
+                            <i class="fas fa-info-circle"></i> All operational pilots 
+                            <?php echo ($selected_pocket !== 'ALL') ? 'in this Pocket ' : ''; ?>
+                            have this skill (or have been excluded by filter).
                         </div>
                     <?php endif; ?>
                 </div>
@@ -375,18 +412,18 @@ function eve_skill_level($skillpoints, $rank) {
 
     </div>
 
-    <!-- RESUMEN EJECUTIVO -->
+    <!-- EXECUTIVE SUMMARY -->
     <div class="row mt-4">
         <div class="col-12">
             <div class="card bg-light">
                 <div class="card-body">
-                    <h5><i class="fas fa-chart-pie"></i> Resumen</h5>
+                    <h5><i class="fas fa-chart-pie"></i> Summary</h5>
                     <p class="mb-0">
                         Skill: <strong><?php echo htmlspecialchars($selected_skill); ?></strong> | 
-                        Pocket6: <strong><?php echo ($selected_pocket === 'ALL') ? 'Todos' : htmlspecialchars($selected_pocket); ?></strong> | 
-                        Con skill: <span class="badge badge-success"><?php echo count($have_skill); ?></span> | 
-                        Sin skill: <span class="badge badge-danger"><?php echo count($missing_skill); ?></span> | 
-                        Total evaluados: <span class="badge badge-primary"><?php echo count($have_skill) + count($missing_skill); ?></span>
+                        Pocket6: <strong><?php echo ($selected_pocket === 'ALL') ? 'All' : htmlspecialchars($selected_pocket); ?></strong> | 
+                        With skill: <span class="badge badge-success"><?php echo count($have_skill); ?></span> | 
+                        Without skill: <span class="badge badge-danger"><?php echo count($missing_skill); ?></span> | 
+                        Total evaluated: <span class="badge badge-primary"><?php echo count($have_skill) + count($missing_skill); ?></span>
                     </p>
                 </div>
             </div>
@@ -395,18 +432,18 @@ function eve_skill_level($skillpoints, $rank) {
 
     <?php else: ?>
 
-    <!-- MENSAJE INICIAL -->
+    <!-- WELCOME MESSAGE -->
     <div class="row">
         <div class="col-12 text-center py-5">
             <div class="jumbotron">
                 <h1 class="display-4"><i class="fas fa-rocket"></i> EVE Skill Inspector</h1>
-                <p class="lead">Selecciona una habilidad y opcionalmente un Pocket6 para ver la distribución de skills entre tus pilotos operativos.</p>
+                <p class="lead">Select a skill and optionally a Pocket6 to see the skill distribution among your operational pilots.</p>
                 <hr class="my-4">
-                <p><strong>Exclusión activa:</strong> Los personajes con "catalog" o "vps" en su nombre son excluidos automáticamente de ambos paneles.</p>
+                <p><strong>Active exclusion:</strong> Characters with "catalog" or "vps" in their name are automatically excluded from both panels.</p>
                 <p class="text-muted">
                     <i class="fas fa-database"></i> 
-                    Skills disponibles en base de datos: <?php echo count($skills_available); ?> | 
-                    Pockets registrados: <?php echo count($pockets_available); ?>
+                    Skills available in database: <?php echo count($skills_available); ?> | 
+                    Pockets registered: <?php echo count($pockets_available); ?>
                 </p>
             </div>
         </div>
@@ -416,7 +453,7 @@ function eve_skill_level($skillpoints, $rank) {
 
 </div>
 
-<!-- FOOTER FIJO -->
+<!-- FIXED FOOTER -->
 <footer class="footer-fixed">
     <div class="container-fluid">
         <div class="row">
@@ -429,15 +466,15 @@ function eve_skill_level($skillpoints, $rank) {
             </div>
             <div class="col-md-6 text-right">
                 <small>
-                    <i class="fas fa-robot"></i> Coautor: Kimi K2.6 (Moonshot AI) | 
-                    <i class="fas fa-user"></i> Autor: VibeCodingMexico.com
+                    <i class="fas fa-robot"></i> Co-author: Kimi K2.6 (Moonshot AI) | 
+                    <i class="fas fa-user"></i> Author: VibeCodingMexico.com
                 </small>
             </div>
         </div>
     </div>
 </footer>
 
-<!-- Bootstrap JS + dependencias -->
+<!-- Bootstrap JS + dependencies -->
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
 
