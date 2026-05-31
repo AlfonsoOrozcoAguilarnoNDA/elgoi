@@ -44,7 +44,8 @@ $tiles = [
     showTile("crew/evermarks.php", "fa-medal", "primary"),
     showTile("crew/biometrics.php", "fa-fingerprint", "primary"),
     showTile("crew/reputation.php", "fa-passport", "primary"),
-    showTile("crew/graduation.php", "fa-graduation-cap", "success"),
+    showTile("crew/skill_inspector.php", "fa-clipboard-check", "primary"),
+	showTile("specific/settings.php", "fa-cogs", "secondary"),
     showTile("crew/28_days_control.php", "fa-user-clock", "danger"),
     showTile("crew/career_plan.php", "fa-sitemap", "dark"),
     showTile("crew/compare.php", "fa-balance-scale", "light"),
@@ -63,8 +64,7 @@ $tiles = [
     
 ];
 
-$tiles2 = [
-	showTile("crew/skill_inspector.php", "fa-clipboard-check", "primary"),
+$tiles2 = [	
 	showTile("industry/slots.php", "fa-industry", "info"),
 	showTile("industry/ammo.php", "fa-industry", "info"),
 	showTile("industry/calc_p1.php", "fa-calculator", "info"),
@@ -72,8 +72,7 @@ $tiles2 = [
 	showTile("experimental/whereare.php", "fa-globe", "success"),
     showTile("experimental/thesix.php", "fa-users", "primary"),
 	showTile("experimental/thesix2.php", "fa-users", "primary"),
-    showTile("logistics/hauling.php", "fa-truck", "secondary"),    
-	showTile("specific/settings.php", "fa-cogs", "secondary"),
+    showTile("logistics/hauling.php", "fa-truck", "secondary"),    	
     showTile("crew/spy.php", "fa-user-secret", "dark")    
 ];
 
