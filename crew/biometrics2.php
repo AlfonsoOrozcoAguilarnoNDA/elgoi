@@ -605,7 +605,7 @@ echo crew_navbar();
             background-color: #0b0c0e;
             color: #ced4da;
             font-family: 'Segoe UI', sans-serif;
-            padding-top: 70px; /* navbar (~60px) + eve-tabs (~56px) */
+            padding-top: 40px; /* navbar (~60px) + eve-tabs (~56px) */
             padding-bottom: 70px;
         }
 
