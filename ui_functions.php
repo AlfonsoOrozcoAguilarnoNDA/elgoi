@@ -88,14 +88,12 @@ function ui_generate_navbar() {
     <div class="row mb-4">
         <div class="col-12">
             <div class="navbar-scroll text-center">
-                <a href="index.php" class="btn btn-light btn-lg"><i class="fas fa-home"></i> Home</a>                
-                <a href="skybreaker.php" class="btn btn-warning btn-lg"><i class="fas fa-list-alt"></i> Skybreaker</a>
+                <a href="index.php" class="btn btn-light btn-lg"><i class="fas fa-home"></i> Home</a>
                 <a href="comparar.php" class="btn btn-dark btn-lg"><i class="fas fa-balance-scale"></i> Comparar Pilotos</a>
                 <a href="newmarket.php" class="btn btn-info btn-lg"><i class="fas fa-chart-line"></i> Region Market</a>
                 <a href="ammo.php" class="btn btn-primary btn-lg"><i class="fas fa-industry"></i> Gestión Industrial</a>
-                <a href="jobs.php" class="btn btn-secondary btn-lg"><i class="fas fa-tasks"></i> Jobs</a>
-                <a href="favoritos.php" class="btn btn-danger btn-lg"><i class="fas fa-star"></i> Favoritos</a>
-                
+                <a href="./industry/jobs.php" class="btn btn-secondary btn-lg"><i class="fas fa-tasks"></i> Jobs</a>
+                <a href="favoritos.php" class="btn btn-danger btn-lg"><i class="fas fa-star"></i> Favoritos</a>                
             </div>
         </div>
     </div>
