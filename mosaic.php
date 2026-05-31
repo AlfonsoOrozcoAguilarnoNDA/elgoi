@@ -53,14 +53,13 @@ $tiles = [
     showTile("specific/skybreaker.php", "fa-rocket", "danger"),
 	showTile("specific/explode.php", "fa-bomb", "light"),    
     
-    showTile("updater.php", "fa-satellite-dish", "dark"),    
-    showTile("industry/crewplanets.php", "fa-globe", "secondary"),
+    showTile("updater.php", "fa-satellite-dish", "dark"),
     showTile("industry/inventory_pi.php", "fa-layer-group", "secondary"),    
     showTile("industry/minerals_bpo_bpc.php", "fa-gem", "warning"),
     showTile("industry/jobs.php", "fa-industry", "info"),    
     showTile("specific/ships_and_5m.php", "fa-id-badge", "secondary"),  
     //showTile("combat/pvp.php", "fa-crosshairs", "danger")    
-    
+    showTile("crew/spy.php", "fa-user-secret", "dark")    
 ];
 
 $tiles2 = [	
@@ -71,8 +70,7 @@ $tiles2 = [
 	showTile("experimental/whereare.php", "fa-globe", "success"),
     showTile("experimental/thesix.php", "fa-users", "primary"),
 	showTile("experimental/thesix2.php", "fa-users", "primary"),
-    showTile("logistics/hauling.php", "fa-truck", "secondary"),    	
-    showTile("crew/spy.php", "fa-user-secret", "dark")    
+    showTile("logistics/hauling.php", "fa-truck", "secondary")    
 ];
 
 // ============================================
