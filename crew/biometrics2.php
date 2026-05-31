@@ -114,7 +114,7 @@ function renderTabGraduation() {
     ob_start();
     ?>
     <div class="table-responsive">
-        <table class="table table-eve table-hover table-dark">
+        <table id="tbl-graduation" class="table table-eve table-hover table-dark">
             <thead>
                 <tr>
                     <th class="text-center">#</th>
@@ -166,7 +166,12 @@ function renderTabGraduation() {
                     <i class="fas fa-tools     mx-1 <?php echo ($p['jobs']    != '[]') ? 'text-warning' : 'text-dark'; ?>"></i>
                     <i class="fas fa-graduation-cap mx-1 <?php echo getBirreteStyle($p['finishqueue'], $p['planets']); ?>"></i>
                 </td>
-                <td><small class="text-info"><?php echo htmlspecialchars($p['pocket6'] ?? 'N/A'); ?></small></td>
+                <td>
+                    <?php
+                    $p6v = $p['pocket6'] ?? 'N/A';
+                    echo '<span class="pocket6-badge" style="background-color:' . get_pocket_color($p6v) . ';color:' . get_pocket_text($p6v) . ';">' . htmlspecialchars($p6v) . '</span>';
+                    ?>
+                </td>
                 <td class="text-right"><?php echo number_format($p['evermarks']); ?></td>
             </tr>
             <?php endwhile; ?>
@@ -272,7 +277,7 @@ function renderTabReputation() {
     </form>
 
     <div class="table-responsive rounded shadow">
-        <table class="table table-sm table-eve mb-0">
+        <table id="tbl-reputation" class="table table-sm table-eve mb-0">
             <thead>
                 <tr>
                     <th width="40" class="text-center">#</th>
@@ -592,6 +597,7 @@ echo crew_navbar();
     <title>EVE Online - Unified Audit</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* ── BASE ── */
@@ -599,7 +605,7 @@ echo crew_navbar();
             background-color: #0b0c0e;
             color: #ced4da;
             font-family: 'Segoe UI', sans-serif;
-            padding-top: 70px;
+            padding-top: 120px; /* navbar (~60px) + eve-tabs (~56px) */
             padding-bottom: 70px;
         }
 
@@ -634,8 +640,40 @@ echo crew_navbar();
 
         /* ── SHARED TABLE ── */
         .table-eve { background-color: #16191c; font-size: 0.82rem; border-collapse: separate; border-spacing: 0; }
-        .table-eve thead th { background-color: #212529; border-bottom: 2px solid #007bff; position: sticky; top: 56px; z-index: 10; }
+        .table-eve thead th { background-color: #212529; border-bottom: 2px solid #007bff; position: sticky; top: 56px; z-index: 10; color: #adb5bd !important; }
         .table-eve td { vertical-align: middle; border-top: 1px solid #2d3238; }
+
+        /* ── DATATABLES DARK OVERRIDES ── */
+        .dataTables_wrapper { color: #ced4da; }
+        .dataTables_wrapper .dataTables_length select,
+        .dataTables_wrapper .dataTables_filter input {
+            background-color: #1e2126; border: 1px solid #495057; color: #e0e0e0;
+            border-radius: 3px; padding: 2px 6px;
+        }
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_paginate { color: #adb5bd; margin-bottom: 8px; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            color: #adb5bd !important; border: 1px solid #343a40 !important;
+            background: #16191c !important; border-radius: 2px !important; margin: 0 2px;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+            background: #2a3040 !important; color: #fff !important; border-color: #007bff !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+            background: #007bff !important; color: #fff !important; border-color: #007bff !important;
+        }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+        .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover { opacity: 0.4; }
+
+        /* ── POCKET6 COLORED BADGE (shared graduation + reputation) ── */
+        .pocket6-badge {
+            display: inline-block; padding: 2px 9px; font-size: 0.72rem;
+            font-weight: 700; text-transform: uppercase; border-radius: 2px;
+            min-width: 62px; text-align: center;
+        }
         .portrait-mini { width: 32px; height: 32px; border: 1px solid #444; }
         .text-sp { color: #5dade2; font-family: 'Courier New', monospace; font-weight: bold; }
         .trade-tag { color: #bb86fc; font-weight: 500; letter-spacing: 0.5px; }
@@ -755,6 +793,30 @@ document.addEventListener("DOMContentLoaded", function() {
 
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+<script>
+$(document).ready(function() {
+    if ($('#tbl-graduation').length) {
+        $('#tbl-graduation').DataTable({
+            pageLength: 50,
+            lengthMenu: [[25, 50, 100, -1], [25, 50, 100, "All"]],
+            order: [],
+            language: { search: "Search:", lengthMenu: "Show _MENU_ pilots" },
+            columnDefs: [{ orderable: false, targets: [8] }]
+        });
+    }
+    if ($('#tbl-reputation').length) {
+        $('#tbl-reputation').DataTable({
+            pageLength: 50,
+            lengthMenu: [[25, 50, 100, -1], [25, 50, 100, "All"]],
+            order: [],
+            language: { search: "Search:", lengthMenu: "Show _MENU_ records" },
+            columnDefs: [{ orderable: false, targets: [6] }]
+        });
+    }
+});
+</script>
 <?php echo ui_footer(); ?>
 </body>
 </html>
