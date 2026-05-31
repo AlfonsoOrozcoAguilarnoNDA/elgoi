@@ -1,7 +1,7 @@
 <?php
 /*
- * EVE Online - Unified Crew Audit Tool
- * License: GPL
+ * EVE Online - Unified Audit Tool
+ * License: MIT
  * Author: Alfonso Orozco Aguilar
  * Tabs: Graduation | Reputation | Biometrics | Evermarks
  * Stack: PHP 8.x Procedural, MariaDB, Bootstrap 4.6.2, Font Awesome 5.15.4
@@ -605,7 +605,7 @@ echo crew_navbar();
             background-color: #0b0c0e;
             color: #ced4da;
             font-family: 'Segoe UI', sans-serif;
-            padding-top: 120px; /* navbar (~60px) + eve-tabs (~56px) */
+            padding-top: 70px; /* navbar (~60px) + eve-tabs (~56px) */
             padding-bottom: 70px;
         }
 
