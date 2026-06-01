@@ -965,6 +965,8 @@ $(document).ready(function() {
     }
 });
 </script>
-<?php echo ui_footer(); ?>
+<?php
+//echo ui_footer();
+//?>
 </body>
 </html>
