@@ -395,6 +395,16 @@ echo "<br />";
     font-weight: 600;
     color: #444;
 }
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_length {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin-bottom: 10px;
+}
+.dataTables_wrapper {
+    overflow: visible !important;
+}
 </style>
 
 <!-- DataTables CSS -->
