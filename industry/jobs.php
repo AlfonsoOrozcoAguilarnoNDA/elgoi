@@ -574,5 +574,5 @@ $(document).ready(function() {
 </script>
 
 <?php
-echo ui_footer();
+//echo ui_footer();
 ?>
