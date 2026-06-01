@@ -467,7 +467,7 @@ function get_pocket_text($val) {
             <div class="col-md-6 text-right">
                 <small>
                     <i class="fas fa-robot"></i> Co-author: Kimi K2.6 (Moonshot AI) | 
-                    <i class="fas fa-user"></i> Author: VibeCodingMexico.com
+                    <i class="fas fa-user"></i> Author: Alfonso Orozco Aguilar
                 </small>
             </div>
         </div>
