@@ -1,7 +1,7 @@
 <?php
-/* 
+/*
  * EVE Online - Manufacturing & Planetary Industry Dashboard
- * 
+ *
  * @author    Alfonso Orozco Aguilar
  * @license   GPL-3.0-or-later
  * @date      2026-06-01
@@ -13,18 +13,18 @@ header("Pragma: no-cache");
 include_once '../config.php';
 include_once '../ui_functions.php';
 
-// Aplicar seguridad
+// Apply security
 check_authorization();
 
 function aValues319($Qx){
-    global $link;    
+    global $link;
     $rsX = mysqli_query($link,$Qx);
     $Qx2=strtolower($Qx);
-    if (left($Qx2,6)<>'select') return "";    
+    if (left($Qx2,6)<>'select') return "";
     $aDataX = array();
     $rows=mysqli_num_rows($rsX);
-    if ($rows==0) return array("",""); 
-        
+    if ($rows==0) return array("","");
+
     $Campos = mysqli_num_fields($rsX);
     while ($regX = mysqli_fetch_array($rsX)) {
         for($iX=0; $iX<$Campos; $iX++){
@@ -62,30 +62,30 @@ function get_pocket_text($val) {
 function render_pocket_cell($val) {
     $color = get_pocket_color($val);
     $text = get_pocket_text($val);
-    return '<span class="pocket-badge-dip" style="background-color:' . $color . ';color:' . $text . ';">' 
+    return '<span class="pocket-badge-dip" style="background-color:' . $color . ';color:' . $text . ';">'
            . htmlspecialchars($val) . '</span>';
 }
 
 /**
- * Obtiene pilotos con jobs activos
+ * Gets pilots with active jobs
  */
-function obtenerPilotosConJobs() {
+function getPilotsWithJobs() {
     global $link;
-    
-    $query = "SELECT toon_number, toon_name, pocket6, jobs, skillpoints 
-              FROM PILOTS 
-              WHERE jobs != '[]' AND jobs IS NOT NULL 
+
+    $query = "SELECT toon_number, toon_name, pocket6, jobs, skillpoints
+              FROM PILOTS
+              WHERE jobs != '[]' AND jobs IS NOT NULL
               ORDER BY skillpoints DESC";
-    
+
     $result = mysqli_query($link, $query);
-    
+
     if (!$result) {
-        die("Error en la consulta de jobs: " . mysqli_error($link));
+        die("Error in jobs query: " . mysqli_error($link));
     }
-    
+
     $jobs_data = [];
     $total_jobs = 0;
-    
+
     while ($row = mysqli_fetch_assoc($result)) {
         $data = stripslashes($row['jobs']);
         $jobs = json_decode($data, true);
@@ -94,32 +94,32 @@ function obtenerPilotosConJobs() {
             $jobs_data[] = $row;
         }
     }
-    
+
     mysqli_free_result($result);
-    
+
     return ['data' => $jobs_data, 'total' => $total_jobs];
 }
 
 /**
- * Obtiene pilotos con planets activos
+ * Gets pilots with active planets
  */
-function obtenerPilotosConPlanets() {
+function getPilotsWithPlanets() {
     global $link;
-    
-    $query = "SELECT toon_number, toon_name, pocket6, planets, skillpoints 
-              FROM PILOTS 
-              WHERE planets != '[]' AND planets IS NOT NULL 
+
+    $query = "SELECT toon_number, toon_name, pocket6, planets, skillpoints
+              FROM PILOTS
+              WHERE planets != '[]' AND planets IS NOT NULL
               ORDER BY skillpoints DESC";
-    
+
     $result = mysqli_query($link, $query);
-    
+
     if (!$result) {
-        die("Error en la consulta de planets: " . mysqli_error($link));
+        die("Error in planets query: " . mysqli_error($link));
     }
-    
+
     $planets_data = [];
     $total_planets = 0;
-    
+
     while ($row = mysqli_fetch_assoc($result)) {
         $data = stripslashes($row['planets']);
         $planets = json_decode($data, true);
@@ -128,9 +128,9 @@ function obtenerPilotosConPlanets() {
             $planets_data[] = $row;
         }
     }
-    
+
     mysqli_free_result($result);
-    
+
     return ['data' => $planets_data, 'total' => $total_planets];
 }
 
@@ -143,26 +143,26 @@ function description($value){
 }
 
 /**
- * Renderiza la tabla de Manufacturing Jobs
+ * Renders the Manufacturing Jobs table
  */
-function renderizarTablaJobs($jobs_info) {
+function renderJobsTable($jobs_info) {
     $jobs_data = $jobs_info['data'];
-    
+
     if (count($jobs_data) == 0) {
-        return '<tr><td colspan="11" class="text-center text-muted">
-                    <i class="fas fa-info-circle"></i> No hay jobs activos
+        return '<tr><td colspan="12" class="text-center text-muted">
+                    <i class="fas fa-info-circle"></i> No active jobs
                 </td></tr>';
     }
-    
+
     $html = '';
     $current_date = new DateTime('now', new DateTimeZone('UTC'));
     $csh = 0;
-    
+
     foreach ($jobs_data as $row) {
         $data = stripslashes($row['jobs']);
         $jobs = json_decode($data, true);
         $pocket6 = $row['pocket6'] ?? '';
-        
+
         if (is_array($jobs) && count($jobs) > 0) {
             foreach ($jobs as $job) {
                 $csh++;
@@ -171,20 +171,20 @@ function renderizarTablaJobs($jobs_info) {
                 $end_date = date('Y-m-d H:i', strtotime($job['end_date']));
                 $cost_formatted = number_format($job['cost'], 2);
                 $skillpoints_formatted = number_format($row['skillpoints'] / 1000000, 2);
-                
-                // Calcular días restantes
+
+                // Calculate remaining days
                 $end_datetime = new DateTime($job['end_date']);
                 $diff = $current_date->diff($end_datetime);
                 $days_remaining = $diff->invert == 0 ? $diff->days : -$diff->days;
-                
-                // Verificar si el trabajo está listo
+
+                // Check if job is ready
                 $is_ready = $end_datetime < $current_date;
                 $row_class = $is_ready ? 'table-success font-weight-bold' : '';
-                
+
                 $where2 = $job['facility_id'];
                 list($where) = aValues319("select itemName from invUniqueNames where itemID='$where2'");
                 if ($where == "") $where = $where2;
-                
+
                 $html .= "<tr class='{$row_class}'>";
                 $html .= "<td><strong>$csh</strong></td>";
                 $html .= "<td><strong>{$row['toon_name']}</strong><br><small class='text-muted'>#{$row['toon_number']}</small></td>";
@@ -202,57 +202,57 @@ function renderizarTablaJobs($jobs_info) {
             }
         }
     }
-    
+
     return $html;
 }
 
 /**
- * Renderiza la tabla de Planetary Industry
+ * Renders the Planetary Industry table
  */
-function renderizarTablaPlanets($planets_info) {
+function renderPlanetsTable($planets_info) {
     $planets_data = $planets_info['data'];
-    
+
     if (count($planets_data) == 0) {
         return '<tr><td colspan="11" class="text-center text-muted">
-                    <i class="fas fa-info-circle"></i> No hay planetas activos
+                    <i class="fas fa-info-circle"></i> No active planets
                 </td></tr>';
     }
-    
+
     $html = '';
     $current_date = new DateTime('now', new DateTimeZone('UTC'));
-    
+
     $planet_types = [
         'temperate' => 'Temperate', 'ice' => 'Ice', 'oceanic' => 'Oceanic',
         'lava' => 'Lava', 'barren' => 'Barren', 'gas' => 'Gas',
         'storm' => 'Storm', 'plasma' => 'Plasma'
     ];
-    
+
     $csh = 0;
-    
+
     foreach ($planets_data as $row) {
         $data = stripslashes($row['planets']);
         $planets = json_decode($data, true);
         $pocket6 = $row['pocket6'] ?? '';
-        
+
         if (is_array($planets) && count($planets) > 0) {
             foreach ($planets as $planet) {
                 $csh++;
                 $last_update = date('Y-m-d H:i', strtotime($planet['last_update']));
                 $skillpoints_formatted = number_format($row['skillpoints'] / 1000000, 2);
-                
+
                 $last_update_datetime = new DateTime($planet['last_update']);
                 $diff_days = $current_date->diff($last_update_datetime)->days;
                 $is_outdated = $diff_days > 7;
                 $row_class = $is_outdated ? 'table-danger font-weight-bold' : '';
-                
-                $planet_type = isset($planet_types[$planet['planet_type']]) 
-                    ? $planet_types[$planet['planet_type']] 
+
+                $planet_type = isset($planet_types[$planet['planet_type']])
+                    ? $planet_types[$planet['planet_type']]
                     : ucfirst($planet['planet_type']);
-                
+
                 $where2 = $planet['planet_id'];
                 list($where) = aValues319("select itemName from invUniqueNames where itemID='$where2'");
                 if ($where == "") $where = $where2;
-                
+
                 $html .= "<tr class='{$row_class}'>";
                 $html .= "<td><strong>$csh</strong></td>";
                 $html .= "<td><strong>{$row['toon_name']}</strong><br><small class='text-muted'>#{$row['toon_number']}</small></td>";
@@ -269,80 +269,83 @@ function renderizarTablaPlanets($planets_info) {
             }
         }
     }
-    
+
     return $html;
 }
 
 /**
- * Genera tabla resumen de Build vs Upgrade por piloto
+ * Generates summary table of Build vs Upgrade by pilot
  */
-function renderizarResumenJobs($jobs_info) {
+function renderJobsSummary($jobs_info) {
     $jobs_data = $jobs_info['data'];
-    
+
     if (count($jobs_data) == 0) {
-        return '<tr><td colspan="5" class="text-center text-muted">No hay datos para resumir</td></tr>';
+        return '<tr><td colspan="6" class="text-center text-muted">No data to summarize</td></tr>';
     }
-    
-    $resumen = [];
+
+    $summary = [];
     $total_build = 0;
     $total_upgrade = 0;
-    
+
     foreach ($jobs_data as $row) {
         $data = stripslashes($row['jobs']);
         $jobs = json_decode($data, true);
         $pilot = $row['toon_name'];
         $pocket6 = $row['pocket6'] ?? '';
-        
-        if (!isset($resumen[$pilot])) {
-            $resumen[$pilot] = ['pocket6' => $pocket6, 'build' => 0, 'upgrade' => 0];
+
+        if (!isset($summary[$pilot])) {
+            $summary[$pilot] = ['pocket6' => $pocket6, 'build' => 0, 'upgrade' => 0];
         }
-        
+
         if (is_array($jobs)) {
             foreach ($jobs as $job) {
                 $desc = description($job['product_type_id']);
-                // Si contiene "Blueprint" es upgrade, si no es build
+                // If it contains "Blueprint" it's an upgrade, otherwise it's a build
                 if (stripos($desc, 'Blueprint') !== false) {
-                    $resumen[$pilot]['upgrade']++;
+                    $summary[$pilot]['upgrade']++;
                     $total_upgrade++;
                 } else {
-                    $resumen[$pilot]['build']++;
+                    $summary[$pilot]['build']++;
                     $total_build++;
                 }
             }
         }
     }
-    
+
     $html = '';
-    foreach ($resumen as $pilot => $datos) {
-        $total_pilot = $datos['build'] + $datos['upgrade'];
+    $row_num = 0;
+    foreach ($summary as $pilot => $data) {
+        $row_num++;
+        $total_pilot = $data['build'] + $data['upgrade'];
         $html .= "<tr>";
+        $html .= "<td><strong>$row_num</strong></td>";
         $html .= "<td><strong>" . htmlspecialchars($pilot) . "</strong></td>";
-        $html .= "<td>" . render_pocket_cell($datos['pocket6']) . "</td>";
-        $html .= "<td class='text-center'>{$datos['build']}</td>";
-        $html .= "<td class='text-center'>{$datos['upgrade']}</td>";
+        $html .= "<td>" . render_pocket_cell($data['pocket6']) . "</td>";
+        $html .= "<td class='text-center'>{$data['build']}</td>";
+        $html .= "<td class='text-center'>{$data['upgrade']}</td>";
         $html .= "<td class='text-center font-weight-bold'>{$total_pilot}</td>";
         $html .= "</tr>";
     }
-    
-    // Fila de totales
-    $gran_total = $total_build + $total_upgrade;
+
+    // Total row
+    $grand_total = $total_build + $total_upgrade;
     $html .= "<tr class='table-dark font-weight-bold'>";
-    $html .= "<td colspan='2' class='text-right'>TOTAL ACUMULADO</td>";
+    $html .= "<td colspan='3' class='text-right'>TOTAL ACCUMULATED</td>";
     $html .= "<td class='text-center'>{$total_build}</td>";
     $html .= "<td class='text-center'>{$total_upgrade}</td>";
-    $html .= "<td class='text-center'>{$gran_total}</td>";
+    $html .= "<td class='text-center'>{$grand_total}</td>";
     $html .= "</tr>";
-    
+
     return $html;
 }
 
-// Obtener datos
-$jobs_info = obtenerPilotosConJobs();
-$planets_info = obtenerPilotosConPlanets();
+// Get data
+$jobs_info = getPilotsWithJobs();
+$planets_info = getPilotsWithPlanets();
 
-// Mostrar interfaz
+// Display interface
 echo ui_header("Manufacturing & Planetary Industry");
-echo crew_navbar(); 
+echo crew_navbar();
 echo "<br />";
 ?>
 
@@ -381,19 +384,30 @@ echo "<br />";
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+/* Custom DataTables search box styling */
+.dataTables_filter input {
+    border: 1px solid #764ba2;
+    border-radius: 4px;
+    padding: 5px 10px;
+    margin-left: 5px;
+}
+.dataTables_filter label {
+    font-weight: 600;
+    color: #444;
+}
 </style>
 
 <!-- DataTables CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 
 <div class="container-fluid mt-4">
-    
+
     <!-- MANUFACTURING JOBS TABLE -->
     <h3 class="section-title">
-        <i class="fas fa-industry"></i> Manufacturing Jobs 
+        <i class="fas fa-industry"></i> Manufacturing Jobs
         <span class="badge badge-light ml-2"><?php echo $jobs_info['total']; ?></span>
     </h3>
-    
+
     <div class="card mb-4">
         <div class="card-body">
             <div class="table-responsive">
@@ -415,7 +429,7 @@ echo "<br />";
                         </tr>
                     </thead>
                     <tbody>
-                        <?php echo renderizarTablaJobs($jobs_info); ?>
+                        <?php echo renderJobsTable($jobs_info); ?>
                     </tbody>
                 </table>
             </div>
@@ -427,7 +441,7 @@ echo "<br />";
         <i class="fas fa-globe"></i> Planetary Industry
         <span class="badge badge-light ml-2"><?php echo $planets_info['total']; ?></span>
     </h3>
-    
+
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
@@ -448,24 +462,25 @@ echo "<br />";
                         </tr>
                     </thead>
                     <tbody>
-                        <?php echo renderizarTablaPlanets($planets_info); ?>
+                        <?php echo renderPlanetsTable($planets_info); ?>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-    
-    <!-- RESUMEN BUILD VS UPGRADE -->
+
+    <!-- BUILD VS UPGRADE SUMMARY -->
     <h3 class="section-title mt-4">
-        <i class="fas fa-chart-bar"></i> Resumen: Build vs Upgrade
+        <i class="fas fa-chart-bar"></i> Summary: Build vs Upgrade
     </h3>
-    
+
     <div class="card mb-4">
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-striped table-hover table-sm mb-0">
                     <thead class="thead-dark">
                         <tr>
+                            <th><i class="fas fa-hashtag"></i> #</th>
                             <th><i class="fas fa-user"></i> Pilot</th>
                             <th><i class="fas fa-wallet"></i> Pocket</th>
                             <th><i class="fas fa-hammer"></i> Build</th>
@@ -474,41 +489,51 @@ echo "<br />";
                         </tr>
                     </thead>
                     <tbody>
-                        <?php echo renderizarResumenJobs($jobs_info); ?>
+                        <?php echo renderJobsSummary($jobs_info); ?>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-    
+
     <div class="row mt-4 mb-4">
         <div class="col-md-6">
             <div class="alert alert-success">
-                <i class="fas fa-check-circle"></i> 
-                <strong>Jobs listos:</strong> Filas resaltadas en verde
+                <i class="fas fa-check-circle"></i>
+                <strong>Ready jobs:</strong> Rows highlighted in green
             </div>
         </div>
         <div class="col-md-6">
             <div class="alert alert-danger">
-                <i class="fas fa-exclamation-triangle"></i> 
-                <strong>Planetas desactualizados:</strong> Más de 7 días sin actualizar (en rojo)
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Outdated planets:</strong> More than 7 days without update (in red)
             </div>
         </div>
     </div>
 </div>
 
-<!-- jQuery y DataTables -->
+<!-- jQuery and DataTables -->
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script>
 $(document).ready(function() {
     $('#jobsTable').DataTable({
         pageLength: 200,
-        lengthMenu: [[50, 100, 200, 500, -1], [50, 100, 200, 500, "Todos"]],
+        lengthMenu: [[50, 100, 200, 500, -1], [50, 100, 200, 500, "All"]],
+        ordering: false,
         language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
-        },
-        order: [[0, 'asc']]
+            search: "Filter:",
+            lengthMenu: "Show _MENU_ entries",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            infoEmpty: "No entries to show",
+            infoFiltered: "(filtered from _MAX_ total entries)",
+            paginate: {
+                first: "First",
+                last: "Last",
+                next: "Next",
+                previous: "Previous"
+            }
+        }
     });
 });
 </script>
