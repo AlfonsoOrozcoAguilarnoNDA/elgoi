@@ -349,6 +349,21 @@ echo crew_navbar();
 echo "<br />";
 ?>
 
+<!-- =====================================================================
+     ASSETS
+     Bootstrap 4.6.x + Font Awesome 5.15.4 via jsDelivr
+     DataTables 1.13.6 con tema Bootstrap 4
+     ===================================================================== -->
+
+<!-- Font Awesome 5.15.4 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+
+<!-- Bootstrap 4.6.2 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+<!-- DataTables 1.13.6 — tema Bootstrap 4 (FIX PRINCIPAL) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-bs4@1.13.6/css/dataTables.bootstrap4.min.css">
+
 <style>
 .section-title {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -369,12 +384,8 @@ echo "<br />";
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
-.badge-success {
-    background-color: #28a745;
-}
-.badge-info {
-    background-color: #17a2b8;
-}
+.badge-success { background-color: #28a745; }
+.badge-info    { background-color: #17a2b8; }
 .pocket-badge-dip {
     display: inline-block;
     padding: 3px 10px;
@@ -384,31 +395,22 @@ echo "<br />";
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-/* Custom DataTables search box styling */
-.dataTables_filter input {
+/* Espaciado para controles DataTables dentro de card */
+.dataTables_wrapper .row:first-child {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.dataTables_wrapper .dataTables_filter input {
     border: 1px solid #764ba2;
     border-radius: 4px;
-    padding: 5px 10px;
-    margin-left: 5px;
+    padding: 4px 10px;
+    margin-left: 6px;
 }
-.dataTables_filter label {
+.dataTables_wrapper .dataTables_filter label {
     font-weight: 600;
     color: #444;
 }
-.dataTables_wrapper .dataTables_filter,
-.dataTables_wrapper .dataTables_length {
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    margin-bottom: 10px;
-}
-.dataTables_wrapper {
-    overflow: visible !important;
-}
 </style>
-
-<!-- DataTables CSS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 
 <div class="container-fluid mt-4">
 
@@ -421,7 +423,7 @@ echo "<br />";
     <div class="card mb-4">
         <div class="card-body">
             <div class="table-responsive">
-                <table id="jobsTable" class="table table-striped table-hover table-sm mb-0">
+                <table id="jobsTable" class="table table-striped table-hover table-sm mb-0 w-100">
                     <thead class="thead-dark">
                         <tr>
                             <th><i class="fas fa-calculator"></i> #</th>
@@ -455,7 +457,7 @@ echo "<br />";
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-striped table-hover table-sm mb-0">
+                <table id="planetsTable" class="table table-striped table-hover table-sm mb-0 w-100">
                     <thead class="thead-dark">
                         <tr>
                             <th><i class="fas fa-calculator"></i> #</th>
@@ -522,29 +524,52 @@ echo "<br />";
     </div>
 </div>
 
-<!-- jQuery and DataTables -->
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<!-- =====================================================================
+     SCRIPTS
+     jQuery → Popper → Bootstrap → DataTables core → DataTables BS4
+     El orden importa: DataTables BS4 debe cargarse después del core
+     ===================================================================== -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/datatables.net-bs4@1.13.6/js/dataTables.bootstrap4.min.js"></script>
+
 <script>
 $(document).ready(function() {
+
+    var dtLanguage = {
+        search:        "Filtrar:",
+        lengthMenu:    "Mostrar _MENU_ registros",
+        info:          "Mostrando _START_ a _END_ de _TOTAL_ registros",
+        infoEmpty:     "Sin registros",
+        infoFiltered:  "(filtrado de _MAX_ registros totales)",
+        paginate: {
+            first:    "Primero",
+            last:     "Último",
+            next:     "Siguiente",
+            previous: "Anterior"
+        }
+    };
+
+    // Manufacturing Jobs — con filtro y paginación
     $('#jobsTable').DataTable({
         pageLength: 200,
-        lengthMenu: [[50, 100, 200, 500, -1], [50, 100, 200, 500, "All"]],
-        ordering: false,
-        language: {
-            search: "Filter:",
-            lengthMenu: "Show _MENU_ entries",
-            info: "Showing _START_ to _END_ of _TOTAL_ entries",
-            infoEmpty: "No entries to show",
-            infoFiltered: "(filtered from _MAX_ total entries)",
-            paginate: {
-                first: "First",
-                last: "Last",
-                next: "Next",
-                previous: "Previous"
-            }
-        }
+        lengthMenu: [[50, 100, 200, 500, -1], [50, 100, 200, 500, "Todos"]],
+        ordering:   false,
+        dom:        'lfrtip',   // l=length, f=filter, r=processing, t=table, i=info, p=pagination
+        language:   dtLanguage
     });
+
+    // Planetary Industry — misma configuración
+    $('#planetsTable').DataTable({
+        pageLength: 200,
+        lengthMenu: [[50, 100, 200, 500, -1], [50, 100, 200, 500, "Todos"]],
+        ordering:   false,
+        dom:        'lfrtip',
+        language:   dtLanguage
+    });
+
 });
 </script>
 
