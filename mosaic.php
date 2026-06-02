@@ -3,7 +3,7 @@
  * License GPL 3.0
  * Alfonso Orozco Aguilar
  * Fleet Commander - Mosaic Dashboard
- * Fecha: 2026-03-31 00:22
+ * Fecha: 2026-06-02 00:22
  * 
  * This is the Lobby of the system, showing you can pass the initial screen
  */
@@ -63,6 +63,7 @@ $tiles = [
 ];
 
 $tiles2 = [	
+	showTile("crew/longtermplan.php", "fa-map", "primary"),
 	showTile("industry/slots.php", "fa-industry", "info"),
 	showTile("industry/ammo.php", "fa-industry", "info"),
 	showTile("industry/calc_p1.php", "fa-calculator", "info"),
