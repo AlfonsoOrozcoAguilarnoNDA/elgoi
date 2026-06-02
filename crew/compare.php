@@ -10,8 +10,8 @@ License GPL 3.0
  */
 
 // Incluir archivos de configuración y funciones
-include_once 'config.php';
-include_once 'ui_functions.php';
+include_once '../config.php';
+include_once '../ui_functions.php';
 
 // Definición de la constante para la capacidad máxima de pilotos
 define('MAX_PILOTS', 6);
