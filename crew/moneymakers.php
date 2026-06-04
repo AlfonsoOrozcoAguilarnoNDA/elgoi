@@ -143,7 +143,8 @@ die ("$message<hr>$error");
 }
 function aValues319($Qx){
 global $link;    
-    $rsX = mysqli_query($link,$Qx); sqlerror("error checking avalues<hr>$Qx"); //  or die("<hr>Avalues 319<hr>$Qx");
+    $rsX = mysqli_query($link,$Qx) or die("<hr>Avalues 319<hr>$Qx");
+	// sqlerror("error checking avalues<hr>$Qx"); 
     $Qx2=strtolower($Qx);
     if (left($Qx2,6)<>'select') return "";    
     $aDataX = array();
