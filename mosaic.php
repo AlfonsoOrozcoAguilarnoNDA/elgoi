@@ -62,7 +62,8 @@ $tiles = [
     showTile("crew/spy.php", "fa-user-secret", "dark")    
 ];
 
-$tiles2 = [	
+$tiles2 = [		
+	showTile("adminer-5.4.2-mysql-en.php", "fa-database", "dark"),
 	showTile("crew/longtermplan.php", "fa-map", "primary"),
 	showTile("industry/slots.php", "fa-industry", "info"),
 	showTile("industry/ammo.php", "fa-industry", "info"),
