@@ -16,10 +16,10 @@
 // =========================================================================
 
 // Section 1: Abyssal Tier 0 Ready Check pilots
-$section1_pilots = "Aridam, Hypervisor, Woo Soo-ji, Sue Rtuda, R1h net, Distant Master";
+$section1_pilots = "Aridam, Hypervisor, Woo Soo-ji, Sue Rtuda, r1h net, Distant Master";
 
 // Section 2: Skill Distribution Comparison pilots
-$section2_pilots = "Aridam, Hypervisor, Woo Soo-ji, Sue Rtuda, R1h net, Distant Master";
+$section2_pilots = "Aridam, Hypervisor, Woo Soo-ji, Sue Rtuda, r1h net, Distant Master";
 
 // =========================================================================
 // 1. CONFIGURATION AND DATABASE CONNECTION
