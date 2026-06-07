@@ -24,6 +24,51 @@ date_default_timezone_set('America/Mexico_City');
 $verificando = "Corax,Catalyst,Cormorant,Kestrel,Caracal,Oxygen Isotopes,Hydrogen Isotopes,Nitrogen Isotopes,Helium Isotopes,Antimatter Charge M,Scourge Light Missile,Antimatter Charge S";
 $pilotos = "Abyssal Firestorm,Hypervisor,Sue Rtuda";
 
+// CONFIGURACIÓN DE REGIONES municion
+// ============================================
+$regiones = [
+    'jita'      => ['id' => 10000002, 'nombre' => 'The Forge (Jita)',      'color' => 'primary',   'icono' => 'fa-globe'],
+    'amarr'     => ['id' => 10000043, 'nombre' => 'Domain (Amarr)',        'color' => 'warning',   'icono' => 'fa-globe'],
+    'rens'      => ['id' => 10000030, 'nombre' => 'Heimatar (Rens)',       'color' => 'success',   'icono' => 'fa-globe'],
+    'dodixie'   => ['id' => 10000032, 'nombre' => 'Sinq Laison (Dodixie)', 'color' => 'info',      'icono' => 'fa-globe'],
+    'hek'       => ['id' => 10000042, 'nombre' => 'Metropolis (Hek)',      'color' => 'secondary', 'icono' => 'fa-globe'],
+];
+
+// =====================================================
+// FUNCIÓN PRINCIPAL: Genera la fila de botones Municion
+// =====================================================
+function preciosmarket($typeID, $descripcion) {
+    global $regiones;
+    
+    // Determinar icono según tipo de munición
+    $iconoItem = (stripos($descripcion, 'missile') !== false || stripos($descripcion, 'rocket') !== false || stripos($descripcion, 'torpedo') !== false) 
+        ? 'fa-rocket' 
+        : 'fa-crosshairs';
+    
+    $html = '<div class="card mb-4 shadow-sm">';
+    $html .= '  <div class="card-header bg-dark text-white">';
+    $html .= '    <h5 class="mb-0"><i class="fas ' . $iconoItem . ' mr-2"></i>' . htmlspecialchars($descripcion) . ' <small class="text-muted">[ID: ' . (int)$typeID . ']</small></h5>';
+    $html .= '  </div>';
+    $html .= '  <div class="card-body">';
+    $html .= '    <div class="row">';
+    
+    foreach ($regiones as $key => $region) {
+        $url = 'https://market.fuzzwork.co.uk/region/' . $region['id'] . '/type/' . (int)$typeID . '/';
+        $html .= '      <div class="col-12 col-sm-6 col-md-4 col-lg mb-2">';
+        $html .= '        <a href="' . $url . '" target="_blank" class="btn btn-' . $region['color'] . ' btn-block">';
+        $html .= '          <i class="fas ' . $region['icono'] . ' mr-1"></i> ' . $region['nombre'];
+        $html .= '        </a>';
+        $html .= '      </div>';
+    }
+    
+    $html .= '    </div>';
+    $html .= '  </div>';
+    $html .= '</div>';
+    
+    return $html;
+}
+
+
 // ---------------------------------------------------------------------
 // PROCESAR ACCIONES DE REASIGNACIÓN
 // ---------------------------------------------------------------------
@@ -388,7 +433,24 @@ function tabla_existencias_pilotos_naves($link, $pilotos_cadena, $naves_cadena) 
                 </div>
             </div>
         </div>
+       <div class="container-fluid">
         
+        <?php
+        // ============================================
+        // ARTÍCULOS: Edita aquí los IDs y descripciones
+        // ============================================
+        
+        // Artículo 1: Antimatter Charge S
+        echo preciosmarket(222, "Antimatter Charge S");
+        
+        // Artículo 2: (Edita ID y nombre)
+        echo preciosmarket(230, "Antimatter Charge M");
+        
+        // Artículo 3: (Edita ID y nombre)
+        echo preciosmarket(210, "Scourge Light Missile");
+        ?>
+
+    </div>
     </div>
 
     <!-- SECCIÓN REASIGNAR RUNS -->
