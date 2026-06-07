@@ -427,7 +427,7 @@ function tabla_existencias_pilotos_naves($link, $pilotos_cadena, $naves_cadena) 
         <div class="row">
             <div class="col-12 mb-3">
                 <div class="form-dark">
-                    <h4><i class="fas fa-shopping-cart"></i> Ammo quick market (Fuzzwork)</h4>
+                    <h4><i class="fas fa-chart-line"></i> Ammo quick market (Fuzzwork)</h4>
                     <p class="mb-1">Cada mosaico abre en una nueva pestaña la página de <strong>market.fuzzwork.co.uk</strong>.</p>
                     <p class="mb-0"><small class="text-muted">Enlaces basados en los objetos monitoreados en tu inventario.</small></p>
                 </div>
