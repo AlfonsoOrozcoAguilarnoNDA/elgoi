@@ -1,6 +1,6 @@
 <?php
 /**
- * EVE Fleet Dashboard - Unified v1.0
+ * EVE Fleet Dashboard - Unified v2.0
  * Stack: PHP 8.x Procedural, MariaDB, Bootstrap 4.6.x, FontAwesome 5.15.4
  * License: GNU General Public License v3.0
  * Author: Alfonso Orozco Aguilar
@@ -8,17 +8,18 @@
  * Date: 2026-06-07
  * 
  * Unified dashboard combining Abyssal Tier 0 Ready Check and Key Pilots Status.
+ * Both sections now use pilot name strings for easy editing.
  */
 
 // =========================================================================
-// EDITABLE CONFIGURATION - Pilot Strings
+// EDITABLE CONFIGURATION - Pilot Name Strings (Modify as needed)
 // =========================================================================
 
 // Section 1: Abyssal Tier 0 Ready Check pilots
-$section1_pilots = "Aridam, Hypervisor, Woo Soo-ji, Sue Rtuda, R1h net";
+$section1_pilots = "Aridam, Hypervisor, Woo Soo-ji, Sue Rtuda, R1h net, Distant Master";
 
-// Section 2: Key Pilots Status (fixed IDs)
-$section2_pilots = ['2124036322','2123978503','2123978462','2123978514', '2123978451','2123978440'];
+// Section 2: Skill Distribution Comparison pilots
+$section2_pilots = "Aridam, Hypervisor, Woo Soo-ji, Sue Rtuda, R1h net, Distant Master";
 
 // =========================================================================
 // 1. CONFIGURATION AND DATABASE CONNECTION
@@ -107,13 +108,18 @@ function get_ship_name_from_json($json_ship) {
     return 'JSON Error';
 }
 
-function MuestraSkills_Group($link, $skill_ids, $pilots_ids) {
-    if (empty($skill_ids) || empty($pilots_ids)) {
+function MuestraSkills_Group($link, $skill_ids, $pilots_names_array) {
+    if (empty($skill_ids) || empty($pilots_names_array)) {
         return ['best_pilot_name' => 'N/A', 'pilot_scores' => []];
     }
+    $names_string = "'" . implode("','", array_map(function($n) use ($link) { return mysqli_real_escape_string($link, $n); }, $pilots_names_array)) . "'";
     $ids_string = implode(',', array_map('intval', $skill_ids));
-    $pilots_string = implode(',', array_map('intval', $pilots_ids));
-    $sql = "SELECT E.toon, SUM(E.skillpoints) AS total_sp, P.toon_name FROM EVE_CHARSKILLS E JOIN PILOTS P ON E.toon = P.toon_number WHERE E.toon IN ($pilots_string) AND E.typeID IN ($ids_string) GROUP BY E.toon ORDER BY total_sp DESC";
+    $sql = "SELECT E.toon, SUM(E.skillpoints) AS total_sp, P.toon_name, P.toon_number 
+            FROM EVE_CHARSKILLS E 
+            JOIN PILOTS P ON E.toon = P.toon_number 
+            WHERE P.toon_name IN ($names_string) AND E.typeID IN ($ids_string) 
+            GROUP BY E.toon 
+            ORDER BY total_sp DESC";
     $result = mysqli_query($link, $sql);
     $pilot_scores = [];
     $max_sp = -1;
@@ -123,18 +129,13 @@ function MuestraSkills_Group($link, $skill_ids, $pilots_ids) {
             $toon = $row['toon'];
             $sp = (int)$row['total_sp'];
             $name = $row['toon_name'];
-            $pilot_scores[$toon] = $sp;
+            $pilot_scores[$toon] = ['sp' => $sp, 'name' => $name];
             if ($sp > $max_sp) {
                 $max_sp = $sp;
                 $best_pilot_name = $name;
             }
         }
         mysqli_free_result($result);
-    }
-    foreach ($pilots_ids as $id) {
-        if (!isset($pilot_scores[$id])) {
-            $pilot_scores[$id] = 0;
-        }
     }
     return ['best_pilot_name' => $best_pilot_name, 'pilot_scores' => $pilot_scores];
 }
@@ -164,33 +165,40 @@ function aValues319($Qx) {
     return $aDataX;
 }
 
-function MuestraSkills_Detalle($link, $title, $skill_ids, $pilots_ids, $pilots_names) {
-    if (empty($skill_ids) || empty($pilots_ids)) {
-        echo '<div class="alert alert-warning">No skill or pilot IDs provided.</div>';
+function MuestraSkills_Detalle($link, $title, $skill_ids, $pilots_names_array) {
+    if (empty($skill_ids) || empty($pilots_names_array)) {
+        echo '<div class="alert alert-warning">No skill or pilot names provided.</div>';
         return;
     }
+    $names_string = "'" . implode("','", array_map(function($n) use ($link) { return mysqli_real_escape_string($link, $n); }, $pilots_names_array)) . "'";
     $ids_string = implode(',', array_map('intval', $skill_ids));
-    $pilots_string = implode(',', array_map('intval', $pilots_ids));
-    $sql = "SELECT typeID, Description, toon, skillpoints, rank FROM EVE_CHARSKILLS WHERE toon IN ($pilots_string) AND typeID IN ($ids_string)";
+    $sql = "SELECT E.typeID, E.Description, E.toon, E.skillpoints, E.rank, P.toon_name 
+            FROM EVE_CHARSKILLS E 
+            JOIN PILOTS P ON E.toon = P.toon_number 
+            WHERE P.toon_name IN ($names_string) AND E.typeID IN ($ids_string)";
     $result = mysqli_query($link, $sql);
     $skill_data = [];
-    $skill_totals = array_fill_keys($pilots_ids, 0);
+    $skill_totals = [];
     $best_pilot_per_skill = [];
+    $pilot_names_map = [];
     if ($result) {
         while ($row = mysqli_fetch_assoc($result)) {
             $toon = $row['toon'];
+            $toon_name = $row['toon_name'];
             $typeID = $row['typeID'];
             $sp = (int)$row['skillpoints'];
             $skill_data[$typeID]['Description'] = format_output($row['Description']);
-            $skill_data[$typeID]['Pilots'][$toon] = ['rank' => (int)$row['rank'], 'sp' => $sp];
-            $skill_totals[$toon] += $sp;
+            $skill_data[$typeID]['Pilots'][$toon_name] = ['rank' => (int)$row['rank'], 'sp' => $sp];
+            if (!isset($skill_totals[$toon_name])) $skill_totals[$toon_name] = 0;
+            $skill_totals[$toon_name] += $sp;
+            $pilot_names_map[$toon] = $toon_name;
             if (!isset($best_pilot_per_skill[$typeID]) || $sp > $best_pilot_per_skill[$typeID]['sp']) {
-                $best_pilot_per_skill[$typeID] = ['toon' => $toon, 'sp' => $sp];
+                $best_pilot_per_skill[$typeID] = ['toon_name' => $toon_name, 'sp' => $sp];
             } elseif ($sp === $best_pilot_per_skill[$typeID]['sp'] && $sp > 0) {
-                if (!is_array($best_pilot_per_skill[$typeID]['toon'])) {
-                    $best_pilot_per_skill[$typeID]['toon'] = [$best_pilot_per_skill[$typeID]['toon']];
+                if (!is_array($best_pilot_per_skill[$typeID]['toon_name'])) {
+                    $best_pilot_per_skill[$typeID]['toon_name'] = [$best_pilot_per_skill[$typeID]['toon_name']];
                 }
-                $best_pilot_per_skill[$typeID]['toon'][] = $toon;
+                $best_pilot_per_skill[$typeID]['toon_name'][] = $toon_name;
             }
         }
         mysqli_free_result($result);
@@ -199,20 +207,19 @@ function MuestraSkills_Detalle($link, $title, $skill_ids, $pilots_ids, $pilots_n
     echo '<div class="table-responsive">';
     echo '<table class="table table-bordered table-sm table-striped small">';
     echo '<thead><tr><th>Skill (Description)</th>';
-    foreach ($pilots_ids as $toon) {
-        list($nombre) = aValues319("SELECT toon_name FROM PILOTS WHERE toon_number='$toon'");
-        echo '<th class="text-center">' . format_output($nombre) . '</th>';
+    foreach ($pilots_names_array as $pname) {
+        echo '<th class="text-center">' . format_output($pname) . '</th>';
     }
     echo '</tr></thead><tbody>';
     foreach ($skill_data as $typeID => $data) {
         echo '<tr><td>' . format_output($data['Description']) . '</td>';
-        foreach ($pilots_ids as $toon) {
-            $pilot_skill = $data['Pilots'][$toon] ?? null;
+        foreach ($pilots_names_array as $pname) {
+            $pilot_skill = $data['Pilots'][$pname] ?? null;
             $is_best = false;
             if (isset($best_pilot_per_skill[$typeID])) {
-                $best_toons = $best_pilot_per_skill[$typeID]['toon'];
+                $best_toons = $best_pilot_per_skill[$typeID]['toon_name'];
                 if (!is_array($best_toons)) $best_toons = [$best_toons];
-                $is_best = in_array($toon, $best_toons);
+                $is_best = in_array($pname, $best_toons);
             }
             $cell_content = '';
             $cell_class = '';
@@ -229,23 +236,24 @@ function MuestraSkills_Detalle($link, $title, $skill_ids, $pilots_ids, $pilots_n
         echo '</tr>';
     }
     echo '<tr class="table-info font-weight-bold"><td>Group Total SP</td>';
-    $max_total_sp = max($skill_totals);
-    $best_total_pilot_ids = array_keys($skill_totals, $max_total_sp);
-    foreach ($pilots_ids as $toon) {
-        $sp_total_k = number_format(($skill_totals[$toon] / 1000), 0, '', ',');
-        $cell_class = (in_array($toon, $best_total_pilot_ids) && $max_total_sp > 0) ? 'bg-primary text-white' : '';
+    $max_total_sp = !empty($skill_totals) ? max($skill_totals) : 0;
+    $best_total_pilot_names = [];
+    if ($max_total_sp > 0) {
+        foreach ($skill_totals as $pname => $sp) {
+            if ($sp === $max_total_sp) $best_total_pilot_names[] = $pname;
+        }
+    }
+    foreach ($pilots_names_array as $pname) {
+        $sp_total = $skill_totals[$pname] ?? 0;
+        $sp_total_k = number_format(($sp_total / 1000), 0, '', ',');
+        $cell_class = (in_array($pname, $best_total_pilot_names) && $max_total_sp > 0) ? 'bg-primary text-white' : '';
         echo '<td class="' . $cell_class . ' text-center">' . $sp_total_k . 'k</td>';
     }
     echo '</tr></tbody></table></div>';
     echo '<p class="lead mt-3">';
     if ($max_total_sp > 0) {
         $sp_total_m = number_format(($max_total_sp / 1000000), 2, '.', ',');
-        $best_names = [];
-        foreach ($best_total_pilot_ids as $id) {
-            list($nombre) = aValues319("SELECT toon_name FROM PILOTS WHERE toon_number='$id'");
-            $best_names[] = $nombre;
-        }
-        $best_names_str = implode(' and ', $best_names);
+        $best_names_str = implode(' and ', $best_total_pilot_names);
         echo 'Best in ' . format_output(str_replace('Group Detail: ', '', $title)) . ': <strong>' . format_output($best_names_str) . '</strong> (' . $sp_total_m . 'M SP)';
     } else {
         echo 'No pilot has points in this group.';
@@ -257,44 +265,51 @@ function MuestraSkills_Detalle($link, $title, $skill_ids, $pilots_ids, $pilots_n
 // 4. SECTION 1: ABYSSAL TIER 0 READY CHECK DATA
 // =========================================================================
 
-$nombres_array = array_map('trim', explode(',', $section1_pilots));
-$lista_para_sql = "'" . implode("','", $nombres_array) . "'";
-$sql1 = "SELECT p.toon_number, p.toon_name, p.pocket6, p.skillpoints as total_sp FROM PILOTS p WHERE p.toon_name IN ($lista_para_sql) ORDER BY FIELD(p.toon_name, $lista_para_sql)";
+$nombres_array1 = array_map('trim', explode(',', $section1_pilots));
+$lista_para_sql1 = "'" . implode("','", $nombres_array1) . "'";
+$sql1 = "SELECT p.toon_number, p.toon_name, p.pocket6, p.skillpoints as total_sp, p.race, p.unalloc, p.finishqueue, p.current_ship, p.current_location, p.attrib, p.commentcard, p.numitems, p.lastdate 
+        FROM PILOTS p 
+        WHERE p.toon_name IN ($lista_para_sql1) 
+        ORDER BY FIELD(p.toon_name, $lista_para_sql1)";
 $res1 = mysqli_query($link, $sql1);
 
 // =========================================================================
-// 5. SECTION 2: KEY PILOTS STATUS DATA
+// 5. SECTION 2: SKILL DISTRIBUTION COMPARISON DATA
 // =========================================================================
 
-$ids_string = implode(',', array_map('intval', $section2_pilots));
-$sql2 = "SELECT toon_number, toon_name, race, skillpoints, unalloc, finishqueue, pocket6, current_ship, current_location, attrib, commentcard, numitems, lastdate FROM PILOTS WHERE toon_number IN ($ids_string)";
-$pilots_data = [];
+$nombres_array2 = array_map('trim', explode(',', $section2_pilots));
+$lista_para_sql2 = "'" . implode("','", $nombres_array2) . "'";
+$sql2 = "SELECT toon_number, toon_name, race, skillpoints, unalloc, finishqueue, pocket6, current_ship, current_location, attrib, commentcard, numitems, lastdate 
+        FROM PILOTS 
+        WHERE toon_name IN ($lista_para_sql2) 
+        ORDER BY FIELD(toon_name, $lista_para_sql2)";
+$pilots_data2 = [];
 $error_msg = null;
-$result_pilots = mysqli_query($link, $sql2);
-if ($result_pilots) {
-    while ($pilot_row = mysqli_fetch_assoc($result_pilots)) {
+$result_pilots2 = mysqli_query($link, $sql2);
+if ($result_pilots2) {
+    while ($pilot_row = mysqli_fetch_assoc($result_pilots2)) {
         $toon_number = $pilot_row['toon_number'];
         $pilot_row['pseudo'] = get_pilot_pseudo($link, $toon_number);
-        $pilots_data[$toon_number] = $pilot_row;
+        $pilots_data2[$pilot_row['toon_name']] = $pilot_row;
     }
-    mysqli_free_result($result_pilots);
+    mysqli_free_result($result_pilots2);
 } else {
     $error_msg = mysqli_error($link);
 }
 
-$group_analysis = [];
+$group_analysis2 = [];
 foreach ($skill_groups as $group_name => $group_info) {
-    $analysis_result = MuestraSkills_Group($link, $group_info['ids'], $section2_pilots);
-    $group_analysis[$group_name] = $analysis_result;
+    $analysis_result = MuestraSkills_Group($link, $group_info['ids'], $nombres_array2);
+    $group_analysis2[$group_name] = $analysis_result;
 }
 
-foreach ($pilots_data as $toon_number => &$pilot_row) {
+foreach ($pilots_data2 as $toon_name => &$pilot_row) {
     $pilot_row['skill_totals'] = [];
     $pilot_row['is_best_in'] = [];
     foreach ($skill_groups as $group_name => $group_info) {
-        $total_sp = $group_analysis[$group_name]['pilot_scores'][$toon_number] ?? 0;
+        $total_sp = $group_analysis2[$group_name]['pilot_scores'][$pilot_row['toon_number']]['sp'] ?? 0;
         $pilot_row['skill_totals'][$group_name] = $total_sp;
-        $best_toon_name = $group_analysis[$group_name]['best_pilot_name'];
+        $best_toon_name = $group_analysis2[$group_name]['best_pilot_name'];
         if (format_output($best_toon_name) === format_output($pilot_row['toon_name'])) {
             $pilot_row['is_best_in'][] = $group_name;
         }
@@ -429,6 +444,43 @@ unset($pilot_row);
             margin: 2px;
             border: 1px solid rgba(255, 193, 7, 0.5);
         }
+        .comparison-banner {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left: 4px solid #2196f3;
+            border-right: 4px solid #2196f3;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .comparison-title {
+            color: #1565c0;
+            font-weight: bold;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .comparison-desc {
+            color: #555;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+        .comparison-note {
+            color: #1565c0;
+            font-size: 0.85rem;
+            font-style: italic;
+        }
+        .comparison-tag {
+            display: inline-block;
+            background: rgba(33, 150, 243, 0.2);
+            color: #1565c0;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin: 2px;
+            border: 1px solid rgba(33, 150, 243, 0.3);
+        }
         .timestamp-bar {
             background-color: #e9ecef;
             color: #495057;
@@ -562,9 +614,29 @@ unset($pilot_row);
         <div class="section-divider"></div>
 
         <!-- ================================================================
-             SECTION 2: KEY PILOTS STATUS
+             SECTION 2: SKILL DISTRIBUTION COMPARISON
              ================================================================ -->
-        <h2 class="section-title"><i class="fas fa-users"></i> Key Pilots Status</h2>
+        <h2 class="section-title"><i class="fas fa-chart-bar"></i> Skill Distribution Comparison</h2>
+
+        <div class="comparison-banner">
+            <div class="comparison-title">
+                <i class="fas fa-balance-scale"></i> Comparative Skill Analysis
+            </div>
+            <div class="comparison-desc">
+                This section provides a <strong>side-by-side comparison</strong> of skill distribution across the second pilot group.
+                Use it to identify specialization gaps, training priorities, and optimal role assignments for fleet operations.
+            </div>
+            <div class="comparison-note">
+                <i class="fas fa-info-circle"></i>
+                <strong>Both pilot groups are editable</strong> in the source code. Modify the <code>$section1_pilots</code> and <code>$section2_pilots</code> strings at the top of this file to customize your fleet roster.
+            </div>
+            <div class="mt-2">
+                <span class="comparison-tag"><i class="fas fa-crosshairs"></i> Missiles</span>
+                <span class="comparison-tag"><i class="fas fa-bolt"></i> Turrets</span>
+                <span class="comparison-tag"><i class="fas fa-users"></i> Social</span>
+                <span class="comparison-tag"><i class="fas fa-cogs"></i> Others</span>
+            </div>
+        </div>
 
         <?php if (isset($error_msg)): ?>
             <div class="alert alert-danger" role="alert">Pilot Query Error: <?= format_output($error_msg) ?></div>
@@ -573,15 +645,15 @@ unset($pilot_row);
         <div class="row">
             <?php
             $counter = 0;
-            foreach ($section2_pilots as $id) {
-                $pilot = $pilots_data[$id] ?? null;
+            foreach ($nombres_array2 as $pname) {
+                $pilot = $pilots_data2[$pname] ?? null;
                 if (!$pilot) {
                     $pilot = [
-                        'toon_name' => 'Unknown Pilot (ID: ' . $id . ')',
+                        'toon_name' => 'Unknown Pilot: ' . $pname,
                         'pseudo' => 'N/A', 'race' => 'N/A', 'skillpoints' => 0, 'unalloc' => 0,
                         'finishqueue' => 'N/A', 'pocket6' => 'N/A', 'current_ship' => 'N/A',
-                        'current_location' => 'N/A', 'attrib' => 'N/A', 'commentcard' => 'Pilot not found.',
-                        'numitems' => 0, 'lastdate' => 'N/A', 'toon_number' => $id,
+                        'current_location' => 'N/A', 'attrib' => 'N/A', 'commentcard' => 'Pilot not found in database.',
+                        'numitems' => 0, 'lastdate' => 'N/A', 'toon_number' => 'N/A',
                         'skill_totals' => [], 'is_best_in' => []
                     ];
                 }
@@ -594,7 +666,7 @@ unset($pilot_row);
             ?>
                 <div class="col-md-4 mb-4">
                     <div class="card card-pilot h-100">
-                        <img src="https://images.evetech.net/characters/<?php echo $id; ?>/portrait?size=256"
+                        <img src="https://images.evetech.net/characters/<?php echo $pilot['toon_number']; ?>/portrait?size=256"
                              class="card-img-top" alt="Portrait of <?php echo format_output($pilot['toon_name']); ?>">
                         <div class="card-header border-0 bg-white pt-2 pb-0">
                             <h5 class="mb-0 text-center font-weight-bold"><?php echo format_output($pilot['toon_name']); ?></h5>
@@ -629,7 +701,7 @@ unset($pilot_row);
                             <div class="alert alert-info py-1 px-2 small mt-2">
                                 <p class="mb-0 font-weight-bold">Best Pilots:</p>
                                 <?php foreach ($skill_groups as $group_name => $group_info):
-                                    $best_name = $group_analysis[$group_name]['best_pilot_name'] ?? 'N/A';
+                                    $best_name = $group_analysis2[$group_name]['best_pilot_name'] ?? 'N/A';
                                 ?>
                                     <p class="mb-0 small"><?php echo format_output($group_name); ?>: <strong><?php echo format_output($best_name); ?></strong></p>
                                 <?php endforeach; ?>
@@ -662,13 +734,11 @@ unset($pilot_row);
         <div class="container mt-5">
             <?php
             foreach ($skill_groups as $group_name => $group_info) {
-                $pilots_names = $section2_pilots;
                 MuestraSkills_Detalle(
                     $link,
                     "Group Detail: " . $group_name,
                     $group_info['ids'],
-                    $section2_pilots,
-                    $pilots_names
+                    $nombres_array2
                 );
                 echo '<hr class="my-5">';
             }
