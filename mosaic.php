@@ -67,8 +67,7 @@ $tiles2 = [
 	showTile("crew/longtermplan.php", "fa-map", "primary"),
 	showTile("industry/slots.php", "fa-industry", "info"),
 	showTile("industry/ammo.php", "fa-industry", "info"),
-	showTile("industry/calc_p1.php", "fa-calculator", "info"),
-	showTile("experimental/tradehubs_ammo.php", "fa-chart-line", "success"),
+	showTile("industry/calc_p1.php", "fa-calculator", "info"),	
 	showTile("experimental/whereare.php", "fa-globe", "success"),
     showTile("experimental/thesix.php", "fa-users", "primary"),	
     showTile("logistics/hauling.php", "fa-truck", "secondary")    
