@@ -25,7 +25,7 @@ $timestamp_calculo = date('Y-m-d H:i:s');
 // ============================================================================
 
 // Cadena de personajes (editable)
-$characters_string = "Hypervisor,Pi Organizer,Sue Rtuda,Jane Hek";
+$characters_string = "Hypervisor,Khadima,Sue Rtuda,Jane Hek";
 
 // Cadena de items P1 a buscar (editable) - nombres exactos
 $items_string = "Biofuels,Water,Toxic Metals,Reactive Metals,Plasmoids,Bacteria,Electrolytes,Precious Metals,Chiral Structures,Silicon,Oxygen,Industrial Fibers,Oxidizing Compound,Biomass";
