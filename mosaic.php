@@ -533,9 +533,11 @@ sort($non_php_files);
     <nav class="nav-bar nav-bar-top">
         <div class="logo">⚡ Fleet Commander</div>
         <div class="nav-links">
-            <a href="mosaic.php">Dashboard</a>
-            <a href="#">Fleet</a>
-            <a href="#">Pilots</a>
+            <a href="#">Dashboard</a>
+            <a target='_blank' href="https://reddit.com/r/Eve/new/">Reddit</a>
+            <a target='_blank' href="https://forums.eveonline.com">Forums</a>
+			<a target='_blank' href="https://eveconomy.online/item/32876">Economy</a>
+			<a target='_blank' href="https://janice.e-351.com/">Janice</a>			
             <a href="#">Settings</a>
         </div>
         <div class="nav-info">
