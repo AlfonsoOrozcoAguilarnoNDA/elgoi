@@ -5,9 +5,9 @@ Alfonso Orozco Aguilar
 
 */
 /**
- * Tabla Maestra de Pilotos - EVE Online
- * Stack: PHP 8.x Procedimental, MariaDB, Bootstrap 4.6.2, DataTables, Font Awesome 5.15.4
- * Recalcula tradefield automáticamente en cada carga.
+ * Master Pilot Table - EVE Online
+ * Stack: PHP 8.x Procedural, MariaDB, Bootstrap 4.6.2, DataTables, Font Awesome 5.15.4
+ * Recalculates tradefield automatically on every load.
  */
 require_once '../config.php';
 
@@ -17,10 +17,10 @@ list($name,$pilot,$data)=avalues319("select toon_name,email_pilot,skills from PI
 if ($name=="") die("The pilot $who ".PilotfromInternet($who)." is not in the database (4)");
 $name=addslashes($name);
 if ($data=='[]') die("no data(1) for $name");
-$where="in <a href='../devauthcallback.php?pilot_id=$who' target='_blank'>this link</a> when you do it, press f5 to reaload here";
-if (str_replace("Timeout contacting tranquility","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try update him/her later $where");
-if (str_replace("unexpected end of JSON","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try update him/her later $where");
-if (str_replace("504 Gateway","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try update him/her later $where");
+$where="in <a href='../devauthcallback.php?pilot_id=$who' target='_blank'>this link</a> when you do it, press f5 to reload here";
+if (str_replace("Timeout contacting tranquility","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try updating him/her later $where");
+if (str_replace("unexpected end of JSON","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try updating him/her later $where");
+if (str_replace("504 Gateway","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try updating him/her later $where");
 
 $data=stripslashes($data);
 //echo "<li>	$name</li>";
@@ -166,32 +166,32 @@ function updatecorpnames(){
 global $link;
 $csh=0;
 // ==============================================================================
-// FUNCIÓN OBTENER CORP NAME
+// FUNCTION: GET CORP NAME
 // ==============================================================================
-// Paso 1: Obtener todas las corporations únicas de la tabla
+// Step 1: Get all unique corporations from the table
 $query = "SELECT DISTINCT corporation FROM PILOTS WHERE corporation IS NOT NULL";
 $result = mysqli_query($link, $query);
 
 if (!$result) {
-    die("Error en consulta: " . mysqli_error($link));
+    die("Query error: " . mysqli_error($link));
 }
 
-$corporaciones = [];
+$corporations = [];
 while ($row = mysqli_fetch_assoc($result)) {
-    $corporaciones[] = $row['corporation'];
+    $corporations[] = $row['corporation'];
 }
 
-//echo "Total de corporaciones a actualizar: " . count($corporaciones) . "\n";
+//echo "Total corporations to update: " . count($corporations) . "\n";
 
-// Paso 2: Por cada corporation_id, consultar la ESI y actualizar
-foreach ($corporaciones as $corporationId) {
+// Step 2: For each corporation_id, query the ESI and update
+foreach ($corporations as $corporationId) {
     $url = "https://esi.evetech.net/latest/corporations/{$corporationId}/";
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'TuApp/1.0 (tu@email.com)');
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10); // Timeout de 10 segundos
+    curl_setopt($ch, CURLOPT_USERAGENT, 'YourApp/1.0 (your@email.com)');
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10); // 10 second timeout
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -199,39 +199,39 @@ foreach ($corporaciones as $corporationId) {
 
     if ($httpCode === 200) {
         $data = json_decode($response, true);
-        $nombreLimpio = mysqli_real_escape_string($link, $data['name']);
+        $cleanName = mysqli_real_escape_string($link, $data['name']);
 
-        // Paso 3: Actualizar TODOS los registros con ese corporation ID
+        // Step 3: Update ALL records with that corporation ID
         $updateQuery = "UPDATE PILOTS 
-                        SET corporation_name = '{$nombreLimpio}' 
+                        SET corporation_name = '{$cleanName}' 
                         WHERE corporation = {$corporationId}";
 
         if (mysqli_query($link, $updateQuery)) {
-            $filas = mysqli_affected_rows($link);
-            //echo "✓ Corp {$corporationId} → '{$data['name']}' ({$filas} registros actualizados)\n";
+            $rows = mysqli_affected_rows($link);
+            //echo "✓ Corp {$corporationId} → '{$data['name']}' ({$rows} records updated)\n";
 			$csh++;
         } else {
-            //echo "✗ Error al actualizar corp {$corporationId}: " . mysqli_error($link) . "\n";
+            //echo "✗ Error updating corp {$corporationId}: " . mysqli_error($link) . "\n";
         }
     } else {
-        //echo "✗ Corp {$corporationId} → Error HTTP {$httpCode}\n";
+        //echo "✗ Corp {$corporationId} → HTTP Error {$httpCode}\n";
     }
 
-    // Pequeña pausa para no saturar la ESI (buena práctica)
-	usleep(2000); // 0.2 segundos entre llamadas
-    //usleep(200000); // 0.2 segundos entre llamadas
+    // Small pause to avoid saturating the ESI (good practice)
+	usleep(2000); // 0.2 seconds between calls
+    //usleep(200000); // 0.2 seconds between calls
 }
-//echo "\n✅ Proceso completado.\n";
+//echo "\n✅ Process completed.\n";
 return "
 <div class='msg-tradefield'>
         <i class='fas fa-check-circle mr-1'></i>
-        Corp Names actualizado — <strong>$csh</strong> corporaciones actualizadas al cargar.
+        Corp Names updated — <strong>$csh</strong> corporations updated on load.
     </div>";
 } // update corpnames
 
 
 // ==============================================================================
-// FUNCIÓN OBTENER OFICIO
+// FUNCTION: GET TRADE/OCCUPATION
 // ==============================================================================
 function obtenerOficio($p) {
     global $link;
@@ -246,20 +246,20 @@ function obtenerOficio($p) {
 
     $res = mysqli_query($link, $sqlSkills);
     if ($res && mysqli_num_rows($res) > 0) {
-        $dato = mysqli_fetch_assoc($res);
-        return $dato['group_name'];
+        $data = mysqli_fetch_assoc($res);
+        return $data['group_name'];
     }
-	// si se va a guardar basura
-	// pero hay que avisar de reevaluar con dashboard
-    return "Skills sin definir, cargue Dashboard"; 
+	// if garbage is going to be saved
+	// but we need to warn to re-evaluate with dashboard
+    return "Skills undefined, load Dashboard"; 
     $sp = (int)(($p['skillpoints'] ?? 0) / 1000000);
-    //return $dato['group_name'];
+    //return $data['group_name'];
 	//if ($sp < 10) return "n/a";
-    //return "Especialista Independiente";
+    //return "Independent Specialist";
 }
 
 // ==============================================================================
-// RECÁLCULO AUTOMÁTICO DE TRADEFIELD (todos, siempre, antes de mostrar)
+// AUTOMATIC TRADEFIELD RECALCULATION (all, always, before displaying)
 // ==============================================================================
 $sqlTodos = "SELECT toon_number,toon_name, skillpoints FROM PILOTS WHERE toon_name NOT LIKE '%CATALOG%'";
 $resTodos = mysqli_query($link, $sqlTodos);
@@ -270,7 +270,7 @@ if ($resTodos) {
         $oficio    = obtenerOficio($p);
         $safeTrade = mysqli_real_escape_string($link, $oficio);
         $safeName  = mysqli_real_escape_string($link, $p['toon_name']);
-		if($safeTrade=='Skills sin definir, cargue Dashboard') {
+		if($safeTrade=='Skills undefined, load Dashboard') {
 			// renew the skills
 			$dummy=renewskills($p['toon_number']);
 			//die($p['toon_number'].$p['toon_name']);
@@ -282,7 +282,7 @@ if ($resTodos) {
 }
 
 // ==============================================================================
-// FILTROS DESPLEGABLES
+// DROPDOWN FILTERS
 // ==============================================================================
 $filterTrade = $_GET['filter_trade'] ?? 'ALL';
 $filterCorp  = $_GET['filter_corp']  ?? 'ALL';
@@ -293,7 +293,7 @@ $resCorp    = mysqli_query($link, "SELECT DISTINCT corporation_name FROM PILOTS 
 $resPockets = mysqli_query($link, "SELECT DISTINCT pocket6 FROM PILOTS WHERE pocket6 IS NOT NULL AND pocket6 <> '' ORDER BY pocket6 ASC");
 
 // ==============================================================================
-// CONSULTA PRINCIPAL
+// MAIN QUERY
 // ==============================================================================
 $where = ["toon_name NOT LIKE '%VPS%'", "toon_name NOT LIKE '%CATALOG%'"];
 
@@ -335,7 +335,7 @@ $sqlPilots = "SELECT
 $resPilots   = mysqli_query($link, $sqlPilots);
 $totalPilotos = $resPilots ? mysqli_num_rows($resPilots) : 0;
 
-// Colores por pocket (para badge)
+// Pocket colors (for badge)
 function getColorPocket($pocket) {
     $p = strtoupper(trim($pocket ?? ''));
     return match($p) {
@@ -351,11 +351,11 @@ function getColorPocket($pocket) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>EVE Online — Tabla Maestra de Pilotos</title>
+    <title>EVE Online — Master Pilot Table</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- DataTables -->
@@ -373,7 +373,7 @@ function getColorPocket($pocket) {
             margin-bottom: 0;
         }
 
-        /* ── BARRA DE FILTROS ── */
+        /* ── FILTER BAR ── */
         .filter-bar {
             background-color: #16191c;
             border-bottom: 2px solid #007bff;
@@ -393,7 +393,7 @@ function getColorPocket($pocket) {
             box-shadow: none;
         }
 
-        /* ── MENSAJE TRADEFIELD ── */
+        /* ── TRADEFIELD MESSAGE ── */
         .msg-tradefield {
             background-color: #1a2a1a;
             border-left: 4px solid #28a745;
@@ -403,7 +403,7 @@ function getColorPocket($pocket) {
             margin-bottom: 14px;
         }
 
-        /* ── DATATABLES DARK ── */
+        /* ── DARK DATATABLES ── */
         .dataTables_wrapper .dataTables_length label,
         .dataTables_wrapper .dataTables_filter label,
         .dataTables_wrapper .dataTables_info,
@@ -429,7 +429,7 @@ function getColorPocket($pocket) {
             border-color: #0056b3 !important;
         }
 
-        /* ── TABLA ── */
+        /* ── TABLE ── */
         #tablaPilotos {
             font-size: 0.82rem;
         }
@@ -456,7 +456,7 @@ function getColorPocket($pocket) {
             vertical-align: middle !important;
         }
 
-        /* Portrait en tabla */
+        /* Portrait in table */
         .portrait-sm {
             width: 38px;
             height: 38px;
@@ -476,18 +476,18 @@ function getColorPocket($pocket) {
         }
         .pocket-badge.dark-text { color: #111; }
 
-        /* Valores numéricos */
+        /* Numeric values */
         .val-money  { color: #f39c12; font-family: monospace; }
         .val-sp     { color: #5dade2; font-weight: bold; }
         .val-em     { color: #a29bfe; }
         .val-sec-pos { color: #28a745; }
         .val-sec-neg { color: #dc3545; }
 
-        /* Iconos de actividad */
+        /* Activity icons */
         .icon-active   { color: #28a745; font-size: 1rem; }
         .icon-inactive { color: #343a40; font-size: 1rem; }
 
-        /* AccType badge esquina */
+        /* AccType corner badge */
         .acctype-icon { font-size: 0.85rem; }
 
         /* Tradefield pill */
@@ -499,7 +499,7 @@ function getColorPocket($pocket) {
             font-size: 0.75rem;
             white-space: nowrap;
         }
-/* Iconos geticons() */
+/* geticons() icons */
 .industry-icons {
     display: inline-flex;
     gap: 9px;
@@ -516,20 +516,20 @@ function getColorPocket($pocket) {
 <!-- NAVBAR -->
 <nav class="navbar navbar-dark navbar-eve px-3">
     <span class="navbar-brand mb-0 h5">
-        <i class="fas fa-space-shuttle mr-2"></i>Tabla Maestra de Pilotos
+        <i class="fas fa-space-shuttle mr-2"></i>Master Pilot Table
     </span>
     <span class="text-muted small">
-        <i class="fas fa-users mr-1"></i><?php echo $totalPilotos; ?> pilotos
+        <i class="fas fa-users mr-1"></i><?php echo $totalPilotos; ?> pilots
     </span>
 </nav>
 
-<!-- FILTROS -->
+<!-- FILTERS -->
 <div class="filter-bar">
     <form method="GET" class="form-inline flex-wrap" style="gap:10px;">
 
-        <label class="text-light mr-1"><i class="fas fa-briefcase mr-1"></i>Oficio:</label>
+        <label class="text-light mr-1"><i class="fas fa-briefcase mr-1"></i>Trade:</label>
         <select name="filter_trade" class="form-control form-control-sm mr-3">
-            <option value="ALL">-- Todos --</option>
+            <option value="ALL">-- All --</option>
             <?php while ($t = mysqli_fetch_assoc($resTrades)): ?>
                 <option value="<?php echo htmlspecialchars($t['tradefield']); ?>"
                     <?php echo ($filterTrade === $t['tradefield']) ? 'selected' : ''; ?>>
@@ -540,7 +540,7 @@ function getColorPocket($pocket) {
 
         <label class="text-light mr-1"><i class="fas fa-building mr-1"></i>Corp:</label>
         <select name="filter_corp" class="form-control form-control-sm mr-3">
-            <option value="ALL">-- Todas --</option>
+            <option value="ALL">-- All --</option>
             <?php while ($c = mysqli_fetch_assoc($resCorp)): ?>
                 <option value="<?php echo htmlspecialchars($c['corporation_name']); ?>"
                     <?php echo ($filterCorp === $c['corporation_name']) ? 'selected' : ''; ?>>
@@ -551,7 +551,7 @@ function getColorPocket($pocket) {
 
         <label class="text-light mr-1"><i class="fas fa-folder mr-1"></i>Pocket:</label>
         <select name="filter_pocket" class="form-control form-control-sm mr-3">
-            <option value="ALL">-- Todos --</option>
+            <option value="ALL">-- All --</option>
             <?php while ($pk = mysqli_fetch_assoc($resPockets)): ?>
                 <option value="<?php echo htmlspecialchars($pk['pocket6']); ?>"
                     <?php echo ($filterPocket === $pk['pocket6']) ? 'selected' : ''; ?>>
@@ -561,12 +561,12 @@ function getColorPocket($pocket) {
         </select>
 
         <button type="submit" class="btn btn-sm btn-primary mr-2">
-            <i class="fas fa-filter mr-1"></i> Filtrar
+            <i class="fas fa-filter mr-1"></i> Filter
         </button>
 
         <?php if ($filterTrade !== 'ALL' || $filterCorp !== 'ALL' || $filterPocket !== 'ALL'): ?>
         <a href="?" class="btn btn-sm btn-outline-secondary">
-            <i class="fas fa-times mr-1"></i> Limpiar
+            <i class="fas fa-times mr-1"></i> Clear
         </a>
         <?php endif; ?>
 
@@ -575,33 +575,33 @@ function getColorPocket($pocket) {
 
 <div class="container-fluid">
 
-    <!-- Mensaje recálculo tradefield -->
+    <!-- Tradefield recalculation message -->
     <div class="msg-tradefield">
         <i class="fas fa-check-circle mr-1"></i>
-        Tradefield actualizado — <strong><?php echo $actualizados; ?></strong> pilotos procesados al cargar.
+        Tradefield updated — <strong><?php echo $actualizados; ?></strong> pilots processed on load.
     </div>
     <?php echo updatecorpnames(); ?> 
-    <!-- TABLA -->
+    <!-- TABLE -->
     <div class="table-responsive">
         <table id="tablaPilotos" class="table table-sm table-bordered" style="width:100%">
             <thead>
                 <tr>
                     <th>#</th>
                     <th>Img</th>
-                    <th>Nombre</th>
+                    <th>Name</th>
                     <th>Pocket</th>
-                    <th>Oficio</th>
-                    <th title="Número de items"><i class="fas fa-boxes"></i> Items</th>
+                    <th>Trade</th>
+                    <th title="Number of items"><i class="fas fa-boxes"></i> Items</th>
                     <th title="Evermarks"><i class="fas fa-shield-alt"></i> EM</th>
-                    <th title="Número de naves"><i class="fas fa-rocket"></i> Ships</th>
+                    <th title="Number of ships"><i class="fas fa-rocket"></i> Ships</th>
 					<th title="Jita Value"><i class="fas fa-dollar"></i> Jitav</th>
-                    <th title="Wallet en millones ISK"><i class="fas fa-wallet"></i> Wallet M</th>
-                    <th title="Actividad planetaria e industrial">PI / Jobs</th>
+                    <th title="Wallet in millions ISK"><i class="fas fa-wallet"></i> Wallet M</th>
+                    <th title="Planetary and industrial activity">PI / Jobs</th>
                     <th title="GF">GF</th>
-                    <th title="Número de fits">Fits</th>
+                    <th title="Number of fits">Fits</th>
                     <th title="Security status">Sec.</th>
-                    <th title="Skillpoints en millones"><i class="fas fa-microchip"></i> SP M</th>
-                    <th title="Tipo de cuenta">Acc</th>
+                    <th title="Skillpoints in millions"><i class="fas fa-microchip"></i> SP M</th>
+                    <th title="Account type">Acc</th>
                 </tr>
             </thead>
             <tbody>
@@ -625,7 +625,7 @@ function getColorPocket($pocket) {
                         $accColor = 'color:#95a5a6';
                     }
 
-                    // Pocket texto claro u oscuro
+                    // Pocket light or dark text
                     $pocketBadgeClass = in_array(strtoupper(trim($p['pocket6'] ?? '')), ['YENN','SANGO']) ? 'dark-text' : '';
                 ?>
                 <tr>
@@ -669,7 +669,7 @@ function getColorPocket($pocket) {
                     <td class="text-right val-money"><?php echo number_format($walletM, 2); ?></td>
 
                     <td class="text-center">
-                        <!-- DESPUÉS -->
+                        <!-- AFTER -->
     <?php echo geticons($p['toon_number']); ?>
 
                     </td>
@@ -706,15 +706,15 @@ function getColorPocket($pocket) {
 $(document).ready(function() {
     $('#tablaPilotos').DataTable({
         pageLength: 100,
-        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
-        order: [[13, 'desc']], // Ordenar por SP descendente por default
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        order: [[13, 'desc']], // Sort by SP descending by default
         language: {
-            search:         "Buscar:",
-            lengthMenu:     "Mostrar _MENU_ pilotos",
-            info:           "Mostrando _START_ a _END_ de _TOTAL_ pilotos",
-            infoEmpty:      "Sin resultados",
-            infoFiltered:   "(filtrado de _MAX_ totales)",
-            zeroRecords:    "No se encontraron pilotos",
+            search:         "Search:",
+            lengthMenu:     "Show _MENU_ pilots",
+            info:           "Showing _START_ to _END_ of _TOTAL_ pilots",
+            infoEmpty:      "No results",
+            infoFiltered:   "(filtered from _MAX_ total)",
+            zeroRecords:    "No pilots found",
             paginate: {
                 first:    "«",
                 last:     "»",
@@ -723,7 +723,7 @@ $(document).ready(function() {
             }
         },
         columnDefs: [
-            { orderable: false, targets: [1, 10] }, // Imagen y PI/Jobs no ordenables
+            { orderable: false, targets: [1, 10] }, // Image and PI/Jobs not sortable
             { className: "text-center", targets: [0, 1, 3, 9, 10, 11, 12, 14] },
             { className: "text-right",  targets: [5, 6, 7, 8, 13] }
         ]		
