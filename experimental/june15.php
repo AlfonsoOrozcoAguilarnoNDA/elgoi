@@ -1,7 +1,7 @@
 <?php
 // 1. Conexión y Control de Datos
 /*
-Mecamnismo de control temporal de accounts por expansion
+Mecanismo de control temporal de accounts por expansion
 Licencia GPL
 Experimento conjunto Gemini
 
@@ -58,7 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // 3. Persistencia de Filtros en la consulta
 $filter_especial = isset($_GET['f_especial']) ? $_GET['f_especial'] : '';
 $filter_activar  = isset($_GET['f_activar']) ? $_GET['f_activar'] : '';
-$filter_plex     = isset($_GET['f_plex']) ? $_GET['f_plex'] : ''; // Nuevo filtro PLEX
+$filter_plex     = isset($_GET['f_plex']) ? $_GET['f_plex'] : '';
+$filter_redimibles = isset($_GET['f_redimibles']) ? $_GET['f_redimibles'] : ''; // NUEVO FILTRO
 
 $where_clauses = [];
 if ($filter_especial !== '') {
@@ -67,9 +68,14 @@ if ($filter_especial !== '') {
 if ($filter_activar !== '') {
     $where_clauses[] = "`activar_hoy` = '" . mysqli_real_escape_string($link, $filter_activar) . "'";
 }
-// Lógica para filtrar por volumen de PLEX
 if ($filter_plex === 'mayor_cero') {
     $where_clauses[] = "`plex` > 0";
+}
+// NUEVO: Lógica para filtrar por activos redimibles
+if ($filter_redimibles === 'con_comentario') {
+    $where_clauses[] = "(`activos_redimibles` IS NOT NULL AND `activos_redimibles` != '' AND `activos_redimibles` != 'Ninguno')";
+} elseif ($filter_redimibles === 'sin_comentario') {
+    $where_clauses[] = "(`activos_redimibles` IS NULL OR `activos_redimibles` = '' OR `activos_redimibles` = 'Ninguno')";
 }
 
 $where_sql = "";
@@ -128,7 +134,14 @@ $result = mysqli_query($link, $query);
                     <option value="mayor_cero" <?php echo ($filter_plex === 'mayor_cero') ? 'selected' : ''; ?>>Mayor a 0</option>
                 </select>
 
-                <?php if ($filter_especial !== '' || $filter_activar !== '' || $filter_plex !== ''): ?>
+                <label class="mr-2 font-weight-bold" for="f_redimibles">Activos Redimibles:</label>
+                <select name="f_redimibles" id="f_redimibles" class="form-control form-control-sm mr-4" onchange="this.form.submit()">
+                    <option value="">-- Todos --</option>
+                    <option value="con_comentario" <?php echo ($filter_redimibles === 'con_comentario') ? 'selected' : ''; ?>>Con comentario</option>
+                    <option value="sin_comentario" <?php echo ($filter_redimibles === 'sin_comentario') ? 'selected' : ''; ?>>Sin comentario</option>
+                </select>
+
+                <?php if ($filter_especial !== '' || $filter_activar !== '' || $filter_plex !== '' || $filter_redimibles !== ''): ?>
                     <a href="<?php echo $_SERVER['PHP_SELF']; ?>" class="btn btn-sm btn-outline-danger">Limpiar Filtros</a>
                 <?php endif; ?>
             </form>
@@ -141,14 +154,13 @@ $result = mysqli_query($link, $query);
                 <tr>
                     <th width="5%">ID</th>
                     <th width="5%"># Cta</th>
-                    <th width="10%">Pseudo</th>
-                    <th width="10%">Piloto Principal</th>
+                    <th width="12%">Pseudo</th>
+                    <th width="12%">Piloto Principal</th>
                     <th width="8%">PLEX</th>
                     <th width="10%">Activar Hoy</th>
                     <th width="10%">Especial</th>
-                    <th width="18%">Activos (Caso Especial)</th>
-                    <th width="18%">Notas Auditoría</th>
-                    <th width="6%">Acción</th>
+                    <th width="23%">Activos (Caso Especial)</th>
+                    <th width="15%">Acción</th>
                 </tr>
             </thead>
             <tbody>
@@ -183,10 +195,6 @@ $result = mysqli_query($link, $query);
                             
                             <td class="align-middle">
                                 <input type="text" name="activos_redimibles" class="form-control form-control-sm" value="<?php echo htmlspecialchars($row['activos_redimibles']); ?>">
-                            </td>
-                            
-                            <td class="align-middle">
-                                <textarea name="notas_auditoria" class="form-control form-control-sm" rows="1"><?php echo htmlspecialchars($row['notas_auditoria']); ?></textarea>
                             </td>
                             
                             <td class="align-middle text-center">
