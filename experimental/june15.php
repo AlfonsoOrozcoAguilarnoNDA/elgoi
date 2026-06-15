@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS `sucursales_flota` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 */
-require "../config.php";
+// 1. Conexión y Control de Datos
+require "config.php";
 
 // Sanitización rápida procedimental
 function safe_input($data) {
@@ -51,14 +52,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if (mysqli_query($link, $update_query)) {
         header("Location: " . $_SERVER['PHP_SELF'] . "?msg=success");
         exit;
-    } else {
-        $error_db = mysqli_error($link);
     }
 }
 
 // 3. Persistencia de Filtros en la consulta
 $filter_especial = isset($_GET['f_especial']) ? $_GET['f_especial'] : '';
-$filter_activar = isset($_GET['f_activar']) ? $_GET['f_activar'] : '';
+$filter_activar  = isset($_GET['f_activar']) ? $_GET['f_activar'] : '';
+$filter_plex     = isset($_GET['f_plex']) ? $_GET['f_plex'] : ''; // Nuevo filtro PLEX
 
 $where_clauses = [];
 if ($filter_especial !== '') {
@@ -66,6 +66,10 @@ if ($filter_especial !== '') {
 }
 if ($filter_activar !== '') {
     $where_clauses[] = "`activar_hoy` = '" . mysqli_real_escape_string($link, $filter_activar) . "'";
+}
+// Lógica para filtrar por volumen de PLEX
+if ($filter_plex === 'mayor_cero') {
+    $where_clauses[] = "`plex` > 0";
 }
 
 $where_sql = "";
@@ -83,9 +87,7 @@ $result = mysqli_query($link, $query);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auditoría de Flota - Control Interno</title>
-    <!-- Bootstrap 4.6 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-    <!-- DataTables Bootstrap 4 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-bs4@1.13.7/css/dataTables.bootstrap4.min.css">
     <style>
         body { background-color: #f8f9fa; font-size: 0.9rem; }
@@ -103,7 +105,6 @@ $result = mysqli_query($link, $query);
         <?php endif; ?>
     </div>
 
-    <!-- Barra de Filtros -->
     <div class="card mb-4 table-card">
         <div class="card-body py-3">
             <form method="GET" action="" class="form-inline">
@@ -121,14 +122,19 @@ $result = mysqli_query($link, $query);
                     <option value="NO" <?php echo ($filter_activar === 'NO') ? 'selected' : ''; ?>>NO</option>
                 </select>
 
-                <?php if ($filter_especial !== '' || $filter_activar !== ''): ?>
+                <label class="mr-2 font-weight-bold" for="f_plex">Filtrar PLEX:</label>
+                <select name="f_plex" id="f_plex" class="form-control form-control-sm mr-4" onchange="this.form.submit()">
+                    <option value="">-- Todos --</option>
+                    <option value="mayor_cero" <?php echo ($filter_plex === 'mayor_cero') ? 'selected' : ''; ?>>Mayor a 0</option>
+                </select>
+
+                <?php if ($filter_especial !== '' || $filter_activar !== '' || $filter_plex !== ''): ?>
                     <a href="<?php echo $_SERVER['PHP_SELF']; ?>" class="btn btn-sm btn-outline-danger">Limpiar Filtros</a>
                 <?php endif; ?>
             </form>
         </div>
     </div>
 
-    <!-- Tabla Principal CRUD -->
     <div class="p-3 table-card">
         <table id="tablaFlota" class="table table-striped table-bordered table-hover table-sm w-100">
             <thead class="thead-dark">
@@ -148,7 +154,6 @@ $result = mysqli_query($link, $query);
             <tbody>
                 <?php while ($row = mysqli_fetch_assoc($result)): ?>
                     <tr>
-                        <!-- Formulario único por fila para envío directo sin conflictos -->
                         <form method="POST" action="">
                             <input type="hidden" name="action" value="update_row">
                             <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
@@ -158,12 +163,10 @@ $result = mysqli_query($link, $query);
                             <td class="align-middle"><strong><?php echo htmlspecialchars($row['pseudo']); ?></strong></td>
                             <td class="align-middle"><?php echo htmlspecialchars($row['piloto_principal']); ?></td>
                             
-                            <!-- Campo PLEX (Numérico entero) -->
                             <td class="align-middle">
                                 <input type="number" name="plex" class="form-control form-control-sm input-inline" value="<?php echo $row['plex']; ?>" required min="0">
                             </td>
                             
-                            <!-- Campo Activar Hoy (ENUM SI/NO) -->
                             <td class="align-middle">
                                 <select name="activar_hoy" class="form-control form-control-sm">
                                     <option value="NO" <?php echo ($row['activar_hoy'] === 'NO') ? 'selected' : ''; ?>>NO</option>
@@ -171,7 +174,6 @@ $result = mysqli_query($link, $query);
                                 </select>
                             </td>
                             
-                            <!-- Campo Caso Especial (ENUM SI/NO) -->
                             <td class="align-middle">
                                 <select name="caso_especial" class="form-control form-control-sm">
                                     <option value="NO" <?php echo ($row['caso_especial'] === 'NO') ? 'selected' : ''; ?>>NO</option>
@@ -179,17 +181,14 @@ $result = mysqli_query($link, $query);
                                 </select>
                             </td>
                             
-                            <!-- Comentario de Caso Especial (Activos Redimibles) -->
                             <td class="align-middle">
                                 <input type="text" name="activos_redimibles" class="form-control form-control-sm" value="<?php echo htmlspecialchars($row['activos_redimibles']); ?>">
                             </td>
                             
-                            <!-- Comentario de Auditoría (Notas) -->
                             <td class="align-middle">
-                                <textarea name="notes_auditoria" class="form-control form-control-sm" rows="1"><?php echo htmlspecialchars($row['notas_auditoria']); ?></textarea>
+                                <textarea name="notas_auditoria" class="form-control form-control-sm" rows="1"><?php echo htmlspecialchars($row['notas_auditoria']); ?></textarea>
                             </td>
                             
-                            <!-- Botón de Actualizar Fila -->
                             <td class="align-middle text-center">
                                 <button type="submit" class="btn btn-sm btn-primary btn-block font-weight-bold">Guardar</button>
                             </td>
@@ -201,7 +200,6 @@ $result = mysqli_query($link, $query);
     </div>
 </div>
 
-<!-- Scripts obligatorios de jQuery, Bootstrap y DataTables -->
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.4/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/datatables.net@1.13.7/js/jquery.dataTables.min.js"></script>
@@ -209,12 +207,11 @@ $result = mysqli_query($link, $query);
 
 <script>
 $(document).ready(function() {
-    // Inicialización de DataTables configurado a 50 registros por página por defecto
     $('#tablaFlota').DataTable({
         "pageLength": 50,
         "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "Todos"]],
         "ordering": true,
-        "order": [[0, "asc"]], // Ordenar por ID por defecto
+        "order": [[0, "asc"]],
         "language": {
             "lengthMenu": "Mostrar _MENU_ registros por página",
             "zeroRecords": "No se encontraron resultados",
@@ -231,7 +228,6 @@ $(document).ready(function() {
         }
     });
 
-    // Desvanecer el mensaje de éxito automáticamente tras 3 segundos
     setTimeout(function() {
         $('#alert-msg').fadeOut('slow');
     }, 3000);
