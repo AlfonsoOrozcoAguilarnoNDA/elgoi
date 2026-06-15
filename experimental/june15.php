@@ -3,7 +3,7 @@
 /*
 Mecanismo de control temporal de accounts por expansion
 Licencia GPL
-Experimento conjunto Gemini
+Experimento conjunto Gemini, corregido por kimi despues
 
 https://vibecodingmexico.com/gemini-como-wikipedia/
 
