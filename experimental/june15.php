@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS `sucursales_flota` (
 
 */
 // 1. Conexión y Control de Datos
-require "config.php";
+require "../config.php";
 
 // Sanitización rápida procedimental
 function safe_input($data) {
