@@ -56,22 +56,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // 3. Persistencia de Filtros en la consulta
-$filter_especial = isset($_GET['f_especial']) ? $_GET['f_especial'] : '';
 $filter_activar  = isset($_GET['f_activar']) ? $_GET['f_activar'] : '';
 $filter_plex     = isset($_GET['f_plex']) ? $_GET['f_plex'] : '';
-$filter_redimibles = isset($_GET['f_redimibles']) ? $_GET['f_redimibles'] : ''; // NUEVO FILTRO
+$filter_redimibles = isset($_GET['f_redimibles']) ? $_GET['f_redimibles'] : '';
 
 $where_clauses = [];
-if ($filter_especial !== '') {
-    $where_clauses[] = "`caso_especial` = '" . mysqli_real_escape_string($link, $filter_especial) . "'";
-}
 if ($filter_activar !== '') {
     $where_clauses[] = "`activar_hoy` = '" . mysqli_real_escape_string($link, $filter_activar) . "'";
 }
 if ($filter_plex === 'mayor_cero') {
     $where_clauses[] = "`plex` > 0";
 }
-// NUEVO: Lógica para filtrar por activos redimibles
 if ($filter_redimibles === 'con_comentario') {
     $where_clauses[] = "(`activos_redimibles` IS NOT NULL AND `activos_redimibles` != '' AND `activos_redimibles` != 'Ninguno')";
 } elseif ($filter_redimibles === 'sin_comentario') {
@@ -114,13 +109,6 @@ $result = mysqli_query($link, $query);
     <div class="card mb-4 table-card">
         <div class="card-body py-3">
             <form method="GET" action="" class="form-inline">
-                <label class="mr-2 font-weight-bold" for="f_especial">Caso Especial:</label>
-                <select name="f_especial" id="f_especial" class="form-control form-control-sm mr-4" onchange="this.form.submit()">
-                    <option value="">-- Todos --</option>
-                    <option value="SI" <?php echo ($filter_especial === 'SI') ? 'selected' : ''; ?>>SI</option>
-                    <option value="NO" <?php echo ($filter_especial === 'NO') ? 'selected' : ''; ?>>NO</option>
-                </select>
-
                 <label class="mr-2 font-weight-bold" for="f_activar">Activar Hoy:</label>
                 <select name="f_activar" id="f_activar" class="form-control form-control-sm mr-4" onchange="this.form.submit()">
                     <option value="">-- Todos --</option>
@@ -141,7 +129,7 @@ $result = mysqli_query($link, $query);
                     <option value="sin_comentario" <?php echo ($filter_redimibles === 'sin_comentario') ? 'selected' : ''; ?>>Sin comentario</option>
                 </select>
 
-                <?php if ($filter_especial !== '' || $filter_activar !== '' || $filter_plex !== '' || $filter_redimibles !== ''): ?>
+                <?php if ($filter_activar !== '' || $filter_plex !== '' || $filter_redimibles !== ''): ?>
                     <a href="<?php echo $_SERVER['PHP_SELF']; ?>" class="btn btn-sm btn-outline-danger">Limpiar Filtros</a>
                 <?php endif; ?>
             </form>
@@ -158,8 +146,7 @@ $result = mysqli_query($link, $query);
                     <th width="12%">Piloto Principal</th>
                     <th width="8%">PLEX</th>
                     <th width="10%">Activar Hoy</th>
-                    <th width="10%">Especial</th>
-                    <th width="23%">Activos (Caso Especial)</th>
+                    <th width="33%">Activos redimibles</th>
                     <th width="15%">Acción</th>
                 </tr>
             </thead>
@@ -169,6 +156,7 @@ $result = mysqli_query($link, $query);
                         <form method="POST" action="">
                             <input type="hidden" name="action" value="update_row">
                             <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+                            <input type="hidden" name="caso_especial" value="<?php echo $row['caso_especial']; ?>">
                             
                             <td class="align-middle text-center font-weight-bold text-muted"><?php echo $row['id']; ?></td>
                             <td class="align-middle text-center"><?php echo $row['numero_cuenta']; ?></td>
@@ -183,13 +171,6 @@ $result = mysqli_query($link, $query);
                                 <select name="activar_hoy" class="form-control form-control-sm">
                                     <option value="NO" <?php echo ($row['activar_hoy'] === 'NO') ? 'selected' : ''; ?>>NO</option>
                                     <option value="SI" <?php echo ($row['activar_hoy'] === 'SI') ? 'selected' : ''; ?>>SI</option>
-                                </select>
-                            </td>
-                            
-                            <td class="align-middle">
-                                <select name="caso_especial" class="form-control form-control-sm">
-                                    <option value="NO" <?php echo ($row['caso_especial'] === 'NO') ? 'selected' : ''; ?>>NO</option>
-                                    <option value="SI" <?php echo ($row['caso_especial'] === 'SI') ? 'selected' : ''; ?>>SI</option>
                                 </select>
                             </td>
                             
