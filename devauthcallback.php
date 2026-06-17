@@ -322,7 +322,7 @@ function displayCharacterInfo($tokenData) {
     $name = mysqli_real_escape_string($GLOBALS['link'], $tokenData['character_name']);
     
     echo "<div class='card mt-3'>";
-    echo "<div class='card-header bg-primary text-white'><h3>Personaje: $name (ID: $mytoonid)</h3></div>";
+    echo "<div class='card-header bg-primary text-white'><h3>Pilot: $name (ID: $mytoonid)</h3></div>";
     echo "<div class='card-body'>";
     
     // Verificar si existe en BD
@@ -336,16 +336,16 @@ function displayCharacterInfo($tokenData) {
         echo "<div class='alert alert-success'>Piloto $name guardado en BD</div>";
     } else {
         // Actualizar piloto existente
-		// we blank assets because maybe the cha have much in the past and contract to other char.
+		// we blank assets because maybe the char have much in the past and contract to other char.
         $sql = "UPDATE PILOTS SET toon_name='$name', lastsaved=NOW(),assets='',assets2='',assets3='',assets4='',assets5='' WHERE toon_number='$mytoonid'";
         list($dummy) = aValues319b($sql);
-        echo "<div class='alert alert-info'>Piloto $name actualizado en BD</div>";
+        echo "<div class='alert alert-info'>Pilot $name updated in BD</div>";
     }
     
     // Guardar token en BD
     saveTokenToDB($tokenData, $mytoonid);
     
-    echo "<h4>Actualizando datos del personaje...</h4>";
+    echo "<h4>Updating Data of the Pilot...</h4>";
     echo "<ul class='list-unstyled'>";
     
     // Usar la función genérica para obtener todos los datos
@@ -389,15 +389,15 @@ function displayCharacterInfo($tokenData) {
     echo "</div>";
     echo "<div class='card-footer text-center'>";
     $num=$mytoonid;
-    echo "<div class='alert alert-info'>Actualizando Datos Generales 1/2</div>";
+    echo "<div class='alert alert-info'>Updating General Data 1/2</div>";
     echo generales($num); // update general data
-    echo "<div class='alert alert-info'>Actualizando Datos Generales 2/2</div>";
+    echo "<div class='alert alert-info'>Updating General Data 2/2</div>";
     echo generales2($num); // update general data atributes
-    echo "<div class='alert alert-info'>Actualizando queue</div>";
+    echo "<div class='alert alert-info'>Updating queue</div>";
     charqueue($num);
-    echo "<div class='alert alert-info'>Actualizando Standings</div>";
+    echo "<div class='alert alert-info'>Updating Standings</div>";
     standings($num);
-    echo "<div class='alert alert-info'>Actualizando Skills</div>";
+    echo "<div class='alert alert-info'>Updating Skills</div>";
     charskills(); // update skills
     
     $authUrl = generateAuthUrl($GLOBALS['SCOPES']);
@@ -408,7 +408,7 @@ function displayCharacterInfo($tokenData) {
     
     $_SESSION['loading'] = $mytoonid;
     
-    // Funciones adicionales (mantenlas si las tienes)
+    // Funciones adicionales 
     updatepanelnagual();
     charskills(); // hace explotar los datos
 }
@@ -473,10 +473,8 @@ $sql="update PILOTS SET email_pilot='redrodac@gmail.com'";
   'VPS 58','VPS 59','VPS 60',
   'VPS 01'    
    )";
-
      
-  $rs= mysqli_query($link,$sql) or die("error showm - 60".mysqli_error($link));    
-
+  $rs= mysqli_query($link,$sql) or die("error showm - 60".mysqli_error($link));
   
   //die("88");    
 // updates panel nagual end
@@ -625,7 +623,7 @@ $sql="update PILOTS SET email_pilot='redrodac@gmail.com'";
                                     $tokenStatus = " ❌ Token expirado sin refresh";
                                 }
                             } else {
-                                $tokenStatus = " ✓ Token válido";
+                                $tokenStatus = " ✓ Valid Token";
                             }
                             
                             echo "<option value='{$pilot['toon_number']}'>{$pilot['toon_name']}{$tokenStatus}</option>";
@@ -633,7 +631,7 @@ $sql="update PILOTS SET email_pilot='redrodac@gmail.com'";
                         
                         echo "</select>";
                         echo "</div>";
-                        echo "<button type='submit' class='btn btn-{$borderColor}'><i class='fas fa-sync-alt'></i> Actualizar</button>";
+                        echo "<button type='submit' class='btn btn-{$borderColor}'><i class='fas fa-sync-alt'></i> Update</button>";
                         echo "</form>";
                         
                         echo "<div class='pilot-count'><i class='fas fa-user-friends'></i> {$pilotCount} piloto(s) encontrado(s)</div>";
