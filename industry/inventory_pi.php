@@ -181,8 +181,8 @@ echo crew_navbar();
                     <th>Material</th>
                     <th>Piloto</th>
                     <th class="text-center">Pocket</th>
-                    <th class="text-center">GF</th>
-                    <th class="text-right">Cantidad</th>
+                    <th class="text-center">Flag</th>
+                    <th class="text-right">Quantity</th>
                     <th class="text-center">Acc</th>
                 </tr>
             </thead>
@@ -202,7 +202,7 @@ echo crew_navbar();
                         </span>
                     </td>
                     <td class="text-white font-weight-bold"><?php echo htmlspecialchars($row['typeName']); ?></td>
-                    <td><?php echo htmlspecialchars($row['toon_name']); ?></td>
+                    <td class="text-white font-weight-bold"><?php echo htmlspecialchars($row['toon_name']); ?></td>
                     <td class="text-center">
                         <span class="pocket-badge" style="background-color:<?php echo $pb; ?>;color:<?php echo $pt; ?>;">
                             <?php echo htmlspecialchars($row['pocket6']); ?>
