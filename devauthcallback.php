@@ -108,7 +108,7 @@ function loadTokenFromDB($character_id) {
     );
     
     if (empty($access_token) || empty($refresh_token)) {
-        echo "<div class='alert alert-warning'>No hay token en BD para piloto $character_id</div>";
+        echo "<div class='alert alert-warning'>No token in Database for pilot $character_id</div>";
         return false;
     }
     
@@ -120,7 +120,7 @@ function loadTokenFromDB($character_id) {
         'expires_at' => $daterefresh
     ];
     
-    echo "<div class='alert alert-info'>Token cargado desde BD para: $char_name (ID: $character_id)</div>";
+    echo "<div class='alert alert-info'>Token loaded from Database for: $char_name (ID: $character_id)</div>";
     return $tokenData;
 }
 
