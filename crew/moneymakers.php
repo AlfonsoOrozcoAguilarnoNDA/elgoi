@@ -295,8 +295,8 @@ $resPockets = mysqli_query($link, "SELECT DISTINCT pocket6 FROM PILOTS WHERE poc
 // ==============================================================================
 // MAIN QUERY
 // ==============================================================================
-//$where = ["toon_name NOT LIKE '%VPS%'", "toon_name NOT LIKE '%CATALOG%'"];
-$where = ["toon_name NOT LIKE '%CATALOG%'"];
+$where = ["toon_name NOT LIKE '%VPS%'", "toon_name NOT LIKE '%CATALOG%'"];
+//$where = ["toon_name NOT LIKE '%CATALOG%'"];
 
 if ($filterTrade !== 'ALL') {
     $where[] = "tradefield = '" . mysqli_real_escape_string($link, $filterTrade) . "'";
