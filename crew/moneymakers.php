@@ -706,7 +706,7 @@ function getColorPocket($pocket) {
 <script>
 $(document).ready(function() {
     $('#tablaPilotos').DataTable({
-        pageLength: 100,
+        pageLength: 200,
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
         order: [[13, 'desc']], // Sort by SP descending by default
         language: {
