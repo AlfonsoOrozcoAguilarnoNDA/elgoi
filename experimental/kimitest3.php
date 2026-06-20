@@ -2,10 +2,9 @@
 /**
  * Fleet Commander - Pilot Management System with Supergroup Editing
  * Fecha: 2026-03-31 09:03
- * License GPL
  * 
  * CONFIGURACIÓN INICIAL - Siempre trabajar de esta manera
- * Simplified. Ori9ginal Kimi, simplified by command by Claude Sonnet 4.6
+ * Simplified. Original Kimi, simplified by command by Claude Sonnet 4.6 in june 20
  */
 
 session_start();
@@ -138,7 +137,9 @@ if (!empty($security_error) || !empty($integrity_error)) {
                         numitems,
                         evermarks,
                         numberfits,
-                        supergroup
+                        supergroup,
+                        current_ship,
+                        current_location
                      FROM PILOTS 
                      WHERE parent_toon_number = ? 
                      ORDER BY supergroup ASC, toon_name ASC";
@@ -904,10 +905,32 @@ function formatMillions($value) {
                         <th>Queue End</th>
                         <th><i class="fas fa-sync-alt"></i></th>
                         <th>DaysQ</th>
+                        <th>Ship</th>
+                        <th>Location</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($pilots as $pilot): ?>
+                    <?php foreach ($pilots as $pilot): 
+                        // Decodificar current_ship (JSON con slashes escapados)
+                        $ship_display = '-';
+                        if (!empty($pilot['current_ship'])) {
+                            $ship_data = json_decode(stripslashes($pilot['current_ship']), true);
+                            if (!empty($ship_data['ship_name'])) {
+                                $ship_display = $ship_data['ship_name'];
+                            }
+                        }
+                        
+                        // Decodificar current_location (JSON con slashes escapados)
+                        $location_display = '-';
+                        if (!empty($pilot['current_location'])) {
+                            $location_data = json_decode(stripslashes($pilot['current_location']), true);
+                            if (!empty($location_data['station_id'])) {
+                                $location_display = 'Station ' . $location_data['station_id'];
+                            } elseif (!empty($location_data['solar_system_id'])) {
+                                $location_display = 'System: ' . $location_data['solar_system_id'];
+                            }
+                        }
+                    ?>
                     <tr data-toon="<?php echo $pilot['toon_number']; ?>">
                         <td>
                             <div class="pilot-info-cell">
@@ -965,6 +988,10 @@ function formatMillions($value) {
                         </td>
                         
                         <td class="stat-number"><?php echo $pilot['daysq'] ?? 0; ?></td>
+                        
+                        <td><?php echo htmlspecialchars($ship_display); ?></td>
+                        
+                        <td><?php echo htmlspecialchars($location_display); ?></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
