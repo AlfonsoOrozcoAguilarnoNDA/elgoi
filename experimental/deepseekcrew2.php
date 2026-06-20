@@ -56,31 +56,6 @@ function formatMillions($value) {
     return number_format($value / 1000000, 2);
 }
 
-function getPilotStatus($lastsaved) {
-    if (empty($lastsaved) || $lastsaved === "0000-00-00 00:00:00") {
-        return ["class" => "secondary", "label" => "No Data"];
-    }
-    $last = strtotime($lastsaved);
-    $now = time();
-    $diff = ($now - $last) / 3600;
-    if ($diff < 24) {
-        return ["class" => "success", "label" => "Active"];
-    } elseif ($diff < 168) {
-        return ["class" => "warning", "label" => "Recent"];
-    } else {
-        return ["class" => "danger", "label" => "Inactive"];
-    }
-}
-
-function parseShipName($current_ship_json) {
-    if (empty($current_ship_json)) return "-";
-    $decoded = json_decode($current_ship_json, true);
-    if (json_last_error() === JSON_ERROR_NONE && isset($decoded["ship_name"])) {
-        return htmlspecialchars($decoded["ship_name"]);
-    }
-    return htmlspecialchars(substr($current_ship_json, 0, 30));
-}
-
 function verificarIntegridadFlota($conexion, $commander_id) {
     $resultado = [
         "valido" => true,
@@ -520,13 +495,6 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
         /* ============================================
            STAT CARDS
            ============================================ */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
         .stat-card {
             background: rgba(22, 27, 34, 0.8);
             border: 1px solid #30363d;
@@ -566,23 +534,6 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
         /* ============================================
            TABLES
            ============================================ */
-        .pilots-container {
-            background: rgba(22, 27, 34, 0.8);
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-            overflow-x: auto;
-        }
-
-        .pilots-container h5 {
-            color: #58a6ff;
-            margin-bottom: 15px;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
         table {
             width: 100%;
             border-collapse: collapse;
@@ -623,82 +574,14 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
         }
 
         /* ============================================
-           PILOT INFO CELL
-           ============================================ */
-        .pilot-info-cell {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .pilot-portrait {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid #30363d;
-            object-fit: cover;
-        }
-
-        .pilot-name {
-            font-weight: 600;
-            color: #c9d1d9;
-            font-size: 13px;
-        }
-
-        .pilot-number {
-            font-size: 10px;
-            color: #6e7681;
-            font-family: 'Courier New', monospace;
-        }
-
-        /* ============================================
            BADGES & STATUS
            ============================================ */
-        .pocket-status {
-            padding: 3px 10px;
-            border-radius: 10px;
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            display: inline-block;
-        }
-
-        .pocket-clean {
-            background: rgba(63, 185, 80, 0.15);
-            color: #3fb950;
-        }
-
-        .pocket-warning {
-            background: rgba(210, 153, 34, 0.15);
-            color: #d29922;
-        }
-
-        .pocket-danger {
-            background: rgba(248, 81, 73, 0.15);
-            color: #f85149;
-        }
-
-        .pocket-secondary {
-            background: rgba(139, 148, 158, 0.15);
-            color: #8b949e;
-        }
-
         .badge {
             padding: 3px 10px;
             border-radius: 10px;
             font-size: 10px;
             font-weight: 600;
             display: inline-block;
-        }
-
-        .badge-omega {
-            background: rgba(255, 107, 107, 0.2);
-            color: #ff6b6b;
-        }
-
-        .badge-alpha {
-            background: rgba(78, 205, 196, 0.2);
-            color: #4ecdc4;
         }
 
         .badge-primary {
@@ -710,42 +593,6 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
             background: rgba(63, 185, 80, 0.2);
             color: #3fb950;
         }
-
-        .security-high { color: #3fb950; font-weight: 600; font-family: 'Courier New', monospace; }
-        .security-medium { color: #d29922; font-weight: 600; font-family: 'Courier New', monospace; }
-        .security-low { color: #f85149; font-weight: 600; font-family: 'Courier New', monospace; }
-
-        .sp-value {
-            font-family: 'Courier New', monospace;
-            color: #7ee787;
-            font-weight: 600;
-            font-size: 12px;
-        }
-
-        .wallet-value {
-            font-family: 'Courier New', monospace;
-            color: #3fb950;
-            font-weight: 600;
-            font-size: 12px;
-        }
-
-        .ship-name-cell {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            color: #a371f7;
-            font-weight: 600;
-        }
-
-        .stat-number {
-            font-family: 'Courier New', monospace;
-            font-weight: 600;
-            font-size: 12px;
-        }
-
-        .stat-good { color: #3fb950; }
-        .stat-warning { color: #d29922; }
-        .stat-danger { color: #f85149; }
-        .stat-inactive { color: #484f58; }
 
         .race-icon {
             width: 12px;
@@ -915,41 +762,28 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
             margin: 0 -10px;
         }
 
-        .col-md-3, .col-md-4, .col-md-6, .col-md-12 {
+        .col-md-3, .col-md-6, .col-md-12 {
             padding: 0 10px;
             margin-bottom: 20px;
         }
 
         .col-md-3 { flex: 0 0 25%; max-width: 25%; }
-        .col-md-4 { flex: 0 0 33.333%; max-width: 33.333%; }
         .col-md-6 { flex: 0 0 50%; max-width: 50%; }
         .col-md-12 { flex: 0 0 100%; max-width: 100%; }
 
         @media (max-width: 992px) {
-            .col-md-3, .col-md-4, .col-md-6 { flex: 0 0 50%; max-width: 50%; }
+            .col-md-3, .col-md-6 { flex: 0 0 50%; max-width: 50%; }
         }
 
         @media (max-width: 768px) {
-            .col-md-3, .col-md-4, .col-md-6, .col-md-12 { flex: 0 0 100%; max-width: 100%; }
+            .col-md-3, .col-md-6, .col-md-12 { flex: 0 0 100%; max-width: 100%; }
             .page-header { flex-direction: column; align-items: flex-start; }
         }
 
         .text-center { text-align: center; }
-        .text-white { color: #c9d1d9; }
-        .text-white-50 { color: #8b949e; }
-        .text-muted { color: #6e7681; }
-        .mb-0 { margin-bottom: 0; }
-        .mb-2 { margin-bottom: 8px; }
-        .mb-3 { margin-bottom: 15px; }
         .mb-4 { margin-bottom: 25px; }
         .mt-3 { margin-top: 15px; }
-        .p-3 { padding: 15px; }
-        .p-4 { padding: 25px; }
-        .d-flex { display: flex; }
-        .justify-content-between { justify-content: space-between; }
-        .align-items-center { align-items: center; }
         .ml-2 { margin-left: 8px; }
-        .gap-12 { gap: 12px; }
 
         /* Chart.js dark theme overrides */
         canvas {
