@@ -1,15 +1,15 @@
 <?php
 /**
  * Fleet Commander - Pilot Management System with Supergroup Editing
- * Fecha: 2026-03-31 09:03
+ * Date: 2026-03-31 09:03
  * 
- * CONFIGURACIÓN INICIAL - Siempre trabajar de esta manera
+ * INITIAL CONFIGURATION - Always work this way
  */
 
 session_start();
 
 // ============================================
-// VERIFICACIÓN DE SESIÓN
+// SESSION VERIFICATION
 // ============================================
 if (!isset($_SESSION['is_authenticated']) || $_SESSION['is_authenticated'] !== true) {
     header('Location: fleet_login.php');
@@ -17,13 +17,13 @@ if (!isset($_SESSION['is_authenticated']) || $_SESSION['is_authenticated'] !== t
 }
 
 // ============================================
-// INCLUIR CONFIGURACIÓN DE BD
+// INCLUDE DB CONFIGURATION
 // ============================================
 require_once '../config.php';
-// Asume que $link ya está disponible como conexión MySQLi
+// Assumes $link is already available as a MySQLi connection
 
 // ============================================
-// VERIFICAR Y CREAR CAMPO supergroup SI NO EXISTE
+// VERIFY AND CREATE supergroup FIELD IF IT DOES NOT EXIST
 // ============================================
 $check_column = mysqli_query($link, "SHOW COLUMNS FROM PILOTS LIKE 'supergroup'");
 if (mysqli_num_rows($check_column) == 0) {
@@ -32,7 +32,7 @@ if (mysqli_num_rows($check_column) == 0) {
 }
 
 // ============================================
-// PROCESAR ACTUALIZACIÓN AJAX DE SUPERGROUP
+// PROCESS AJAX SUPERGROUP UPDATE
 // ============================================
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_supergroup') {
     header('Content-Type: application/json');
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $toon_number = intval($_POST['toon_number'] ?? 0);
     $new_supergroup = intval($_POST['supergroup'] ?? 1);
     
-    // Verificar que el piloto pertenezca a este commander
+    // Verify that the pilot belongs to this commander
     $verify_query = "SELECT parent_toon_number FROM PILOTS WHERE toon_number = ? LIMIT 1";
     $verify_stmt = mysqli_prepare($link, $verify_query);
     mysqli_stmt_bind_param($verify_stmt, "i", $toon_number);
@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // ============================================
-// VALIDACIÓN DE SEGURIDAD 1: Verificar otros Fleet Commanders
+// SECURITY VALIDATION 1: Check other Fleet Commanders
 // ============================================
 $fc_check_query = "SELECT fleet_commander_number, pilot_name, character_id 
                    FROM fleet_commanders 
@@ -84,7 +84,7 @@ if (mysqli_num_rows($fc_result) > 0) {
 }
 
 // ============================================
-// VALIDACIÓN DE SEGURIDAD 2: Verificar integridad de pilotos
+// SECURITY VALIDATION 2: Verify pilot integrity
 // ============================================
 $integrity_error = '';
 if (empty($security_error)) {
@@ -106,7 +106,7 @@ if (empty($security_error)) {
 }
 
 // ============================================
-// SI HAY ERRORES DE SEGURIDAD, DETENER
+// IF THERE ARE SECURITY ERRORS, STOP
 // ============================================
 if (!empty($security_error) || !empty($integrity_error)) {
     $error_message = !empty($security_error) ? $security_error : $integrity_error;
@@ -114,7 +114,7 @@ if (!empty($security_error) || !empty($integrity_error)) {
     $pilots = [];
 } else {
     // ============================================
-    // OBTENER PILOTOS DEL FLEET COMMANDER
+    // GET PILOTS FOR THE FLEET COMMANDER
     // ============================================
     $show_data = true;
     $pilots_query = "SELECT 
@@ -152,19 +152,19 @@ if (!empty($security_error) || !empty($integrity_error)) {
     $pilots_result = mysqli_stmt_get_result($pilot_stmt);
     
     $pilots = [];
-    $supergroups = []; // Para el filtro de DataTables
+    $supergroups = []; // For DataTables filter
     
     while ($row = mysqli_fetch_assoc($pilots_result)) {
         $pilots[] = $row;
         $supergroups[$row['supergroup']] = true;
     }
     
-    // Ordenar supergroups para el select
+    // Sort supergroups for the select
     ksort($supergroups);
 }
 
 // ============================================
-// PROCESAR LOGOUT CON CONFIRMACIÓN
+// PROCESS LOGOUT WITH CONFIRMATION
 // ============================================
 if (isset($_GET['logout']) && $_GET['logout'] === 'confirm') {
     session_destroy();
@@ -173,7 +173,7 @@ if (isset($_GET['logout']) && $_GET['logout'] === 'confirm') {
 }
 
 // ============================================
-// FUNCIONES AUXILIARES
+// HELPER FUNCTIONS
 // ============================================
 function formatMillions($value) {
     if (empty($value)) return '0.00';
@@ -182,17 +182,17 @@ function formatMillions($value) {
 
 function getPilotStatus($lastsaved) {
     if (empty($lastsaved) || $lastsaved === '0000-00-00 00:00:00') {
-        return ['class' => 'secondary', 'label' => 'Sin Datos'];
+        return ['class' => 'secondary', 'label' => 'No Data'];
     }
     $last = strtotime($lastsaved);
     $now = time();
     $diff = ($now - $last) / 3600;
     if ($diff < 24) {
-        return ['class' => 'success', 'label' => 'Activo'];
+        return ['class' => 'success', 'label' => 'Active'];
     } elseif ($diff < 168) {
-        return ['class' => 'warning', 'label' => 'Reciente'];
+        return ['class' => 'warning', 'label' => 'Recent'];
     } else {
-        return ['class' => 'danger', 'label' => 'Inactivo'];
+        return ['class' => 'danger', 'label' => 'Inactive'];
     }
 }
 
@@ -220,99 +220,12 @@ function getPilotStatus($lastsaved) {
             background: linear-gradient(135deg, #0a0e1a 0%, #1a1f2e 50%, #0d1117 100%);
             min-height: 100vh;
             color: #c9d1d9;
-            padding-top: 120px;
-            padding-bottom: 60px;
+            padding-top: 20px;
+            padding-bottom: 20px;
         }
         
         /* ============================================
-           BARRAS DE NAVEGACIÓN FIJAS
-           ============================================ */
-        .nav-bar {
-            position: fixed;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(22, 27, 34, 0.98);
-            border-bottom: 1px solid #30363d;
-            backdrop-filter: blur(10px);
-        }
-        
-        .nav-bar-top {
-            top: 0;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 30px;
-        }
-        
-        .nav-bar-bottom {
-            top: 60px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            padding: 0 30px;
-            background: rgba(13, 17, 23, 0.95);
-        }
-        
-        .logo {
-            color: #58a6ff;
-            font-size: 20px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        
-        .nav-links {
-            display: flex;
-            gap: 25px;
-        }
-        
-        .nav-links a {
-            color: #8b949e;
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.3s ease;
-        }
-        
-        .nav-links a:hover, .nav-links a.active {
-            color: #58a6ff;
-        }
-        
-        .nav-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        
-        .pilot-badge {
-            background: rgba(88, 166, 255, 0.15);
-            border: 1px solid #58a6ff;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            color: #58a6ff;
-        }
-        
-        .logout-btn {
-            background: linear-gradient(135deg, #da3633 0%, #b62318 100%);
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .logout-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(218, 54, 51, 0.4);
-        }
-        
-        /* ============================================
-           CONTENIDO PRINCIPAL
+           MAIN CONTENT
            ============================================ */
         .main-content {
             max-width: 1600px;
@@ -368,7 +281,7 @@ function getPilotStatus($lastsaved) {
         }
         
         /* ============================================
-           ALERTAS DE SEGURIDAD
+           SECURITY ALERTS
            ============================================ */
         .security-alert {
             background: rgba(248, 81, 73, 0.15);
@@ -466,7 +379,7 @@ function getPilotStatus($lastsaved) {
             background: rgba(48, 54, 61, 0.3);
         }
         
-        /* Paginación */
+        /* Pagination */
         .dataTables_paginate .paginate_button {
             background: rgba(48, 54, 61, 0.5) !important;
             border: 1px solid #30363d !important;
@@ -488,7 +401,7 @@ function getPilotStatus($lastsaved) {
         }
         
         /* ============================================
-           CELDAS ESPECÍFICAS
+           SPECIFIC CELLS
            ============================================ */
         .pilot-info-cell {
             display: flex;
@@ -633,7 +546,7 @@ function getPilotStatus($lastsaved) {
         }
         
         /* ============================================
-           SUPERGROUP EDITABLE
+           EDITABLE SUPERGROUP
            ============================================ */
         .supergroup-cell {
             position: relative;
@@ -732,34 +645,6 @@ function getPilotStatus($lastsaved) {
         }
         
         /* ============================================
-           FOOTER
-           ============================================ */
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 50px;
-            background: rgba(13, 17, 23, 0.98);
-            border-top: 1px solid #30363d;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 30px;
-            font-size: 12px;
-            color: #6e7681;
-        }
-        
-        .footer-left {
-            display: flex;
-            gap: 20px;
-        }
-        
-        .footer-right {
-            color: #484f58;
-        }
-        
-        /* ============================================
            MODAL
            ============================================ */
         .modal-overlay {
@@ -826,7 +711,7 @@ function getPilotStatus($lastsaved) {
         /* Toast notification */
         .toast {
             position: fixed;
-            top: 140px;
+            top: 20px;
             right: 30px;
             background: rgba(35, 134, 54, 0.95);
             color: white;
@@ -861,39 +746,9 @@ function getPilotStatus($lastsaved) {
     </style>
 </head>
 <body>
-    <!-- ============================================
-         BARRA DE NAVEGACIÓN SUPERIOR
-         ============================================ -->
-    <nav class="nav-bar nav-bar-top">
-        <div class="logo">⚡ Fleet Commander</div>
-        <div class="nav-links">
-            <a href="mosaic.php">Dashboard</a>
-            <a href="pilots.php" class="active">Pilots</a>
-            <a href="#">Fleet</a>
-            <a href="#">Settings</a>
-        </div>
-        <div class="nav-info">
-            <span class="pilot-badge">
-                <?php echo htmlspecialchars($_SESSION['pilot_name'] ?? 'Unknown'); ?>
-            </span>
-            <button class="logout-btn" onclick="showLogoutModal()">Logout</button>
-        </div>
-    </nav>
     
     <!-- ============================================
-         BARRA DE NAVEGACIÓN INFERIOR
-         ============================================ -->
-    <nav class="nav-bar nav-bar-bottom">
-        <div class="nav-links">
-            <a href="#" class="active">All Pilots</a>
-            <a href="#">Active</a>
-            <a href="#">Training</a>
-            <a href="#">Industry</a>
-        </div>
-    </nav>
-    
-    <!-- ============================================
-         CONTENIDO PRINCIPAL
+         MAIN CONTENT
          ============================================ -->
     <main class="main-content">
         
@@ -929,13 +784,13 @@ function getPilotStatus($lastsaved) {
                         <th>DaysQ</th>
                         <th>Ship</th>
                         <th>Location</th>
-                        <th>Estado</th>
+                        <th>Status</th>
                         <th>Pocket6</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($pilots as $pilot): 
-                        // Decodificar current_ship (JSON con slashes escapados)
+                        // Decode current_ship (JSON with escaped slashes)
                         $ship_display = '-';
                         if (!empty($pilot['current_ship'])) {
                             $ship_data = json_decode(stripslashes($pilot['current_ship']), true);
@@ -944,7 +799,7 @@ function getPilotStatus($lastsaved) {
                             }
                         }
                         
-                        // Decodificar current_location (JSON con slashes escapados)
+                        // Decode current_location (JSON with escaped slashes)
                         $location_display = '-';
                         if (!empty($pilot['current_location'])) {
                             $location_data = json_decode(stripslashes($pilot['current_location']), true);
@@ -955,7 +810,7 @@ function getPilotStatus($lastsaved) {
                             }
                         }
                         
-                        // Estado del piloto segun lastsaved
+                        // Pilot status based on lastsaved
                         $status = getPilotStatus($pilot['lastsaved'] ?? null);
                         
                         // Pocket6
@@ -975,7 +830,7 @@ function getPilotStatus($lastsaved) {
                             </div>
                         </td>
                         
-                        <!-- SUPERGROUP EDITABLE -->
+                        <!-- EDITABLE SUPERGROUP -->
                         <td class="supergroup-cell">
                             <div class="supergroup-display" onclick="editSupergroup(<?php echo $pilot['toon_number']; ?>)">
                                 <span class="supergroup-value" id="sg-value-<?php echo $pilot['toon_number']; ?>">
@@ -1046,34 +901,6 @@ function getPilotStatus($lastsaved) {
     </main>
     
     <!-- ============================================
-         FOOTER
-         ============================================ -->
-    <footer class="footer">
-
-            <div class="col-4 text-left footer-left">
-                <span class="text-white-50 small ml-3">
-                  <span>Fleet Commander System</span>
-            <span>|</span>
-            <span>FC: <?php echo htmlspecialchars($_SESSION['fleet_commander_number'] ?? 'N/A'); ?></span>
-            <span>|</span>
-            <span>Pilots: <?php echo count($pilots); ?></span>
-                </span>
-            </div>
-            <div class="col-4 text-center">
-                <div class="btn-group">
-                    <a href="mosaic.php" class="btn btn-link text-white p-2" title="Mosaic"><i class="fas fa-th-large"></i></a>
-                    <a href="<?php echo basename(__FILE__); ?>" class="btn btn-link text-white p-2" title="Pilotos"><i class="fas fa-user-astronaut"></i></a>
-                    <a href="#" class="btn btn-link text-white p-2" title="Buscar"><i class="fas fa-search"></i></a>
-                    <a href="#" class="btn btn-link text-white p-2" title="Configuracion"><i class="fas fa-cog"></i></a>
-                    <a href="#" class="btn btn-link text-white p-2" title="Exportar"><i class="fas fa-file-export"></i></a></i></a>
-                </div>
-            </div>
-            <div class="col-4 text-right footer-right">
-                <span class="text-muted small mr-3">v1.0.3 | <?php echo date("H:i"); ?> EVE</span>
-            </div>        
-    </footer>
-    
-    <!-- ============================================
          MODAL LOGOUT
          ============================================ -->
     <div class="modal-overlay" id="logoutModal">
@@ -1103,10 +930,10 @@ function getPilotStatus($lastsaved) {
         let editingToon = null;
         
         $(document).ready(function() {
-            // Inicializar DataTable
+            // Initialize DataTable
             table = $('#pilotsTable').DataTable({
                 pageLength: 200,
-                order: [[1, 'asc']], // Ordenar por supergroup por defecto
+                order: [[1, 'asc']], // Sort by supergroup by default
                 language: {
                     search: "Search pilots:",
                     lengthMenu: "Show _MENU_ pilots per page",
@@ -1119,11 +946,11 @@ function getPilotStatus($lastsaved) {
                     }
                 },
                 columnDefs: [
-                    { orderable: false, targets: [4] }, // Icono Update no ordenable
-                    { width: "120px", targets: 1 } // Ancho fijo para supergroup
+                    { orderable: false, targets: [4] }, // Update icon not sortable
+                    { width: "120px", targets: 1 } // Fixed width for supergroup
                 ],
                 initComplete: function() {
-                    // Filtro personalizado por supergroup
+                    // Custom filter by supergroup
                     this.api().columns(1).every(function() {
                         var column = this;
                         var select = $('<select class="supergroup-filter"><option value="">All Groups</option></select>')
@@ -1133,7 +960,7 @@ function getPilotStatus($lastsaved) {
                                 column.search(val ? '^' + val + '$' : '', true, false).draw();
                             });
                         
-                        // Obtener valores únicos de supergroup
+                        // Get unique supergroup values
                         column.data().unique().sort().each(function(d, j) {
                             var val = $(d).find('.supergroup-value').text().trim();
                             if (val) {
@@ -1146,21 +973,21 @@ function getPilotStatus($lastsaved) {
         });
         
         // ============================================
-        // EDICIÓN DE SUPERGROUP
+        // SUPERGROUP EDITING
         // ============================================
         function editSupergroup(toonNumber) {
-            // Cancelar edición anterior si existe
+            // Cancel previous edit if any
             if (editingToon && editingToon !== toonNumber) {
                 cancelEdit(editingToon);
             }
             
             editingToon = toonNumber;
             
-            // Ocultar display, mostrar form
+            // Hide display, show form
             document.getElementById('sg-value-' + toonNumber).parentElement.style.display = 'none';
             document.getElementById('sg-form-' + toonNumber).classList.add('active');
             
-            // Focus en el input
+            // Focus on input
             var input = document.getElementById('sg-input-' + toonNumber);
             input.focus();
             input.select();
@@ -1183,17 +1010,17 @@ function getPilotStatus($lastsaved) {
         function saveSupergroup(toonNumber) {
             var newValue = document.getElementById('sg-input-' + toonNumber).value;
             
-            // Validar
+            // Validate
             if (newValue < 1 || newValue > 999) {
                 showToast('Supergroup must be between 1 and 999', true);
                 return;
             }
             
-            // Mostrar indicador de guardado
+            // Show saving indicator
             var form = document.getElementById('sg-form-' + toonNumber);
             form.innerHTML = '<span class="sg-saving"><i class="fas fa-spinner fa-spin"></i> Saving...</span>';
             
-            // Enviar AJAX
+            // Send AJAX
             $.ajax({
                 url: window.location.href,
                 method: 'POST',
@@ -1204,10 +1031,10 @@ function getPilotStatus($lastsaved) {
                 },
                 success: function(response) {
                     if (response.success) {
-                        // Actualizar valor mostrado
+                        // Update displayed value
                         document.getElementById('sg-value-' + toonNumber).textContent = newValue;
                         
-                        // Restaurar form para próxima vez
+                        // Restore form for next time
                         form.innerHTML = `
                             <input type="number" class="supergroup-input" id="sg-input-${toonNumber}" 
                                    value="${newValue}" min="1" max="999" 
@@ -1223,7 +1050,7 @@ function getPilotStatus($lastsaved) {
                         cancelEdit(toonNumber);
                         showToast('Supergroup updated successfully');
                         
-                        // Redibujar tabla para reordenar
+                        // Redraw table to reorder
                         table.draw();
                     } else {
                         showToast(response.message || 'Error updating supergroup', true);
@@ -1238,7 +1065,7 @@ function getPilotStatus($lastsaved) {
         }
         
         // ============================================
-        // UTILIDADES
+        // UTILITIES
         // ============================================
         function showToast(message, isError = false) {
             var toast = document.getElementById('toast');
@@ -1254,7 +1081,7 @@ function getPilotStatus($lastsaved) {
         
         function updatePilot(toonNumber) {
             showToast('Updating pilot ' + toonNumber + '... (ESI integration pending)');
-            // Aquí iría la llamada ESI para actualizar datos del piloto
+            // ESI call to update pilot data would go here
         }
         
         function refreshTable() {
@@ -1269,12 +1096,12 @@ function getPilotStatus($lastsaved) {
             document.getElementById('logoutModal').classList.remove('active');
         }
         
-        // Cerrar modal al hacer clic fuera
+        // Close modal when clicking outside
         document.getElementById('logoutModal').addEventListener('click', function(e) {
             if (e.target === this) hideLogoutModal();
         });
         
-        // Cerrar con ESC
+        // Close with ESC
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 hideLogoutModal();
