@@ -55,8 +55,7 @@ $tiles = [
     
     showTile("updater.php", "fa-satellite-dish", "dark"),
     showTile("industry/inventory_pi.php", "fa-layer-group", "secondary"),    
-    showTile("industry/minerals_bpo_bpc.php", "fa-gem", "warning"),
-	showTile("experimental/unsafe_station.php", "fa-truck-loading", "danger"),
+    showTile("industry/minerals_bpo_bpc.php", "fa-gem", "warning"),	
     showTile("industry/jobs.php", "fa-industry", "info"),    
     showTile("specific/ships_and_5m.php", "fa-id-badge", "secondary"),  
     //showTile("combat/pvp.php", "fa-crosshairs", "danger")    
@@ -66,6 +65,7 @@ $tiles = [
 $tiles2 = [		
 	showTile("adminer-5.4.2-mysql-en.php", "fa-database", "dark"),
 	showTile("crew/longtermplan.php", "fa-map", "primary"),
+	showTile("experimental/unsafe_station.php", "fa-truck-loading", "danger"),
 	showTile("industry/slots.php", "fa-industry", "info"),
 	showTile("industry/ammo.php", "fa-industry", "info"),
 	showTile("industry/calc_p1.php", "fa-calculator", "info"),	
