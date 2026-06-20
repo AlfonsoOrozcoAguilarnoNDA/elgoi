@@ -56,6 +56,7 @@ $tiles = [
     showTile("updater.php", "fa-satellite-dish", "dark"),
     showTile("industry/inventory_pi.php", "fa-layer-group", "secondary"),    
     showTile("industry/minerals_bpo_bpc.php", "fa-gem", "warning"),
+	showTile("experimental/unsafe_station.php", "fa-truck-loading", "danger"),
     showTile("industry/jobs.php", "fa-industry", "info"),    
     showTile("specific/ships_and_5m.php", "fa-id-badge", "secondary"),  
     //showTile("combat/pvp.php", "fa-crosshairs", "danger")    
