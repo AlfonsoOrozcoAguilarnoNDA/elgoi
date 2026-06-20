@@ -1057,7 +1057,7 @@ function getPilotStatus($lastsaved) {
             <span>Pilots: <?php echo count($pilots); ?></span>
         </div>
         <div class="footer-right">
-            EVE Online ESI Integration • v1.0
+                <span class="text-muted small mr-3">v1.0.3 | <?php echo date("H:i"); ?> </span>
         </div>
     </footer>
     
