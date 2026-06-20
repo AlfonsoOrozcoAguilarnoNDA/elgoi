@@ -69,6 +69,7 @@ $tiles2 = [
 	showTile("industry/ammo.php", "fa-industry", "info"),
 	showTile("industry/calc_p1.php", "fa-calculator", "info"),	
 	showTile("experimental/whereare.php", "fa-globe", "success"),
+	showTile("experimental/newpanels.php", "fa-users", "info"),	
     showTile("experimental/thesix.php", "fa-users", "primary"),	
     showTile("logistics/hauling.php", "fa-truck", "secondary")    
 ];
