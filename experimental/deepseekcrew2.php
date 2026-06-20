@@ -1348,7 +1348,7 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
                                 <div>
                                     <span class="race-icon race-<?php echo strtolower($top["race"] ?? "minmatar"); ?>"></span>
                                     <strong><?php echo htmlspecialchars($top["toon_name"]); ?></strong>
-                                    <small class="ml-2">(#<?php echo $top["toon_number"; ?>)</small>
+                                    <small class="ml-2">(#<?php echo $top["toon_number"]; ?>)</small>
                                 </div>
                                 <span class="badge badge-primary"><?php echo number_format($top["skillpoints"] / 1000000, 1); ?>M SP</span>
                             </div>
