@@ -1048,9 +1048,8 @@ function getPilotStatus($lastsaved) {
     <!-- ============================================
          FOOTER
          ============================================ -->
-    <footer class="footer">        
+    <footer class="footer">
 
-<div class="container-fluid">
             <div class="col-4 text-left footer-left">
                 <span class="text-white-50 small ml-3">
                   <span>Fleet Commander System</span>
@@ -1070,8 +1069,7 @@ function getPilotStatus($lastsaved) {
             </div>
             <div class="col-4 text-right footer-right">
                 <span class="text-muted small mr-3">v1.0.3 | <?php echo date("H:i"); ?> EVE</span>
-            </div>
-        </div>        
+            </div>        
     </footer>
     
     <!-- ============================================
