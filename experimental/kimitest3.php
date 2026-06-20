@@ -218,35 +218,6 @@ function getPilotStatus($lastsaved) {
             font-size: 14px;
         }
         
-        .header-actions {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #238636 0%, #1a6328 100%);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(35, 134, 54, 0.4);
-        }
-        
         /* ============================================
            SECURITY ALERTS
            ============================================ */
@@ -396,26 +367,6 @@ function getPilotStatus($lastsaved) {
             font-family: 'Courier New', monospace;
         }
         
-        .profession {
-            background: rgba(88, 166, 255, 0.15);
-            color: #58a6ff;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            font-weight: 500;
-            display: inline-block;
-        }
-        
-        .security-status {
-            font-weight: 600;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
-        
-        .security-high { color: #3fb950; }
-        .security-medium { color: #d29922; }
-        .security-low { color: #f85149; }
-        
         .sp-value {
             font-family: 'Courier New', monospace;
             color: #7ee787;
@@ -428,43 +379,10 @@ function getPilotStatus($lastsaved) {
             color: #d29922;
         }
         
-        .acctype {
-            background: rgba(139, 148, 158, 0.15);
-            color: #8b949e;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            text-transform: uppercase;
-        }
-        
         .queue-finish {
             font-family: 'Courier New', monospace;
             font-size: 11px;
             color: #a371f7;
-        }
-        
-        .wallet {
-            font-family: 'Courier New', monospace;
-            color: #3fb950;
-            font-weight: 600;
-            font-size: 12px;
-        }
-        
-        .status-icon {
-            font-size: 16px;
-        }
-        
-        .status-active { color: #3fb950; }
-        .status-inactive { color: #484f58; }
-        .status-training { color: #a371f7; }
-        .status-update { 
-            color: #58a6ff; 
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-        
-        .status-update:hover {
-            transform: rotate(180deg);
         }
         
         .stat-number {
@@ -473,10 +391,20 @@ function getPilotStatus($lastsaved) {
             font-size: 12px;
         }
         
-        .stat-good { color: #3fb950; }
-        .stat-warning { color: #d29922; }
-        .stat-danger { color: #f85149; }
-        .stat-inactive { color: #484f58; }
+        .status-icon {
+            font-size: 16px;
+        }
+        
+        .status-update {
+            color: #58a6ff;
+            display: inline-block;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .status-update:hover {
+            transform: rotate(180deg);
+        }
         
         .pocket-status {
             padding: 3px 8px;
@@ -504,12 +432,6 @@ function getPilotStatus($lastsaved) {
         .pocket-secondary {
             background: rgba(139, 148, 158, 0.15);
             color: #8b949e;
-        }
-        
-        .evermarks {
-            color: #a371f7;
-            font-weight: 600;
-            font-size: 12px;
         }
         
         /* ============================================
@@ -544,106 +466,6 @@ function getPilotStatus($lastsaved) {
             color: #8b949e;
             font-size: 11px;
         }
-        
-        /* ============================================
-           MODAL
-           ============================================ */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .modal-overlay.active {
-            display: flex;
-        }
-        
-        .modal {
-            background: rgba(22, 27, 34, 0.98);
-            border: 1px solid #30363d;
-            border-radius: 12px;
-            padding: 30px;
-            max-width: 400px;
-            text-align: center;
-        }
-        
-        .modal h3 {
-            color: #f85149;
-            margin-bottom: 15px;
-        }
-        
-        .modal p {
-            color: #8b949e;
-            margin-bottom: 25px;
-        }
-        
-        .modal-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-        
-        .modal-btn {
-            padding: 10px 25px;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        
-        .modal-btn.confirm {
-            background: #da3633;
-            color: white;
-        }
-        
-        .modal-btn.cancel {
-            background: #30363d;
-            color: #c9d1d9;
-        }
-        
-        /* Toast notification */
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 30px;
-            background: rgba(35, 134, 54, 0.95);
-            color: white;
-            padding: 15px 25px;
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            display: none;
-            align-items: center;
-            gap: 10px;
-            z-index: 3000;
-            animation: slideIn 0.3s ease;
-        }
-        
-        .toast.show {
-            display: flex;
-        }
-        
-        .toast.error {
-            background: rgba(218, 54, 51, 0.95);
-        }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
     </style>
 </head>
 <body>
@@ -657,11 +479,6 @@ function getPilotStatus($lastsaved) {
             <div>
                 <h1><i class="fas fa-users"></i> Pilot Management</h1>
                 <p>Manage your fleet pilots and their supergroups</p>
-            </div>
-            <div class="header-actions">
-                <button class="btn btn-primary" onclick="refreshTable()">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
             </div>
         </div>
         
@@ -681,11 +498,11 @@ function getPilotStatus($lastsaved) {
                         <th>Supergroup</th>
                         <th>SP (M)</th>
                         <th>Queue End</th>
-                        <th><i class="fas fa-sync-alt"></i></th>
                         <th>DaysQ</th>
                         <th>Ship / Location</th>
                         <th>Status</th>
                         <th>Pocket6</th>
+                        <th><i class="fas fa-sync-alt"></i></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -746,12 +563,6 @@ function getPilotStatus($lastsaved) {
                             <?php echo !empty($pilot['finishqueue']) ? date('Y-m-d H:i', strtotime($pilot['finishqueue'])) : '<span style="color:#484f58">-</span>'; ?>
                         </td>
                         
-                        <td class="status-icon">
-                            <i class="fas fa-sync-alt status-update" 
-                               title="Update pilot data"
-                               onclick="updatePilot(<?php echo $pilot['toon_number']; ?>)"></i>
-                        </td>
-                        
                         <td class="stat-number"><?php echo $pilot['daysq'] ?? 0; ?></td>
                         
                         <!-- SHIP / LOCATION (MERGED) -->
@@ -773,6 +584,15 @@ function getPilotStatus($lastsaved) {
                             <span class="pocket-status pocket-clean">CLEAN</span>
                             <?php endif; ?>
                         </td>
+                        
+                        <td class="status-icon">
+                            <a href="../devauthcallback.php?pilot_id=<?php echo $pilot['toon_number']; ?>" 
+                               target="_blank" 
+                               title="Update pilot data"
+                               class="status-update">
+                                <i class="fas fa-sync-alt"></i>
+                            </a>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -781,26 +601,6 @@ function getPilotStatus($lastsaved) {
         <?php endif; ?>
         
     </main>
-    
-    <!-- ============================================
-         MODAL LOGOUT
-         ============================================ -->
-    <div class="modal-overlay" id="logoutModal">
-        <div class="modal">
-            <h3><i class="fas fa-sign-out-alt"></i> Confirm Logout</h3>
-            <p>Are you sure you want to logout?</p>
-            <div class="modal-buttons">
-                <button class="modal-btn cancel" onclick="hideLogoutModal()">Cancel</button>
-                <a href="?logout=confirm" class="modal-btn confirm" style="text-decoration:none">Yes, Logout</a>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Toast Notification -->
-    <div class="toast" id="toast">
-        <i class="fas fa-check-circle"></i>
-        <span id="toast-message">Operation successful</span>
-    </div>
     
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -825,8 +625,8 @@ function getPilotStatus($lastsaved) {
                     }
                 },
                 columnDefs: [
-                    { orderable: false, targets: [4] }, // Update icon not sortable
-                    { width: "120px", targets: 1 } // Fixed width for supergroup
+                    { width: "120px", targets: 1 }, // Fixed width for supergroup
+                    { orderable: false, targets: [8] } // Link icon not sortable
                 ],
                 initComplete: function() {
                     // Custom filter by supergroup
@@ -850,50 +650,6 @@ function getPilotStatus($lastsaved) {
                 }
             });
         });
-        
-        // ============================================
-        // UTILITIES
-        // ============================================
-        function showToast(message, isError = false) {
-            var toast = document.getElementById('toast');
-            var toastMessage = document.getElementById('toast-message');
-            
-            toastMessage.textContent = message;
-            toast.className = 'toast show' + (isError ? ' error' : '');
-            
-            setTimeout(function() {
-                toast.classList.remove('show');
-            }, 3000);
-        }
-        
-        function updatePilot(toonNumber) {
-            showToast('Updating pilot ' + toonNumber + '... (ESI integration pending)');
-            // ESI call to update pilot data would go here
-        }
-        
-        function refreshTable() {
-            location.reload();
-        }
-        
-        function showLogoutModal() {
-            document.getElementById('logoutModal').classList.add('active');
-        }
-        
-        function hideLogoutModal() {
-            document.getElementById('logoutModal').classList.remove('active');
-        }
-        
-        // Close modal when clicking outside
-        document.getElementById('logoutModal').addEventListener('click', function(e) {
-            if (e.target === this) hideLogoutModal();
-        });
-        
-        // Close with ESC
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                hideLogoutModal();
-            }
-        });
     </script>
 </body>
-</html>    
+</html>
