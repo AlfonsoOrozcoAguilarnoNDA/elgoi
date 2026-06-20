@@ -1,11 +1,11 @@
 <?php
 // License GPL
 // Alfonso Orozco Aguilar
-// Control iun the database the  accounts of Eve Online. Experimental, can be erased in any moment
+// Control in the database the  accounts of Eve Online. Experimental, can be erased in any moment
 require_once('..//config.php');
 check_authorization();
 
-/** --- CONTROLADOR --- **/
+/** --- CONTROLLER --- **/
 if (isset($_GET['action']) && isset($_GET['id'])) {
     $id = mysqli_real_escape_string($link, $_GET['id']);
     $action = $_GET['action'];
@@ -27,15 +27,15 @@ if (isset($_GET['action']) && isset($_GET['id'])) {
     exit;
 }
 
-/** --- DATOS --- **/
-// 1. Paneles Activos
+/** --- DATA --- **/
+// 1. Active Panels
 $res_activos = mysqli_query($link, "SELECT *, DATEDIFF(manualExpiration, CURDATE()) as dias FROM PANELS WHERE refresh = 'YES' ORDER BY manualExpiration DESC");
 
-// 2. Paneles Ocultos
+// 2. Hidden Panels
 $res_ocultos = mysqli_query($link, "SELECT idpanel, pseudo FROM PANELS WHERE refresh = 'NO'");
 
-// 3. Auditoría con Recálculo de Jita Value (Forge Value) y Totales
-// Usamos un LEFT JOIN para obtener la suma de assets de cada piloto en tiempo real
+// 3. Audit with Jita Value (Forge Value) Recalculation and Totals
+// We use a LEFT JOIN to get the sum of assets for each pilot in real time
 $sql_pilots = "SELECT 
                 P.toon_name, 
                 P.pocket6, 
@@ -60,14 +60,14 @@ $sql_pilots = "SELECT
 
 $res_pilots = mysqli_query($link, $sql_pilots);
 
-// Variables para el gran total de la auditoría
+// Variables for the audit grand total
 $total_jitav_global = 0;
 $total_items_global = 0;
 $total_wallet_global = 0;
 ?>
 
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>EVE Logistics v2.5 - Forge Update</title>
@@ -88,7 +88,7 @@ $total_wallet_global = 0;
     
     <?php if(mysqli_num_rows($res_ocultos) > 0): ?>
     <div class="card p-3 shadow-sm">
-        <h6 class="text-muted text-uppercase small font-weight-bold mb-3">Reactivar Paneles Ocultos</h6>
+        <h6 class="text-muted text-uppercase small font-weight-bold mb-3">Reactivate Hidden Panels</h6>
         <div class="d-flex flex-wrap">
             <?php while($p = mysqli_fetch_assoc($res_ocultos)): ?>
                 <a href="?action=set_refresh&status=YES&id=<?php echo $p['idpanel']; ?>" 
@@ -101,12 +101,12 @@ $total_wallet_global = 0;
     <?php endif; ?>
 
     <div class="card p-3 shadow">
-        <h6 class="text-uppercase small font-weight-bold mb-3 text-primary">Paneles Activos</h6>
+        <h6 class="text-uppercase small font-weight-bold mb-3 text-primary">Active Panels</h6>
         <div class="table-responsive">
             <table class="table table-dark table-hover table-sm">
                 <thead class="thead-light text-dark">
                     <tr>
-                        <th>#</th><th>Pseudo</th><th>P1</th><th>P2</th><th>P3</th><th>Vencimiento</th><th class="text-center">Flags</th>
+                        <th>#</th><th>Pseudo</th><th>P1</th><th>P2</th><th>P3</th><th>Expiration</th><th class="text-center">Flags</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -134,11 +134,11 @@ $total_wallet_global = 0;
     </div>
 
     <div class="card p-3 shadow">
-        <h6 class="text-uppercase small font-weight-bold mb-3 text-gold">Auditoría de Activos (Recálculo Real-Time Forge)</h6>
+        <h6 class="text-uppercase small font-weight-bold mb-3 text-gold">Asset Audit (Real-Time Forge Recalculation)</h6>
         <table id="tablePilotos" class="table table-striped table-bordered table-dark table-sm w-100">
             <thead>
                 <tr>
-                    <th>#</th><th>Nombre</th><th>Pocket</th><th>Items</th><th>Jita V (Forge)</th><th>Wallet (M)</th>
+                    <th>#</th><th>Name</th><th>Pocket</th><th>Items</th><th>Jita V (Forge)</th><th>Wallet (M)</th>
                 </tr>
             </thead>
             <tbody>
@@ -159,7 +159,7 @@ $total_wallet_global = 0;
             </tbody>
             <tfoot class="tfoot-totals">
                 <tr>
-                    <td colspan="3" class="text-right">TOTALES ACUMULADOS:</td>
+                    <td colspan="3" class="text-right">ACCUMULATED TOTALS:</td>
                     <td class="text-center"><?php echo number_format($total_items_global); ?></td>
                     <td class="text-right"><?php echo number_format($total_jitav_global/1000000, 2); ?></td>
                     <td class="text-right"><?php echo number_format($total_wallet_global / 1000000, 2); ?>M</td>
@@ -178,8 +178,8 @@ $total_wallet_global = 0;
     $(document).ready(function() {
         $('#tablePilotos').DataTable({
             "pageLength": 25,
-            "language": { "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json" },
-            "order": [[ 4, "desc" ]] // Ordenar por Jita V (Forge) por defecto
+            "language": { "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/English.json" },
+            "order": [[ 4, "desc" ]] // Sort by Jita V (Forge) by default
         });
     });
 </script>
