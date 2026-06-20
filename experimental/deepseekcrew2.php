@@ -1,1179 +1,1027 @@
 <?php
 /**
- * Fleet Commander - Pilot Management System with Supergroup Editing
- * Date: 2026-03-31 09:03
- * 
- * INITIAL CONFIGURATION - Always work this way
+ * Archivo: pilots.php
+ * Fecha: 2026-06-20
+ * Descripcion: Panel de control de pilotos con integridad de flota.
+ *              Fusion de dos scripts: logica de Qwen (arriba) + DeepSeek (abajo).
+ * Modelos: DeepSeek R1 (marzo 2026)
  */
 
-session_start();
+// ============================================================================
+// CONFIGURACION DE GRUPOS - MODIFICAR AQUI LOS VALORES DE SUPERGROUP
+// ============================================================================
+$GRUPO_1_SUPERGROUP = 1;   // Seccion Qwen (arriba)
+$GRUPO_2_SUPERGROUP = 2;   // Seccion DeepSeek / comparacion (abajo)
 
-// ============================================
-// SESSION VERIFICATION
-// ============================================
-if (!isset($_SESSION['is_authenticated']) || $_SESSION['is_authenticated'] !== true) {
-    header('Location: ../fleet_login.php');
-    exit;
-}
-
-// ============================================
-// INCLUDE DB CONFIGURATION
-// ============================================
-require_once '../config.php';
+// ============================================================================
+// CONEXION A BASE DE DATOS - USA $link (establecido en abyss/config.php)
+// ============================================================================
+require "../config.php";
 check_authorization();
 
-// Assumes $link is already available as a MySQLi connection
-
-// ============================================
-// VERIFY AND CREATE supergroup FIELD IF IT DOES NOT EXIST
-// ============================================
-$check_column = mysqli_query($link, "SHOW COLUMNS FROM PILOTS LIKE 'supergroup'");
-if (mysqli_num_rows($check_column) == 0) {
-    $alter_sql = "ALTER TABLE PILOTS ADD COLUMN supergroup INT DEFAULT 1";
-    mysqli_query($link, $alter_sql);
+// Variable del comandante de flota
+$fleet_commander_character_id = isset($_GET["commander"]) ? (int)$_GET["commander"] : 0;
+$fleet_commander_character_id=2112061747;
+if ($fleet_commander_character_id === 0 && isset($_SESSION["fleet_commander_character_id"])) {
+    $fleet_commander_character_id = (int)$_SESSION["fleet_commander_character_id"];
 }
 
-// ============================================
-// PROCESS AJAX SUPERGROUP UPDATE
-// ============================================
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_supergroup') {
-    header('Content-Type: application/json');
-    
-    $toon_number = intval($_POST['toon_number'] ?? 0);
-    $new_supergroup = intval($_POST['supergroup'] ?? 1);
-    
-    // Verify that the pilot belongs to this commander
-    $verify_query = "SELECT parent_toon_number FROM PILOTS WHERE toon_number = ? LIMIT 1";
-    $verify_stmt = mysqli_prepare($link, $verify_query);
-    mysqli_stmt_bind_param($verify_stmt, "i", $toon_number);
-    mysqli_stmt_execute($verify_stmt);
-    $verify_result = mysqli_stmt_get_result($verify_stmt);
-    
-    if ($row = mysqli_fetch_assoc($verify_result)) {
-        if ($row['parent_toon_number'] == ($_SESSION['character_id'] ?? 0)) {
-            $update_query = "UPDATE PILOTS SET supergroup = ? WHERE toon_number = ?";
-            $update_stmt = mysqli_prepare($link, $update_query);
-            mysqli_stmt_bind_param($update_stmt, "ii", $new_supergroup, $toon_number);
-            
-            if (mysqli_stmt_execute($update_stmt)) {
-                echo json_encode(['success' => true, 'message' => 'Supergroup updated']);
-                exit;
-            }
-        }
+// ============================================================================
+// FUNCIONES AUXILIARES
+// ============================================================================
+
+function formatDate($date) {
+    if (empty($date) || $date === "0000-00-00 00:00:00") {
+        return "<span class=\"text-muted\">N/A</span>";
     }
-    
-    echo json_encode(['success' => false, 'message' => 'Unauthorized or error']);
-    exit;
+    return date("d/m/Y H:i", strtotime($date));
 }
 
-// ============================================
-// SECURITY VALIDATION 1: Check other Fleet Commanders
-// ============================================
-$fc_check_query = "SELECT fleet_commander_number, pilot_name, character_id 
-                   FROM fleet_commanders 
-                   WHERE installation_id = 1 AND character_id != ?";
-$fc_stmt = mysqli_prepare($link, $fc_check_query);
-$current_char_id = $_SESSION['character_id'] ?? 0;
-mysqli_stmt_bind_param($fc_stmt, "i", $current_char_id);
-mysqli_stmt_execute($fc_stmt);
-$fc_result = mysqli_stmt_get_result($fc_stmt);
-
-$security_error = '';
-if (mysqli_num_rows($fc_result) > 0) {
-    $other_fc = mysqli_fetch_assoc($fc_result);
-    $security_error = "SECURITY ALERT: Another Fleet Commander detected in system. " .
-                      "Access denied. Contact administrator.";
+function formatNumber($number) {
+    if (empty($number)) return "0";
+    return number_format((float)$number, 0, ",", ".");
 }
 
-// ============================================
-// SECURITY VALIDATION 2: Verify pilot integrity
-// ============================================
-$integrity_error = '';
-if (empty($security_error)) {
-    $integrity_query = "SELECT COUNT(*) as foreign_pilots 
-                        FROM PILOTS 
-                        WHERE parent_toon_number != ? AND parent_toon_number != 0";
-    $int_stmt = mysqli_prepare($link, $integrity_query);
-    $session_char_id = $_SESSION['character_id'] ?? 0;
-    mysqli_stmt_bind_param($int_stmt, "i", $session_char_id);
-    mysqli_stmt_execute($int_stmt);
-    $int_result = mysqli_stmt_get_result($int_stmt);
-    $int_data = mysqli_fetch_assoc($int_result);
-    
-    if ($int_data['foreign_pilots'] > 0) {
-        $integrity_error = "INTEGRITY VIOLATION: Found " . $int_data['foreign_pilots'] . 
-                          " pilot(s) not belonging to this Fleet Commander. " .
-                          "System halted for security reasons.";
-    }
-}
-
-// ============================================
-// IF THERE ARE SECURITY ERRORS, STOP
-// ============================================
-if (!empty($security_error) || !empty($integrity_error)) {
-    $error_message = !empty($security_error) ? $security_error : $integrity_error;
-    $show_data = false;
-    $pilots = [];
-} else {
-    // ============================================
-    // GET PILOTS FOR THE FLEET COMMANDER
-    // ============================================
-    $show_data = true;
-    $pilots_query = "SELECT 
-                        toon_number,
-                        toon_name,
-                        tradefield,
-                        security,
-                        skillpoints,
-                        unalloc,
-                        acctype,
-                        finishqueue,
-                        wallet,
-                        planets,
-                        jobs,
-                        queue,
-                        numships,
-                        pocket6,
-                        daysq,
-                        numitems,
-                        evermarks,
-                        numberfits,
-                        supergroup,
-                        current_ship,
-                        current_location,
-                        lastsaved,
-                        pocket6
-                     FROM PILOTS 
-                     WHERE parent_toon_number = ? 
-                     ORDER BY supergroup ASC, toon_name ASC";
-    
-    $pilot_stmt = mysqli_prepare($link, $pilots_query);
-    $char_id = $_SESSION['character_id'] ?? 0;
-    mysqli_stmt_bind_param($pilot_stmt, "i", $char_id);
-    mysqli_stmt_execute($pilot_stmt);
-    $pilots_result = mysqli_stmt_get_result($pilot_stmt);
-    
-    $pilots = [];
-    $supergroups = []; // For DataTables filter
-    
-    while ($row = mysqli_fetch_assoc($pilots_result)) {
-        $pilots[] = $row;
-        $supergroups[$row['supergroup']] = true;
-    }
-    
-    // Sort supergroups for the select
-    ksort($supergroups);
-}
-
-// ============================================
-// PROCESS LOGOUT WITH CONFIRMATION
-// ============================================
-if (isset($_GET['logout']) && $_GET['logout'] === 'confirm') {
-    session_destroy();
-    header('Location: fleet_login.php');
-    exit;
-}
-
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-function formatMillions($value) {
-    if (empty($value)) return '0.00';
-    return number_format($value / 1000000, 2);
+function formatISK($isk) {
+    if (empty($isk)) return "0.00";
+    return number_format((float)$isk, 2, ",", ".");
 }
 
 function getPilotStatus($lastsaved) {
-    if (empty($lastsaved) || $lastsaved === '0000-00-00 00:00:00') {
-        return ['class' => 'secondary', 'label' => 'No Data'];
+    if (empty($lastsaved) || $lastsaved === "0000-00-00 00:00:00") {
+        return ["class" => "secondary", "label" => "Sin Datos"];
     }
     $last = strtotime($lastsaved);
     $now = time();
     $diff = ($now - $last) / 3600;
     if ($diff < 24) {
-        return ['class' => 'success', 'label' => 'Active'];
+        return ["class" => "success", "label" => "Activo"];
     } elseif ($diff < 168) {
-        return ['class' => 'warning', 'label' => 'Recent'];
+        return ["class" => "warning", "label" => "Reciente"];
     } else {
-        return ['class' => 'danger', 'label' => 'Inactive'];
+        return ["class" => "danger", "label" => "Inactivo"];
     }
 }
 
+function parseShipName($current_ship_json) {
+    if (empty($current_ship_json)) return "-";
+    $decoded = json_decode($current_ship_json, true);
+    if (json_last_error() === JSON_ERROR_NONE && isset($decoded["ship_name"])) {
+        return htmlspecialchars($decoded["ship_name"]);
+    }
+    return htmlspecialchars(substr($current_ship_json, 0, 30));
+}
+
+function verificarIntegridadFlota($conexion, $commander_id) {
+    $resultado = [
+        "valido" => true,
+        "mensaje" => "",
+        "pilotos_inconsistentes" => [],
+        "total_pilotos" => 0,
+        "pilotos_validos" => 0,
+        "pilotos_invalidos" => 0,
+        "huerfanos" => [],
+        "huerfanos_count" => 0
+    ];
+
+    if ($commander_id === 0) {
+        $resultado["valido"] = false;
+        $resultado["mensaje"] = "No se ha definido un comandante de flota (fleet_commander_character_id)";
+        return $resultado;
+    }
+
+    $stmt = $conexion->prepare("SELECT toon_number, toon_name, parent_toon_number FROM PILOTS WHERE parent_toon_number != ? AND parent_toon_number != 0");
+    $stmt->bind_param("i", $commander_id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    $pilotos_inconsistentes = [];
+    while ($row = $result->fetch_assoc()) {
+        $pilotos_inconsistentes[] = $row;
+    }
+
+    // Pilotos huerfanos: parent_toon_number = 0 (sin commander asignado)
+    $stmt_huerfanos = $conexion->prepare("SELECT toon_number, toon_name, parent_toon_number FROM PILOTS WHERE parent_toon_number = 0");
+    $stmt_huerfanos->execute();
+    $result_huerfanos = $stmt_huerfanos->get_result();
+
+    $huerfanos = [];
+    while ($row = $result_huerfanos->fetch_assoc()) {
+        $huerfanos[] = $row;
+    }
+
+    $total_result = $conexion->query("SELECT COUNT(*) as total FROM PILOTS");
+    $total_pilotos = $total_result->fetch_assoc()["total"];
+
+    $stmt_validos = $conexion->prepare("SELECT COUNT(*) as validos FROM PILOTS WHERE parent_toon_number = ?");
+    $stmt_validos->bind_param("i", $commander_id);
+    $stmt_validos->execute();
+    $validos_result = $stmt_validos->get_result();
+    $pilotos_validos = $validos_result->fetch_assoc()["validos"];
+
+    $resultado["total_pilotos"] = $total_pilotos;
+    $resultado["pilotos_validos"] = $pilotos_validos;
+    $resultado["pilotos_invalidos"] = count($pilotos_inconsistentes);
+    $resultado["pilotos_inconsistentes"] = $pilotos_inconsistentes;
+    $resultado["huerfanos"] = $huerfanos;
+    $resultado["huerfanos_count"] = count($huerfanos);
+
+    $otros_count = count($pilotos_inconsistentes);
+    $huerfanos_count = count($huerfanos);
+
+    if ($otros_count > 0) {
+        // Pilotos de otro comandante SI bloquean el dashboard
+        $resultado["valido"] = false;
+        $resultado["mensaje"] = "Se encontraron " . $otros_count . " piloto(s) asignados a otro comandante de flota (no al ID: " . $commander_id . ")";
+        if ($huerfanos_count > 0) {
+            $resultado["mensaje"] .= " y " . $huerfanos_count . " piloto(s) huerfano(s) (sin comandante asignado)";
+        }
+    } else {
+        // Los huerfanos NO bloquean el dashboard, solo se muestran como aviso aparte
+        $resultado["valido"] = true;
+        $resultado["mensaje"] = "Los " . $pilotos_validos . " pilotos pertenecen al comandante de flota (ID: " . $commander_id . ")";
+    }
+
+    return $resultado;
+}
+
+function obtenerEstadisticasFlota($conexion, $commander_id = 0) {
+    $estadisticas = [];
+    $filtro_commander = "";
+    $params = [];
+    $types = "";
+
+    if ($commander_id > 0) {
+        $filtro_commander = "WHERE parent_toon_number = ? OR parent_toon_number = 0";
+        $params[] = $commander_id;
+        $types .= "i";
+    }
+
+    $sql = "SELECT COUNT(*) as total FROM PILOTS " . $filtro_commander;
+    $stmt = $conexion->prepare($sql);
+    if ($commander_id > 0) $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $estadisticas["total_pilotos"] = $stmt->get_result()->fetch_assoc()["total"];
+
+    $sql = "SELECT SUM(skillpoints) as total_sp FROM PILOTS " . $filtro_commander;
+    $stmt = $conexion->prepare($sql);
+    if ($commander_id > 0) $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $estadisticas["total_sp"] = $stmt->get_result()->fetch_assoc()["total_sp"] ?: 0;
+
+    $estadisticas["promedio_sp"] = $estadisticas["total_pilotos"] > 0 ? 
+        round($estadisticas["total_sp"] / $estadisticas["total_pilotos"], 0) : 0;
+
+    $sql = "SELECT race, COUNT(*) as cantidad FROM PILOTS " . $filtro_commander . " GROUP BY race ORDER BY cantidad DESC";
+    $stmt = $conexion->prepare($sql);
+    if ($commander_id > 0) $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $estadisticas["razas"] = [];
+    while ($row = $result->fetch_assoc()) {
+        $estadisticas["razas"][] = $row;
+    }
+
+    $sql = "SELECT acctype, COUNT(*) as cantidad FROM PILOTS " . $filtro_commander . " GROUP BY acctype";
+    $stmt = $conexion->prepare($sql);
+    if ($commander_id > 0) $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $estadisticas["tipos_cuenta"] = [];
+    while ($row = $result->fetch_assoc()) {
+        $estadisticas["tipos_cuenta"][] = $row;
+    }
+
+    // CHANGED: LIMIT 5 to LIMIT 4
+    $sql = "SELECT toon_number, toon_name, skillpoints, race, acctype FROM PILOTS " . $filtro_commander . " ORDER BY skillpoints DESC LIMIT 4";
+    $stmt = $conexion->prepare($sql);
+    if ($commander_id > 0) $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $estadisticas["top_skillpoints"] = [];
+    while ($row = $result->fetch_assoc()) {
+        $estadisticas["top_skillpoints"][] = $row;
+    }
+
+    $sql = "SELECT toon_number, toon_name, lastsaved, skillpoints FROM PILOTS " . $filtro_commander . " ORDER BY lastsaved DESC LIMIT 4";
+    $stmt = $conexion->prepare($sql);
+    if ($commander_id > 0) $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $estadisticas["ultimos_actualizados"] = [];
+    while ($row = $result->fetch_assoc()) {
+        $estadisticas["ultimos_actualizados"][] = $row;
+    }
+
+    // ADDED: Top 4 wallets
+    $sql = "SELECT toon_number, toon_name, wallet FROM PILOTS " . $filtro_commander . " and wallet IS NOT NULL ORDER BY wallet DESC LIMIT 4";
+    $stmt = $conexion->prepare($sql);
+    if ($commander_id > 0) $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $estadisticas["top_wallets"] = [];
+    while ($row = $result->fetch_assoc()) {
+        $estadisticas["top_wallets"][] = $row;
+    }
+
+    $sql = "SELECT AVG(security) as avg_security, MIN(security) as min_security, MAX(security) as max_security FROM PILOTS " . $filtro_commander . " and security IS NOT NULL";
+    $stmt = $conexion->prepare($sql);
+    if ($commander_id > 0) $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $estadisticas["seguridad"] = $stmt->get_result()->fetch_assoc();
+
+    return $estadisticas;
+}
+
+// ============================================================================
+// OBTENER DATOS DE PILOTOS PARA SECCION 1 (Qwen) - por supergroup
+// ============================================================================
+$pilots_grupo1 = [];
+$totalPilots_grupo1 = 0;
+$totalShips_grupo1 = 0;
+$activePilots_grupo1 = 0;
+
+if ($link && !$link->connect_error) {
+    $stmt1 = $link->prepare("SELECT toon_number, toon_name, corporation_name, race, security, skillpoints, 
+                                    current_ship, current_location, numships, wallet, lastsaved, acctype, 
+                                    email_pilot, NPC_rep, tradefield, pocket6
+                             FROM PILOTS 
+                             WHERE supergroup = ?
+                             ORDER BY toon_name ASC");
+    $stmt1->bind_param("i", $GRUPO_1_SUPERGROUP);
+    $stmt1->execute();
+    $result1 = $stmt1->get_result();
+
+    if ($result1 && $result1->num_rows > 0) {
+        while ($row = $result1->fetch_assoc()) {
+            $pilots_grupo1[] = $row;
+            $totalPilots_grupo1++;
+            $totalShips_grupo1 += (int)$row["numships"];
+            if (!empty($row["current_ship"])) {
+                $activePilots_grupo1++;
+            }
+        }
+    }
+}
+
+// ============================================================================
+// DATOS SECCION 2 (DeepSeek)
+// ============================================================================
+$integridad = verificarIntegridadFlota($link, $fleet_commander_character_id);
+$mostrar_contenido = $integridad["valido"];
+
+$estadisticas = [];
+
+if ($mostrar_contenido) {
+    $estadisticas = obtenerEstadisticasFlota($link, $fleet_commander_character_id);
+}
+
+$db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->connect_error : "";
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fleet Commander - Pilot Management</title>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+    <title>Pilot Manager - Fleet Integrity</title>
+
+    <!-- Bootstrap 4.6.2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+    <!-- Font Awesome 5.15.4 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            min-height: 100vh;
-            color: #333;
             padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
-        /* ============================================
-           MAIN CONTENT
-           ============================================ */
-        .main-content {
+
+        .main-container {
             max-width: 1600px;
             margin: 0 auto;
-            padding: 30px;
         }
-        
-        .page-header {
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .page-header h1 {
-            color: #ffd700;
-            font-size: 28px;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-        
-        .page-header p {
-            color: rgba(255,255,255,0.7);
-            font-size: 14px;
-        }
-        
-        .header-actions {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            border-radius: 15px;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-        
-        .btn-primary {
-            background: #ff6b6b;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #ff5252;
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.4);
-        }
-        
-        /* ============================================
-           SECURITY ALERTS
-           ============================================ */
-        .security-alert {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 30px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            border-left: 4px solid #dc3545;
-        }
-        
-        .security-alert i {
-            font-size: 48px;
-            color: #dc3545;
-            margin-bottom: 15px;
-        }
-        
-        .security-alert h2 {
-            color: #dc3545;
-            margin-bottom: 10px;
-        }
-        
-        .security-alert p {
-            color: #333;
-            font-size: 16px;
-        }
-        
-        /* ============================================
-           DATATABLES CUSTOM STYLES
-           ============================================ */
-        .pilots-container {
+
+        .stat-card {
             background: white;
             border-radius: 15px;
             padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            color: #2a5298;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #1e3c72;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .pilot-table {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
-        
-        /* Override DataTables styles */
-        .dataTables_wrapper {
-            color: #333;
-        }
-        
-        .dataTables_length, .dataTables_filter, .dataTables_info, .dataTables_paginate {
-            margin-bottom: 15px;
-            color: #6c757d !important;
-        }
-        
-        .dataTables_length select, .dataTables_filter input {
-            background: white;
-            border: 1px solid #dee2e6;
-            color: #333;
-            padding: 5px 10px;
-            border-radius: 10px;
-        }
-        
-        .dataTables_filter input:focus {
-            outline: none;
-            border-color: #2a5298;
-            box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.2);
-        }
-        
-        table.dataTable {
-            background: transparent;
-            border-collapse: collapse;
-            width: 100% !important;
-        }
-        
-        table.dataTable thead th {
+
+        .table thead th {
             background: #1e3c72;
             color: white;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: 1px;
-            border-bottom: 2px solid #2a5298;
-            padding: 12px 10px;
-            text-align: center;
+            border: none;
         }
-        
-        table.dataTable thead th:first-child {
-            text-align: left;
-        }
-        
-        table.dataTable tbody td {
-            padding: 10px;
-            border-bottom: 1px solid #e9ecef;
-            color: #333;
-            vertical-align: middle;
-            text-align: center;
-        }
-        
-        table.dataTable tbody td:first-child {
-            text-align: left;
-        }
-        
-        table.dataTable tbody tr:hover {
-            background: rgba(42, 82, 152, 0.05);
-        }
-        
-        /* Pagination */
-        .dataTables_paginate .paginate_button {
-            background: white !important;
-            border: 1px solid #dee2e6 !important;
-            color: #2a5298 !important;
-            border-radius: 10px !important;
-            margin: 0 2px !important;
-            transition: all 0.3s ease;
-        }
-        
-        .dataTables_paginate .paginate_button:hover {
-            background: #2a5298 !important;
-            border-color: #2a5298 !important;
-            color: white !important;
-        }
-        
-        .dataTables_paginate .paginate_button.current {
-            background: #2a5298 !important;
-            border-color: #2a5298 !important;
-            color: white !important;
-        }
-        
-        /* ============================================
-           SPECIFIC CELLS
-           ============================================ */
-        .pilot-info-cell {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .pilot-portrait {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            border: 2px solid #2a5298;
-            object-fit: cover;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-        
-        .pilot-name {
-            font-weight: 600;
-            color: #1e3c72;
-            font-size: 14px;
-        }
-        
-        .pilot-number {
-            font-size: 11px;
-            color: #6c757d;
-            font-family: 'Courier New', monospace;
-        }
-        
-        .profession {
-            background: rgba(42, 82, 152, 0.15);
-            color: #2a5298;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            font-weight: 500;
-            display: inline-block;
-        }
-        
-        .security-status {
-            font-weight: 600;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-        }
-        
-        .security-high { color: #28a745; }
-        .security-medium { color: #ffc107; }
-        .security-low { color: #dc3545; }
-        
-        .sp-value {
-            font-family: 'Courier New', monospace;
-            color: #1e3c72;
-            font-weight: 600;
-            font-size: 13px;
-        }
-        
-        .sp-unalloc {
-            font-size: 10px;
-            color: #ffc107;
-            font-weight: 500;
-        }
-        
-        .acctype {
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-        
-        .acctype-omega {
+
+        .badge-omega {
             background: #ff6b6b;
             color: white;
         }
-        
-        .acctype-alpha {
+
+        .badge-alpha {
             background: #4ecdc4;
             color: white;
         }
-        
-        .queue-finish {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            color: #6f42c1;
-            font-weight: 500;
-        }
-        
-        .wallet {
-            font-family: 'Courier New', monospace;
-            color: #28a745;
-            font-weight: 600;
-            font-size: 12px;
-        }
-        
-        .status-icon {
-            font-size: 16px;
-        }
-        
-        .status-active { color: #28a745; }
-        .status-inactive { color: #6c757d; }
-        .status-training { color: #6f42c1; }
-        .status-update { 
-            color: #2a5298; 
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-        
-        .status-update:hover {
-            transform: rotate(180deg);
+
+        .badge-commander {
+            background: #ffd700;
             color: #1e3c72;
         }
-        
-        .stat-number {
-            font-family: 'Courier New', monospace;
-            font-weight: 600;
-            font-size: 12px;
-        }
-        
-        .stat-good { color: #28a745; }
-        .stat-warning { color: #ffc107; }
-        .stat-danger { color: #dc3545; }
-        .stat-inactive { color: #6c757d; }
-        
-        .pocket-status {
-            padding: 3px 10px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        
-        .pocket-clean {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .pocket-warning {
-            background: #fff3cd;
-            color: #856404;
-        }
-        
-        .pocket-danger {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .pocket-secondary {
-            background: #e9ecef;
-            color: #6c757d;
-        }
-        
-        .evermarks {
-            color: #6f42c1;
-            font-weight: 600;
-            font-size: 12px;
-        }
-        
-        /* ============================================
-           EDITABLE SUPERGROUP
-           ============================================ */
-        .supergroup-cell {
-            position: relative;
-        }
-        
-        .supergroup-display {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            padding: 5px 12px;
-            border-radius: 15px;
-            background: rgba(42, 82, 152, 0.1);
-            border: 1px solid #dee2e6;
-            transition: all 0.3s ease;
-        }
-        
-        .supergroup-display:hover {
-            background: rgba(42, 82, 152, 0.2);
-            border-color: #2a5298;
-            transform: translateY(-2px);
-            box-shadow: 0 3px 10px rgba(42, 82, 152, 0.2);
-        }
-        
-        .supergroup-value {
-            font-weight: 700;
-            color: #2a5298;
-            min-width: 30px;
-            text-align: center;
-            font-size: 14px;
-        }
-        
-        .supergroup-edit {
-            color: #6c757d;
-            font-size: 12px;
-        }
-        
-        .supergroup-form {
-            display: none;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .supergroup-form.active {
-            display: inline-flex;
-        }
-        
-        .supergroup-input {
-            width: 60px;
+
+        .search-box {
             background: white;
-            border: 2px solid #2a5298;
-            color: #1e3c72;
-            padding: 5px 8px;
             border-radius: 10px;
-            text-align: center;
-            font-weight: 700;
-            font-size: 14px;
+            padding: 15px;
+            margin-bottom: 20px;
         }
-        
-        .supergroup-input:focus {
-            outline: none;
-            box-shadow: 0 0 0 4px rgba(42, 82, 152, 0.2);
-        }
-        
-        .sg-btn {
-            width: 32px;
-            height: 32px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .sg-btn-save {
-            background: #28a745;
-            color: white;
-        }
-        
-        .sg-btn-save:hover {
-            background: #218838;
-            transform: scale(1.1);
-        }
-        
-        .sg-btn-cancel {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .sg-btn-cancel:hover {
-            background: #5a6268;
-            transform: scale(1.1);
-        }
-        
-        .sg-saving {
-            color: #2a5298;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        /* ============================================
-           MODAL
-           ============================================ */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(30, 60, 114, 0.8);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(5px);
-        }
-        
-        .modal-overlay.active {
-            display: flex;
-        }
-        
-        .modal {
+
+        .pagination-custom {
             background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 15px;
-            padding: 30px;
-            max-width: 400px;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .race-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .race-caldari { background: #3498db; }
+        .race-gallente { background: #2ecc71; }
+        .race-amarr { background: #f39c12; }
+        .race-minmatar { background: #e74c3c; }
+
+        .alert-warning-custom {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .alert-danger-custom {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success-custom {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        footer {
+            margin-top: 40px;
             text-align: center;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            color: white;
         }
-        
-        .modal h3 {
-            color: #dc3545;
-            margin-bottom: 15px;
-        }
-        
-        .modal p {
-            color: #6c757d;
-            margin-bottom: 25px;
-        }
-        
-        .modal-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-        
-        .modal-btn {
-            padding: 10px 25px;
-            border-radius: 15px;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .modal-btn.confirm {
+
+        .btn-flota {
             background: #ff6b6b;
             color: white;
+            border: none;
         }
-        
-        .modal-btn.confirm:hover {
+
+        .btn-flota:hover {
             background: #ff5252;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
-        }
-        
-        .modal-btn.cancel {
-            background: #e9ecef;
-            color: #333;
-        }
-        
-        .modal-btn.cancel:hover {
-            background: #dee2e6;
-            transform: translateY(-2px);
-        }
-        
-        /* Toast notification */
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 30px;
-            background: #28a745;
             color: white;
-            padding: 15px 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            display: none;
+        }
+
+        .commander-info {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #1e3c72;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .supergroup-badge {
+            background: #6c757d;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+
+        .section-divider {
+            border-top: 3px solid rgba(255,255,255,0.3);
+            margin: 40px 0;
+            position: relative;
+        }
+
+        .section-divider::after {
+            content: attr(data-label);
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2a5298;
+            color: white;
+            padding: 5px 20px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        .pilot-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: inline-flex;
             align-items: center;
-            gap: 10px;
-            z-index: 3000;
-            animation: slideIn 0.3s ease;
-            font-weight: 600;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-right: 10px;
         }
-        
-        .toast.show {
-            display: flex;
+
+        .status-badge {
+            min-width: 80px;
         }
-        
-        .toast.error {
-            background: #dc3545;
+
+        .fixed-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(30, 60, 114, 0.95);
+            border-top: 2px solid rgba(255,255,255,0.2);
+            padding: 10px 0;
+            z-index: 1000;
         }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+
+        .content-wrapper {
+            padding-bottom: 80px;
         }
-        
-        /* Attribution note */
+
         .attribution-note {
-            background: rgba(0,0,0,0.2);
-            border-radius: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
             padding: 15px;
             margin-top: 30px;
             color: rgba(255,255,255,0.8);
             font-size: 0.85rem;
-            text-align: center;
+        }
+
+        /* Menu de navegacion superior */
+        .navbar-custom {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            border-bottom: 3px solid #ffd700;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            padding: 0.8rem 1rem;
+        }
+
+        .navbar-custom .navbar-brand {
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: #ffd700 !important;
+        }
+
+        .navbar-custom .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem !important;
+            border-radius: 8px;
+        }
+
+        .navbar-custom .nav-link:hover,
+        .navbar-custom .nav-link.active {
+            color: #ffd700 !important;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .navbar-custom .dropdown-menu {
+            background: #1e3c72;
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        .navbar-custom .dropdown-item {
+            color: rgba(255,255,255,0.9);
+            transition: all 0.2s;
+        }
+
+        .navbar-custom .dropdown-item:hover {
+            background: rgba(255,215,0,0.2);
+            color: #ffd700;
+        }
+
+        .navbar-custom .dropdown-divider {
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .navbar-custom .navbar-text {
+            color: rgba(255,255,255,0.8) !important;
+        }
+
+        .pocket6-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .ship-name-cell {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: #1e3c72;
+            font-weight: 600;
+        }
+
+        .cmdr-under-name {
+            display: block;
+            font-size: 0.75rem;
+            margin-top: 2px;
         }
     </style>
 </head>
 <body>
-    
-    <!-- ============================================
-         MAIN CONTENT
-         ============================================ -->
-    <main class="main-content">
-        
-        <div class="page-header">
-            <div>
-                <h1><i class="fas fa-users"></i> Pilot Management</h1>
-                <p>Manage your fleet pilots and their supergroups</p>
-            </div>
-            <div class="header-actions">
-                <button class="btn btn-primary" onclick="showLogoutModal()">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-                <button class="btn btn-primary" onclick="refreshTable()">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
-            </div>
+
+<!-- ============================================================================ -->
+<!-- MENU DE NAVEGACION SUPERIOR - DEL SCRIPT 1 (Qwen)                           -->
+<!-- ============================================================================ -->
+<nav class="navbar navbar-expand-lg navbar-custom fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="<?php echo basename(__FILE__); ?>"></a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTop">
+            <span class="navbar-toggler-icon" style="color: white;"><i class="fas fa-bars"></i></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarTop">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown">
+                        <i class="fas fa-list"></i> Gestión
+                    </a>
+                    <div class="dropdown-menu">
+                        <a class="dropdown-item" href="mosaic.php"><i class="fas fa-th-large"></i> Mosaic</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#"><i class="fas fa-users"></i> Ver Todos</a>
+                        <a class="dropdown-item" href="#"><i class="fas fa-user-check"></i> Activos</a>
+                        <a class="dropdown-item" href="#"><i class="fas fa-user-times"></i> Inactivos</a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item" href="#"><i class="fas fa-file-export"></i> Exportar</a>
+                    </div>
+                </li>
+            </ul>
         </div>
-        
-        <?php if (!empty($security_error) || !empty($integrity_error)): ?>
-        <div class="security-alert">
-            <i class="fas fa-shield-alt"></i>
-            <h2>Security Violation Detected</h2>
-            <p><?php echo htmlspecialchars($error_message); ?></p>
+    </div>
+</nav>
+
+<div class="main-container content-wrapper" style="padding-top: 90px;">
+
+    <!-- Titulo principal -->
+    <div class="text-center mb-4">
+        <h1 class="display-4 text-white">
+            <i class="fas fa-user-astronaut"></i> Pilot Manager
+        </h1>
+        <p class="lead text-white-50">
+            Integridad y control de la flota
+        </p>
+    </div>
+
+    <!-- Informacion del comandante de flota -->
+    <?php if ($fleet_commander_character_id > 0): ?>
+        <div class="commander-info text-center">
+            <i class="fas fa-crown"></i> 
+            <strong>Comandante de Flota ID: <?php echo $fleet_commander_character_id; ?></strong>
+            <i class="fas fa-chevron-right"></i> 
+            Verificando integridad de la flota...
         </div>
-        
-        <?php else: ?>
-        <div class="pilots-container">
-            <table id="pilotsTable" class="display" style="width:100%">
-                <thead>
-                    <tr>
-                        <th>Pilot</th>
-                        <th>Supergroup</th>
-                        <th>SP (M)</th>
-                        <th>Queue End</th>
-                        <th><i class="fas fa-sync-alt"></i></th>
-                        <th>DaysQ</th>
-                        <th>Ship</th>
-                        <th>Location</th>
-                        <th>Status</th>
-                        <th>Pocket6</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($pilots as $pilot): 
-                        // Decode current_ship (JSON with escaped slashes)
-                        $ship_display = '-';
-                        if (!empty($pilot['current_ship'])) {
-                            $ship_data = json_decode(stripslashes($pilot['current_ship']), true);
-                            if (!empty($ship_data['ship_name'])) {
-                                $ship_display = $ship_data['ship_name'];
-                            }
-                        }
-                        
-                        // Decode current_location (JSON with escaped slashes)
-                        $location_display = '-';
-                        if (!empty($pilot['current_location'])) {
-                            $location_data = json_decode(stripslashes($pilot['current_location']), true);
-                            if (!empty($location_data['station_id'])) {
-                                $location_display = 'Station ' . $location_data['station_id'];
-                            } elseif (!empty($location_data['solar_system_id'])) {
-                                $location_display = 'System: ' . $location_data['solar_system_id'];
-                            }
-                        }
-                        
-                        // Pilot status based on lastsaved
-                        $status = getPilotStatus($pilot['lastsaved'] ?? null);
-                        
-                        // Account type badge
-                        $acctype_class = (strtolower($pilot['acctype'] ?? '') === 'omega') ? 'acctype-omega' : 'acctype-alpha';
-                        
-                        // Pocket6
-                        $pocket6 = strtoupper($pilot['pocket6'] ?? 'CLEAN');
-                    ?>
-                    <tr data-toon="<?php echo $pilot['toon_number']; ?>">
-                        <td>
-                            <div class="pilot-info-cell">
-                                <img src="https://images.evetech.net/characters/<?php echo $pilot['toon_number']; ?>/portrait?size=64" 
-                                     alt="<?php echo htmlspecialchars($pilot['toon_name']); ?>"
-                                     class="pilot-portrait"
-                                     onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect fill=%22%23dee2e6%22 width=%2264%22 height=%2264%22/><text fill=%22%236c757d%22 x=%2232%22 y=%2236%22 text-anchor=%22middle%22 font-size=%2224%22>?</text></svg>'">
-                                <div>
-                                    <div class="pilot-name"><?php echo htmlspecialchars($pilot['toon_name']); ?></div>
-                                    <div class="pilot-number">#<?php echo $pilot['toon_number']; ?> <span class="acctype <?php echo $acctype_class; ?>"><?php echo strtoupper($pilot['acctype'] ?? 'alpha'); ?></span></div>
-                                </div>
-                            </div>
-                        </td>
-                        
-                        <!-- EDITABLE SUPERGROUP -->
-                        <td class="supergroup-cell">
-                            <div class="supergroup-display" onclick="editSupergroup(<?php echo $pilot['toon_number']; ?>)">
-                                <span class="supergroup-value" id="sg-value-<?php echo $pilot['toon_number']; ?>">
-                                    <?php echo intval($pilot['supergroup'] ?? 1); ?>
-                                </span>
-                                <i class="fas fa-pencil-alt supergroup-edit"></i>
-                            </div>
-                            <div class="supergroup-form" id="sg-form-<?php echo $pilot['toon_number']; ?>">
-                                <input type="number" 
-                                       class="supergroup-input" 
-                                       id="sg-input-<?php echo $pilot['toon_number']; ?>"
-                                       value="<?php echo intval($pilot['supergroup'] ?? 1); ?>"
-                                       min="1"
-                                       max="999"
-                                       onkeypress="handleEnter(event, <?php echo $pilot['toon_number']; ?>)">
-                                <button class="sg-btn sg-btn-save" onclick="saveSupergroup(<?php echo $pilot['toon_number']; ?>)" title="Save">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                                <button class="sg-btn sg-btn-cancel" onclick="cancelEdit(<?php echo $pilot['toon_number']; ?>)" title="Cancel">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </td>
-                        
-                        <td>
-                            <div class="sp-value"><?php echo formatMillions($pilot['skillpoints']); ?></div>
-                            <?php if (!empty($pilot['unalloc']) && $pilot['unalloc'] > 0): ?>
-                            <div class="sp-unalloc">+<?php echo formatMillions($pilot['unalloc']); ?></div>
-                            <?php endif; ?>
-                        </td>
-                        
-                        <td class="queue-finish">
-                            <?php echo !empty($pilot['finishqueue']) ? date('Y-m-d H:i', strtotime($pilot['finishqueue'])) : '<span style="color:#adb5bd">-</span>'; ?>
-                        </td>
-                        
-                        <td class="status-icon">
-                            <i class="fas fa-sync-alt status-update" 
-                               title="Update pilot data"
-                               onclick="updatePilot(<?php echo $pilot['toon_number']; ?>)"></i>
-                        </td>
-                        
-                        <td class="stat-number"><?php echo $pilot['daysq'] ?? 0; ?></td>
-                        
-                        <td><?php echo htmlspecialchars($ship_display); ?></td>
-                        
-                        <td><?php echo htmlspecialchars($location_display); ?></td>
-                        
-                        <?php
-                            $status_class_map = ['success' => 'pocket-clean', 'warning' => 'pocket-warning', 'danger' => 'pocket-danger', 'secondary' => 'pocket-secondary'];
-                            $status_css = $status_class_map[$status['class']] ?? 'pocket-secondary';
-                        ?>
-                        <td><span class="pocket-status <?php echo $status_css; ?>"><?php echo htmlspecialchars($status['label']); ?></span></td>
-                        
-                        <td>
-                            <?php if ($pocket6 !== 'CLEAN'): ?>
-                            <span class="pocket-status pocket-danger"><?php echo htmlspecialchars($pocket6); ?></span>
-                            <?php else: ?>
-                            <span class="pocket-status pocket-clean">CLEAN</span>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+    <?php endif; ?>
+
+    <!-- Alerta de Error de Base de Datos -->
+    <?php if (!empty($db_error)): ?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle"></i> <strong>Error de Base de Datos:</strong> <?php echo $db_error; ?>
+        <button type="button" class="close" data-dismiss="alert">
+            <span>&times;</span>
+        </button>
+    </div>
+    <?php endif; ?>
+
+    <!-- Verificacion de integridad de la flota -->
+    <?php if (!$integridad["valido"]): ?>
+        <div class="alert-danger-custom">
+            <h4 class="alert-heading">
+                <i class="fas fa-exclamation-triangle"></i> 
+                ¡ALERTA! Problema de integridad en la flota
+            </h4>
+            <p class="mb-2">
+                <strong><?php echo $integridad["mensaje"]; ?></strong>
+            </p>
+            <p>
+                <i class="fas fa-chart-line"></i> Total de pilotos en BD: <?php echo $integridad["total_pilotos"]; ?><br>
+                <i class="fas fa-check-circle text-success"></i> Pilotos válidos: <?php echo $integridad["pilotos_validos"]; ?><br>
+                <i class="fas fa-times-circle text-danger"></i> Pilotos asignados a otro comandante: <?php echo $integridad["pilotos_invalidos"]; ?>
+            </p>
+
+            <?php if (count($integridad["pilotos_inconsistentes"]) > 0): ?>
+                <hr>
+                <h6><i class="fas fa-list"></i> Pilotos asignados a otro comandante:</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered bg-white">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Número de Toon</th>
+                                <th>Nombre</th>
+                                <th>Parent Toon Number</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($integridad["pilotos_inconsistentes"] as $piloto): ?>
+                                <tr class="table-danger">
+                                    <td><?php echo $piloto["toon_number"]; ?></td>
+                                    <td><?php echo htmlspecialchars($piloto["toon_name"]); ?></td>
+                                    <td><?php echo $piloto["parent_toon_number"] ?: "0"; ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+
+            <?php if (count($integridad["huerfanos"]) > 0): ?>
+                <hr>
+                <h6><i class="fas fa-list"></i> Pilotos huérfanos (sin comandante asignado):</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered bg-white">
+                        <thead class="thead-dark">
+                            <tr>
+                                <th>Número de Toon</th>
+                                <th>Nombre</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($integridad["huerfanos"] as $huerfano): ?>
+                                <tr class="table-danger">
+                                    <td><?php echo $huerfano["toon_number"]; ?></td>
+                                    <td><?php echo htmlspecialchars($huerfano["toon_name"]); ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
+
+            <hr>
+            <p class="mb-0">
+                <i class="fas fa-info-circle"></i> 
+                Para continuar, asegúrate de que todos los pilotos tengan 
+                <strong>parent_toon_number = <?php echo $fleet_commander_character_id; ?></strong>
+            </p>
+        </div>
+
+        <div class="text-center mt-3">
+            <a href="?commander=<?php echo $fleet_commander_character_id; ?>&forzar=1" class="btn btn-warning">
+                <i class="fas fa-eye"></i> Ver de todas formas (no recomendado)
+            </a>
+        </div>
+
+    <?php else: ?>
+
+        <!-- Mensaje de exito en integridad -->
+        <div class="alert-success-custom">
+            <h5 class="mb-0">
+                <i class="fas fa-check-circle"></i> 
+                <?php echo $integridad["mensaje"]; ?>
+            </h5>
+        </div>
+
+        <!-- Aviso de pilotos huerfanos (parent_toon_number = 0) -->
+        <?php if ($integridad["huerfanos_count"] > 0): ?>
+        <div class="alert-danger-custom">
+            <h5 class="mb-2">
+                <i class="fas fa-exclamation-triangle"></i>
+                Se encontraron <?php echo $integridad["huerfanos_count"]; ?> piloto(s) huérfano(s) (sin comandante asignado)
+            </h5>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered bg-white mb-0">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Número de Toon</th>
+                            <th>Nombre</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($integridad["huerfanos"] as $huerfano): ?>
+                            <tr class="table-danger">
+                                <td><?php echo $huerfano["toon_number"]; ?></td>
+                                <td><?php echo htmlspecialchars($huerfano["toon_name"]); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
         <?php endif; ?>
-        
-        <!-- Attribution Note -->
-        <div class="attribution-note text-center">
-            <i class="fas fa-code"></i> <strong>Attribution:</strong> Fleet Commander Pilot Management System
-            <br><i class="fas fa-calendar"></i> Date: 2026-03-31 | <i class="fas fa-file-code"></i> File: <?php echo basename(__FILE__); ?> | <i class="fas fa-database"></i> PHP <?php echo phpversion(); ?>
-            <br><i class="fas fa-users"></i> Pilots: <?php echo count($pilots); ?> | <i class="fas fa-user-shield"></i> FC: <?php echo htmlspecialchars($_SESSION['fleet_commander_number'] ?? 'N/A'); ?>
+
+        <!-- ================================================================ -->
+        <!-- TARJETAS DE ESTADISTICAS:                                        -->
+        <!-- ================================================================ -->
+        <div class="row mb-4">
+            <!-- Fila 1: Estadisticas DeepSeek (4 tarjetas) -->
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-icon"><i class="fas fa-user-astronaut"></i></div>
+                    <div class="stat-value"><?php echo number_format($estadisticas["total_pilotos"], 0, ",", "."); ?></div>
+                    <div class="stat-label">Total Pilotos</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-value"><?php echo number_format($estadisticas["total_sp"] / 1000000, 1); ?>M</div>
+                    <div class="stat-label">Skillpoints Totales</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-icon"><i class="fas fa-chart-simple"></i></div>
+                    <div class="stat-value"><?php echo number_format($estadisticas["promedio_sp"] / 1000000, 1); ?>M</div>
+                    <div class="stat-label">Promedio SP</div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-icon"><i class="fas fa-shield-alt"></i></div>
+                    <div class="stat-value"><?php echo number_format($estadisticas["seguridad"]["avg_security"] ?? 0, 2); ?></div>
+                    <div class="stat-label">Seguridad Promedio</div>
+                </div>
+            </div>
         </div>
-        
-    </main>
-    
-    <!-- ============================================
-         MODAL LOGOUT
-         ============================================ -->
-    <div class="modal-overlay" id="logoutModal">
-        <div class="modal">
-            <h3><i class="fas fa-sign-out-alt"></i> Confirm Logout</h3>
-            <p>Are you sure you want to logout?</p>
-            <div class="modal-buttons">
-                <button class="modal-btn cancel" onclick="hideLogoutModal()">Cancel</button>
-                <a href="?logout=confirm" class="modal-btn confirm" style="text-decoration:none">Yes, Logout</a>
+
+        <!-- Fila 2: Estadisticas  -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-icon"><i class="fas fa-users text-primary"></i></div>
+                    <div class="stat-value"><?php echo $totalPilots_grupo1; ?></div>
+                    <div class="stat-label">Grupo <?php echo $GRUPO_1_SUPERGROUP; ?> - Total Pilotos</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-icon"><i class="fas fa-user-check text-success"></i></div>
+                    <div class="stat-value"><?php echo $activePilots_grupo1; ?></div>
+                    <div class="stat-label">Grupo <?php echo $GRUPO_1_SUPERGROUP; ?> - Activos</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-icon"><i class="fas fa-shuttle-space text-warning"></i></div>
+                    <div class="stat-value"><?php echo formatNumber($totalShips_grupo1); ?></div>
+                    <div class="stat-label">Grupo <?php echo $GRUPO_1_SUPERGROUP; ?> - Total Naves</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card text-center">
+                    <div class="stat-icon"><i class="fas fa-calculator text-info"></i></div>
+                    <div class="stat-value"><?php echo $totalPilots_grupo1 > 0 ? round($totalShips_grupo1 / $totalPilots_grupo1, 1) : 0; ?></div>
+                    <div class="stat-label">Grupo <?php echo $GRUPO_1_SUPERGROUP; ?> - Naves/Piloto</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================================================================ -->
+        <!-- SECCION 2: CONTENIDO DEEPSEEK - ESTADISTICAS AVANZADAS (GRUPO 2) -->
+        <!-- ================================================================ -->
+        <div class="section-divider" data-label="SECCION 2: Comparación de Distribución de Habilidades (DeepSeek)"></div>
+
+        <div class="row mb-4">
+            <div class="col-md-12 text-center">
+                <h2 class="text-white">
+                    <i class="fas fa-chart-bar"></i> Comparación de Distribución de Habilidades
+                </h2>
+                <p class="text-white-50">Comparando la distribución de habilidades entre pilotos del Grupo <?php echo $GRUPO_2_SUPERGROUP; ?> (supergroup = <?php echo $GRUPO_2_SUPERGROUP; ?>)</p>
+            </div>
+        </div>
+
+        <!-- Segunda fila de estadisticas -->
+        <?php if ($estadisticas["total_pilotos"] > 0): ?>
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="stat-card">
+                        <h5><i class="fas fa-chart-pie"></i> Distribucion por Raza</h5>
+                        <canvas id="raceChart" height="140"></canvas>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="stat-card">
+                        <h5><i class="fas fa-crown"></i> Top 4 Skillpoints</h5>
+                        <div class="list-group">
+                            <?php if (count($estadisticas["top_skillpoints"]) > 0): ?>
+                                <?php foreach ($estadisticas["top_skillpoints"] as $top): ?>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="race-icon race-<?php echo strtolower($top["race"] ?? "minmatar"); ?>"></span>
+                                            <strong><?php echo htmlspecialchars($top["toon_name"]); ?></strong>
+                                            <small class="text-muted ml-2">(#<?php echo $top["toon_number"]; ?>)</small>
+                                        </div>
+                                        <span class="badge badge-primary badge-pill">
+                                            <?php echo number_format($top["skillpoints"] / 1000000, 1); ?>M SP
+                                        </span>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="list-group-item text-center text-muted">
+                                    No hay datos disponibles
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <h5><i class="fas fa-money-bill-wave text-success"></i> Top 4 Wallets</h5>
+                        <div class="list-group">
+                            <?php if (count($estadisticas["top_wallets"]) > 0): ?>
+                                <?php foreach ($estadisticas["top_wallets"] as $topw): ?>
+                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <strong><?php echo htmlspecialchars($topw["toon_name"]); ?></strong>
+                                            <small class="text-muted ml-2">(#<?php echo $topw["toon_number"]; ?>)</small>
+                                        </div>
+                                        <span class="badge badge-success badge-pill">
+                                            <?php echo number_format(($topw["wallet"] ?? 0) / 1000000, 2); ?> M ISK
+                                        </span>
+                                    </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="list-group-item text-center text-muted">
+                                    No hay datos de wallet disponibles
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PLACEHOLDER -->
+            <div class="pilot-table mb-4">
+                <h5 class="p-3 mb-0 bg-secondary text-white text-center">
+                    <i class="fas fa-tools"></i> PRÓXIMAMENTE - Más contenido en camino
+                </h5>
+                <div class="p-4 text-center text-muted">
+                    <i class="fas fa-hard-hat fa-3x mb-3"></i>
+                    <p>Esta sección está reservada para contenido futuro.</p>
+                </div>
+            </div>
+        <?php else: ?>
+            <div class="alert-warning-custom text-center">
+                <i class="fas fa-info-circle fa-2x mb-2"></i>
+                <h5>No hay pilotos registrados para este comandante</h5>
+                <p class="mb-0">Agrega pilotos con parent_toon_number = <?php echo $fleet_commander_character_id; ?> o parent_toon_number = 0</p>
+            </div>
+        <?php endif; ?>
+
+    <?php endif; ?>
+
+    <!-- Nota de Atribucion -->
+    <div class="attribution-note text-center">
+        <i class="fas fa-code"></i> <strong>Atribucion:</strong> Este archivo fue realizado parte por <strong>Qwen</strong> (menu de navegacion superior) 
+        y parte por <strong>DeepSeek R1</strong> (seccion de integridad de flota, estadisticas avanzadas, graficos Chart.js, buscador con paginacion, badges Omega/Alpha, supergroup). 
+        <br><i class="fas fa-palette"></i> Colores y presentacion: estilo DeepSeek.
+        <br><i class="fas fa-calendar"></i> Fecha de fusion: 2026-06-20 | <i class="fas fa-file-code"></i> Archivo: <?php echo basename(__FILE__); ?> | <i class="fas fa-database"></i> PHP <?php echo phpversion(); ?>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <hr class="bg-light">
+            <p>
+                <i class="fas fa-code"></i> Modelos: Qwen + DeepSeek R1 | 
+                <i class="fas fa-calendar"></i> Fecha: 2026-06-20 |
+                <i class="fas fa-file-code"></i> Archivo: <?php echo basename(__FILE__); ?> |
+                <i class="fas fa-database"></i> PHP <?php echo phpversion(); ?>
+            </p>
+            <p>
+                <i class="fas fa-chart-line"></i> Integridad de la flota verificada
+                <?php if ($fleet_commander_character_id > 0): ?>
+                    | <i class="fas fa-user-tie"></i> Commander ID: <?php echo $fleet_commander_character_id; ?>
+                <?php endif; ?>
+                | <i class="fas fa-database"></i> <?php echo empty($db_error) ? "Conectado" : "Error DB"; ?>
+            </p>
+        </div>
+    </footer>
+</div>
+
+<!-- Fixed Footer Bar -->
+<div class="fixed-footer">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-4 text-left">
+                <span class="text-white-50 small ml-3">
+                    <i class="fas fa-anchor mr-1"></i> Estado de Flota: En línea
+                </span>
+            </div>
+            <div class="col-4 text-center">
+                <div class="btn-group">
+                    <a href="mosaic.php" class="btn btn-link text-white p-2" title="Mosaic"><i class="fas fa-th-large"></i></a>
+                    <a href="<?php echo basename(__FILE__); ?>" class="btn btn-link text-white p-2" title="Pilotos"><i class="fas fa-user-astronaut"></i></a>
+                    <a href="#" class="btn btn-link text-white p-2" title="Buscar"><i class="fas fa-search"></i></a>
+                    <a href="#" class="btn btn-link text-white p-2" title="Configuracion"><i class="fas fa-cog"></i></a>
+                </div>
+            </div>
+            <div class="col-4 text-right">
+                <span class="text-muted small mr-3">v1.0.3 | <?php echo date("H:i"); ?> EVE</span>
             </div>
         </div>
     </div>
-    
-    <!-- Toast Notification -->
-    <div class="toast" id="toast">
-        <i class="fas fa-check-circle"></i>
-        <span id="toast-message">Operation successful</span>
-    </div>
-    
-    <!-- Scripts -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-    
-    <script>
-        let table;
-        let editingToon = null;
-        
-        $(document).ready(function() {
-            // Initialize DataTable
-            table = $('#pilotsTable').DataTable({
-                pageLength: 200,
-                order: [[1, 'asc']], // Sort by supergroup by default
-                language: {
-                    search: "Search pilots:",
-                    lengthMenu: "Show _MENU_ pilots per page",
-                    info: "Showing _START_ to _END_ of _TOTAL_ pilots",
-                    paginate: {
-                        first: "First",
-                        last: "Last",
-                        next: "Next",
-                        previous: "Previous"
-                    }
-                },
-                columnDefs: [
-                    { orderable: false, targets: [4] }, // Update icon not sortable
-                    { width: "120px", targets: 1 } // Fixed width for supergroup
-                ],
-                initComplete: function() {
-                    // Custom filter by supergroup
-                    this.api().columns(1).every(function() {
-                        var column = this;
-                        var select = $('<select class="supergroup-filter"><option value="">All Groups</option></select>')
-                            .appendTo($(column.header()).empty())
-                            .on('change', function() {
-                                var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                                column.search(val ? '^' + val + '$' : '', true, false).draw();
-                            });
-                        
-                        // Get unique supergroup values
-                        column.data().unique().sort().each(function(d, j) {
-                            var val = $(d).find('.supergroup-value').text().trim();
-                            if (val) {
-                                select.append('<option value="' + val + '">Group ' + val + '</option>');
-                            }
-                        });
-                    });
-                }
-            });
-        });
-        
-        // ============================================
-        // SUPERGROUP EDITING
-        // ============================================
-        function editSupergroup(toonNumber) {
-            // Cancel previous edit if any
-            if (editingToon && editingToon !== toonNumber) {
-                cancelEdit(editingToon);
-            }
-            
-            editingToon = toonNumber;
-            
-            // Hide display, show form
-            document.getElementById('sg-value-' + toonNumber).parentElement.style.display = 'none';
-            document.getElementById('sg-form-' + toonNumber).classList.add('active');
-            
-            // Focus on input
-            var input = document.getElementById('sg-input-' + toonNumber);
-            input.focus();
-            input.select();
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<?php if ($mostrar_contenido && isset($estadisticas["razas"]) && count($estadisticas["razas"]) > 0): ?>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var ctx = document.getElementById("raceChart").getContext("2d");
+    var raceData = <?php 
+        $razas = ["labels" => [], "data" => []];
+        foreach ($estadisticas["razas"] as $raza) {
+            $razas["labels"][] = $raza["race"] ?: "Desconocida";
+            $razas["data"][] = $raza["cantidad"];
         }
-        
-        function cancelEdit(toonNumber) {
-            document.getElementById('sg-value-' + toonNumber).parentElement.style.display = 'inline-flex';
-            document.getElementById('sg-form-' + toonNumber).classList.remove('active');
-            editingToon = null;
-        }
-        
-        function handleEnter(event, toonNumber) {
-            if (event.key === 'Enter') {
-                saveSupergroup(toonNumber);
-            } else if (event.key === 'Escape') {
-                cancelEdit(toonNumber);
-            }
-        }
-        
-        function saveSupergroup(toonNumber) {
-            var newValue = document.getElementById('sg-input-' + toonNumber).value;
-            
-            // Validate
-            if (newValue < 1 || newValue > 999) {
-                showToast('Supergroup must be between 1 and 999', true);
-                return;
-            }
-            
-            // Show saving indicator
-            var form = document.getElementById('sg-form-' + toonNumber);
-            form.innerHTML = '<span class="sg-saving"><i class="fas fa-spinner fa-spin"></i> Saving...</span>';
-            
-            // Send AJAX
-            $.ajax({
-                url: window.location.href,
-                method: 'POST',
-                data: {
-                    action: 'update_supergroup',
-                    toon_number: toonNumber,
-                    supergroup: newValue
-                },
-                success: function(response) {
-                    if (response.success) {
-                        // Update displayed value
-                        document.getElementById('sg-value-' + toonNumber).textContent = newValue;
-                        
-                        // Restore form for next time
-                        form.innerHTML = `
-                            <input type="number" class="supergroup-input" id="sg-input-${toonNumber}" 
-                                   value="${newValue}" min="1" max="999" 
-                                   onkeypress="handleEnter(event, ${toonNumber})">
-                            <button class="sg-btn sg-btn-save" onclick="saveSupergroup(${toonNumber})" title="Save">
-                                <i class="fas fa-check"></i>
-                            </button>
-                            <button class="sg-btn sg-btn-cancel" onclick="cancelEdit(${toonNumber})" title="Cancel">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        `;
-                        
-                        cancelEdit(toonNumber);
-                        showToast('Supergroup updated successfully');
-                        
-                        // Redraw table to reorder
-                        table.draw();
-                    } else {
-                        showToast(response.message || 'Error updating supergroup', true);
-                        cancelEdit(toonNumber);
-                    }
-                },
-                error: function() {
-                    showToast('Network error. Please try again.', true);
-                    cancelEdit(toonNumber);
-                }
-            });
-        }
-        
-        // ============================================
-        // UTILITIES
-        // ============================================
-        function showToast(message, isError = false) {
-            var toast = document.getElementById('toast');
-            var toastMessage = document.getElementById('toast-message');
-            
-            toastMessage.textContent = message;
-            toast.className = 'toast show' + (isError ? ' error' : '');
-            
-            setTimeout(function() {
-                toast.classList.remove('show');
-            }, 3000);
-        }
-        
-        function updatePilot(toonNumber) {
-            showToast('Updating pilot ' + toonNumber + '... (ESI integration pending)');
-            // ESI call to update pilot data would go here
-        }
-        
-        function refreshTable() {
-            location.reload();
-        }
-        
-        function showLogoutModal() {
-            document.getElementById('logoutModal').classList.add('active');
-        }
-        
-        function hideLogoutModal() {
-            document.getElementById('logoutModal').classList.remove('active');
-        }
-        
-        // Close modal when clicking outside
-        document.getElementById('logoutModal').addEventListener('click', function(e) {
-            if (e.target === this) hideLogoutModal();
-        });
-        
-        // Close with ESC
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                hideLogoutModal();
-                if (editingToon) cancelEdit(editingToon);
+        echo json_encode($razas);
+    ?>;
+
+    if (raceData.labels && raceData.labels.length > 0) {
+        new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels: raceData.labels,
+                datasets: [{
+                    data: raceData.data,
+                    backgroundColor: ["#3498db", "#2ecc71", "#f39c12", "#e74c3c", "#95a5a6"],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { position: "bottom" } }
             }
         });
-    </script>
+    }
+});
+</script>
+<?php endif; ?>
+
 </body>
 </html>
+<?php $link->close(); ?>
