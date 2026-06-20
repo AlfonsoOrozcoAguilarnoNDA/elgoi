@@ -1,25 +1,25 @@
 <?php
 /**
- * Archivo: deepseekcrew2.php.php
- * Fecha: 2026-06-20
- * Descripcion: Panel de control de pilotos con integridad de flota.
- *              Fusion de dos scripts: logica de Qwen (arriba) + DeepSeek (abajo).
- * Modelos: DeepSeek R1 (marzo 2026)
+ * File: deepseekcrew2.php
+ * Date: 2026-06-20
+ * Description: Fleet pilot dashboard with fleet integrity.
+ *              Merged from two scripts: Qwen logic (top) + DeepSeek (bottom).
+ * Models: DeepSeek R1 (March 2026)
  */
 
 // ============================================================================
-// CONFIGURACION DE GRUPOS - MODIFICAR AQUI LOS VALORES DE SUPERGROUP
+// GROUP CONFIGURATION - MODIFY SUPERGROUP VALUES HERE
 // ============================================================================
-$GRUPO_1_SUPERGROUP = 1;   // Seccion Qwen (arriba)
-$GRUPO_2_SUPERGROUP = 2;   // Seccion DeepSeek / comparacion (abajo)
+$GRUPO_1_SUPERGROUP = 1;   // Section Qwen (top)
+$GRUPO_2_SUPERGROUP = 2;   // Section DeepSeek / comparison (bottom)
 
 // ============================================================================
-// CONEXION A BASE DE DATOS - USA $link (establecido en abyss/config.php)
+// DATABASE CONNECTION - USES $link (established in abyss/config.php)
 // ============================================================================
 require "../config.php";
 check_authorization();
 
-// Variable del comandante de flota
+// Fleet commander variable
 $fleet_commander_character_id = isset($_GET["commander"]) ? (int)$_GET["commander"] : 0;
 $fleet_commander_character_id=2112061747;
 if ($fleet_commander_character_id === 0 && isset($_SESSION["fleet_commander_character_id"])) {
@@ -27,7 +27,7 @@ if ($fleet_commander_character_id === 0 && isset($_SESSION["fleet_commander_char
 }
 
 // ============================================================================
-// FUNCIONES AUXILIARES
+// HELPER FUNCTIONS
 // ============================================================================
 
 function formatDate($date) {
@@ -49,17 +49,17 @@ function formatISK($isk) {
 
 function getPilotStatus($lastsaved) {
     if (empty($lastsaved) || $lastsaved === "0000-00-00 00:00:00") {
-        return ["class" => "secondary", "label" => "Sin Datos"];
+        return ["class" => "secondary", "label" => "No Data"];
     }
     $last = strtotime($lastsaved);
     $now = time();
     $diff = ($now - $last) / 3600;
     if ($diff < 24) {
-        return ["class" => "success", "label" => "Activo"];
+        return ["class" => "success", "label" => "Active"];
     } elseif ($diff < 168) {
-        return ["class" => "warning", "label" => "Reciente"];
+        return ["class" => "warning", "label" => "Recent"];
     } else {
-        return ["class" => "danger", "label" => "Inactivo"];
+        return ["class" => "danger", "label" => "Inactive"];
     }
 }
 
@@ -86,7 +86,7 @@ function verificarIntegridadFlota($conexion, $commander_id) {
 
     if ($commander_id === 0) {
         $resultado["valido"] = false;
-        $resultado["mensaje"] = "No se ha definido un comandante de flota (fleet_commander_character_id)";
+        $resultado["mensaje"] = "No fleet commander has been defined (fleet_commander_character_id)";
         return $resultado;
     }
 
@@ -100,7 +100,7 @@ function verificarIntegridadFlota($conexion, $commander_id) {
         $pilotos_inconsistentes[] = $row;
     }
 
-    // Pilotos huerfanos: parent_toon_number = 0 (sin commander asignado)
+    // Orphan pilots: parent_toon_number = 0 (no commander assigned)
     $stmt_huerfanos = $conexion->prepare("SELECT toon_number, toon_name, parent_toon_number FROM PILOTS WHERE parent_toon_number = 0");
     $stmt_huerfanos->execute();
     $result_huerfanos = $stmt_huerfanos->get_result();
@@ -132,14 +132,14 @@ function verificarIntegridadFlota($conexion, $commander_id) {
     if ($otros_count > 0) {
         // Pilotos de otro comandante SI bloquean el dashboard
         $resultado["valido"] = false;
-        $resultado["mensaje"] = "Se encontraron " . $otros_count . " piloto(s) asignados a otro comandante de flota (no al ID: " . $commander_id . ")";
+        $resultado["mensaje"] = "Found " . $otros_count . " pilot(s) assigned to another fleet commander (not ID: " . $commander_id . ")";
         if ($huerfanos_count > 0) {
-            $resultado["mensaje"] .= " y " . $huerfanos_count . " piloto(s) huerfano(s) (sin comandante asignado)";
+            $resultado["mensaje"] .= " y " . $huerfanos_count . " orphan pilot(s) (no commander assigned)";
         }
     } else {
-        // Los huerfanos NO bloquean el dashboard, solo se muestran como aviso aparte
+        // The huerfanos NO bloquean el dashboard, solo se muestran como aviso aparte
         $resultado["valido"] = true;
-        $resultado["mensaje"] = "Los " . $pilotos_validos . " pilotos pertenecen al comandante de flota (ID: " . $commander_id . ")";
+        $resultado["mensaje"] = "The " . $pilotos_validos . " pilots belong to the fleet commander (ID: " . $commander_id . ")";
     }
 
     return $resultado;
@@ -276,10 +276,10 @@ if ($mostrar_contenido) {
     $estadisticas = obtenerEstadisticasFlota($link, $fleet_commander_character_id);
 }
 
-$db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->connect_error : "";
+$db_error = ($link && $link->connect_error) ? "Connection error: " . $link->connect_error : "";
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -487,21 +487,6 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
             min-width: 80px;
         }
 
-        .fixed-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(30, 60, 114, 0.95);
-            border-top: 2px solid rgba(255,255,255,0.2);
-            padding: 10px 0;
-            z-index: 1000;
-        }
-
-        .content-wrapper {
-            padding-bottom: 80px;
-        }
-
         .attribution-note {
             background: rgba(0,0,0,0.3);
             border-radius: 10px;
@@ -511,57 +496,7 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
             font-size: 0.85rem;
         }
 
-        /* Menu de navegacion superior */
-        .navbar-custom {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            border-bottom: 3px solid #ffd700;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            padding: 0.8rem 1rem;
-        }
-
-        .navbar-custom .navbar-brand {
-            font-weight: bold;
-            font-size: 1.3rem;
-            color: #ffd700 !important;
-        }
-
-        .navbar-custom .nav-link {
-            color: rgba(255,255,255,0.9) !important;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            padding: 0.5rem 1rem !important;
-            border-radius: 8px;
-        }
-
-        .navbar-custom .nav-link:hover,
-        .navbar-custom .nav-link.active {
-            color: #ffd700 !important;
-            background: rgba(255,255,255,0.1);
-        }
-
-        .navbar-custom .dropdown-menu {
-            background: #1e3c72;
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-        }
-
-        .navbar-custom .dropdown-item {
-            color: rgba(255,255,255,0.9);
-            transition: all 0.2s;
-        }
-
-        .navbar-custom .dropdown-item:hover {
-            background: rgba(255,215,0,0.2);
-            color: #ffd700;
-        }
-
-        .navbar-custom .dropdown-divider {
-            border-top: 1px solid rgba(255,255,255,0.2);
-        }
-
-        .navbar-custom .navbar-text {
-            color: rgba(255,255,255,0.8) !important;
-        }
+        
 
         .pocket6-badge {
             background: #e74c3c;
@@ -591,34 +526,7 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
 <!-- ============================================================================ -->
 <!-- MENU DE NAVEGACION SUPERIOR - DEL SCRIPT 1 (Qwen)                           -->
 <!-- ============================================================================ -->
-<nav class="navbar navbar-expand-lg navbar-custom fixed-top">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="<?php echo basename(__FILE__); ?>"></a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTop">
-            <span class="navbar-toggler-icon" style="color: white;"><i class="fas fa-bars"></i></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarTop">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown">
-                        <i class="fas fa-list"></i> Gestión
-                    </a>
-                    <div class="dropdown-menu">
-                        <a class="dropdown-item" href="mosaic.php"><i class="fas fa-th-large"></i> Mosaic</a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="#"><i class="fas fa-users"></i> Ver Todos</a>
-                        <a class="dropdown-item" href="#"><i class="fas fa-user-check"></i> Activos</a>
-                        <a class="dropdown-item" href="#"><i class="fas fa-user-times"></i> Inactivos</a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="#"><i class="fas fa-file-export"></i> Exportar</a>
-                    </div>
-                </li>
-            </ul>
-        </div>
-    </div>
-</nav>
-
-<div class="main-container content-wrapper" style="padding-top: 90px;">
+<div class="main-container" >
 
     <!-- Titulo principal -->
     <div class="text-center mb-4">
@@ -626,7 +534,7 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
             <i class="fas fa-user-astronaut"></i> Pilot Manager
         </h1>
         <p class="lead text-white-50">
-            Integridad y control de la flota
+            Fleet Integrity and Control
         </p>
     </div>
 
@@ -634,16 +542,16 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
     <?php if ($fleet_commander_character_id > 0): ?>
         <div class="commander-info text-center">
             <i class="fas fa-crown"></i> 
-            <strong>Comandante de Flota ID: <?php echo $fleet_commander_character_id; ?></strong>
+            <strong>Fleet Commander ID: <?php echo $fleet_commander_character_id; ?></strong>
             <i class="fas fa-chevron-right"></i> 
-            Verificando integridad de la flota...
+            Verifying fleet integrity...
         </div>
     <?php endif; ?>
 
     <!-- Alerta de Error de Base de Datos -->
     <?php if (!empty($db_error)): ?>
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="fas fa-exclamation-triangle"></i> <strong>Error de Base de Datos:</strong> <?php echo $db_error; ?>
+        <i class="fas fa-exclamation-triangle"></i> <strong>Database Error:</strong> <?php echo $db_error; ?>
         <button type="button" class="close" data-dismiss="alert">
             <span>&times;</span>
         </button>
@@ -655,20 +563,20 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
         <div class="alert-danger-custom">
             <h4 class="alert-heading">
                 <i class="fas fa-exclamation-triangle"></i> 
-                ¡ALERTA! Problema de integridad en la flota
+                ALERT! Fleet Integrity Problem
             </h4>
             <p class="mb-2">
                 <strong><?php echo $integridad["mensaje"]; ?></strong>
             </p>
             <p>
-                <i class="fas fa-chart-line"></i> Total de pilotos en BD: <?php echo $integridad["total_pilotos"]; ?><br>
-                <i class="fas fa-check-circle text-success"></i> Pilotos válidos: <?php echo $integridad["pilotos_validos"]; ?><br>
-                <i class="fas fa-times-circle text-danger"></i> Pilotos asignados a otro comandante: <?php echo $integridad["pilotos_invalidos"]; ?>
+                <i class="fas fa-chart-line"></i> Total pilots in DB: <?php echo $integridad["total_pilotos"]; ?><br>
+                <i class="fas fa-check-circle text-success"></i> Valid pilots: <?php echo $integridad["pilotos_validos"]; ?><br>
+                <i class="fas fa-times-circle text-danger"></i> Pilots assigned to another commander: <?php echo $integridad["pilotos_invalidos"]; ?>
             </p>
 
             <?php if (count($integridad["pilotos_inconsistentes"]) > 0): ?>
                 <hr>
-                <h6><i class="fas fa-list"></i> Pilotos asignados a otro comandante:</h6>
+                <h6><i class="fas fa-list"></i> Pilots assigned to another commander:</h6>
                 <div class="table-responsive">
                     <table class="table table-sm table-bordered bg-white">
                         <thead class="thead-dark">
@@ -693,7 +601,7 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
 
             <?php if (count($integridad["huerfanos"]) > 0): ?>
                 <hr>
-                <h6><i class="fas fa-list"></i> Pilotos huérfanos (sin comandante asignado):</h6>
+                <h6><i class="fas fa-list"></i> Orphan pilots (no commander assigned):</h6>
                 <div class="table-responsive">
                     <table class="table table-sm table-bordered bg-white">
                         <thead class="thead-dark">
@@ -717,20 +625,20 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
             <hr>
             <p class="mb-0">
                 <i class="fas fa-info-circle"></i> 
-                Para continuar, asegúrate de que todos los pilotos tengan 
+                To continue, make sure all pilots have 
                 <strong>parent_toon_number = <?php echo $fleet_commander_character_id; ?></strong>
             </p>
         </div>
 
         <div class="text-center mt-3">
             <a href="?commander=<?php echo $fleet_commander_character_id; ?>&forzar=1" class="btn btn-warning">
-                <i class="fas fa-eye"></i> Ver de todas formas (no recomendado)
+                <i class="fas fa-eye"></i> View anyway (not recommended)
             </a>
         </div>
 
     <?php else: ?>
 
-        <!-- Mensaje de exito en integridad -->
+        <!-- Integrity success message -->
         <div class="alert-success-custom">
             <h5 class="mb-0">
                 <i class="fas fa-check-circle"></i> 
@@ -738,12 +646,12 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
             </h5>
         </div>
 
-        <!-- Aviso de pilotos huerfanos (parent_toon_number = 0) -->
+        <!-- Orphan pilots warning (parent_toon_number = 0) -->
         <?php if ($integridad["huerfanos_count"] > 0): ?>
         <div class="alert-danger-custom">
             <h5 class="mb-2">
                 <i class="fas fa-exclamation-triangle"></i>
-                Se encontraron <?php echo $integridad["huerfanos_count"]; ?> piloto(s) huérfano(s) (sin comandante asignado)
+                Found <?php echo $integridad["huerfanos_count"]; ?> orphan pilot(s) (no commander assigned)
             </h5>
             <div class="table-responsive">
                 <table class="table table-sm table-bordered bg-white mb-0">
@@ -767,7 +675,7 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
         <?php endif; ?>
 
         <!-- ================================================================ -->
-        <!-- TARJETAS DE ESTADISTICAS:                                        -->
+        <!-- STATISTICS CARDS:                                        -->
         <!-- ================================================================ -->
         <div class="row mb-4">
             <!-- Fila 1: Estadisticas DeepSeek (4 tarjetas) -->
@@ -775,7 +683,7 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
                 <div class="stat-card text-center">
                     <div class="stat-icon"><i class="fas fa-user-astronaut"></i></div>
                     <div class="stat-value"><?php echo number_format($estadisticas["total_pilotos"], 0, ",", "."); ?></div>
-                    <div class="stat-label">Total Pilotos</div>
+                    <div class="stat-label">Total Pilots</div>
                 </div>
             </div>
 
@@ -783,7 +691,7 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
                 <div class="stat-card text-center">
                     <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
                     <div class="stat-value"><?php echo number_format($estadisticas["total_sp"] / 1000000, 1); ?>M</div>
-                    <div class="stat-label">Skillpoints Totales</div>
+                    <div class="stat-label">Total Skillpoints</div>
                 </div>
             </div>
 
@@ -791,7 +699,7 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
                 <div class="stat-card text-center">
                     <div class="stat-icon"><i class="fas fa-chart-simple"></i></div>
                     <div class="stat-value"><?php echo number_format($estadisticas["promedio_sp"] / 1000000, 1); ?>M</div>
-                    <div class="stat-label">Promedio SP</div>
+                    <div class="stat-label">Average SP</div>
                 </div>
             </div>
 
@@ -799,7 +707,7 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
                 <div class="stat-card text-center">
                     <div class="stat-icon"><i class="fas fa-shield-alt"></i></div>
                     <div class="stat-value"><?php echo number_format($estadisticas["seguridad"]["avg_security"] ?? 0, 2); ?></div>
-                    <div class="stat-label">Seguridad Promedio</div>
+                    <div class="stat-label">Average Security</div>
                 </div>
             </div>
         </div>
@@ -810,28 +718,28 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
                 <div class="stat-card text-center">
                     <div class="stat-icon"><i class="fas fa-users text-primary"></i></div>
                     <div class="stat-value"><?php echo $totalPilots_grupo1; ?></div>
-                    <div class="stat-label">Grupo <?php echo $GRUPO_1_SUPERGROUP; ?> - Total Pilotos</div>
+                    <div class="stat-label">Group <?php echo $GRUPO_1_SUPERGROUP; ?> - Total Pilots</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card text-center">
                     <div class="stat-icon"><i class="fas fa-user-check text-success"></i></div>
                     <div class="stat-value"><?php echo $activePilots_grupo1; ?></div>
-                    <div class="stat-label">Grupo <?php echo $GRUPO_1_SUPERGROUP; ?> - Activos</div>
+                    <div class="stat-label">Group <?php echo $GRUPO_1_SUPERGROUP; ?> - Actives</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card text-center">
                     <div class="stat-icon"><i class="fas fa-shuttle-space text-warning"></i></div>
                     <div class="stat-value"><?php echo formatNumber($totalShips_grupo1); ?></div>
-                    <div class="stat-label">Grupo <?php echo $GRUPO_1_SUPERGROUP; ?> - Total Naves</div>
+                    <div class="stat-label">Group <?php echo $GRUPO_1_SUPERGROUP; ?> - Total Ships</div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="stat-card text-center">
                     <div class="stat-icon"><i class="fas fa-calculator text-info"></i></div>
                     <div class="stat-value"><?php echo $totalPilots_grupo1 > 0 ? round($totalShips_grupo1 / $totalPilots_grupo1, 1) : 0; ?></div>
-                    <div class="stat-label">Grupo <?php echo $GRUPO_1_SUPERGROUP; ?> - Naves/Piloto</div>
+                    <div class="stat-label">Group <?php echo $GRUPO_1_SUPERGROUP; ?> - Ships/Pilot</div>
                 </div>
             </div>
         </div>
@@ -839,14 +747,14 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
         <!-- ================================================================ -->
         <!-- SECCION 2: CONTENIDO DEEPSEEK - ESTADISTICAS AVANZADAS (GRUPO 2) -->
         <!-- ================================================================ -->
-        <div class="section-divider" data-label="SECCION 2: Comparación de Distribución de Habilidades (DeepSeek)"></div>
+        <div class="section-divider" data-label="SECTION 2: Skill Distribution Comparison (DeepSeek)"></div>
 
         <div class="row mb-4">
             <div class="col-md-12 text-center">
                 <h2 class="text-white">
-                    <i class="fas fa-chart-bar"></i> Comparación de Distribución de Habilidades
+                    <i class="fas fa-chart-bar"></i> Skill Distribution Comparison
                 </h2>
-                <p class="text-white-50">Comparando la distribución de habilidades entre pilotos del Grupo <?php echo $GRUPO_2_SUPERGROUP; ?> (supergroup = <?php echo $GRUPO_2_SUPERGROUP; ?>)</p>
+                <p class="text-white-50">Comparando la distribución de habilidades entre pilotos del Group <?php echo $GRUPO_2_SUPERGROUP; ?> (supergroup = <?php echo $GRUPO_2_SUPERGROUP; ?>)</p>
             </div>
         </div>
 
@@ -855,7 +763,7 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
             <div class="row mb-4">
                 <div class="col-md-6">
                     <div class="stat-card">
-                        <h5><i class="fas fa-chart-pie"></i> Distribucion por Raza</h5>
+                        <h5><i class="fas fa-chart-pie"></i> Distribution by Race</h5>
                         <canvas id="raceChart" height="140"></canvas>
                     </div>
                 </div>
@@ -879,7 +787,7 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <div class="list-group-item text-center text-muted">
-                                    No hay datos disponibles
+                                    No data available
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -902,7 +810,7 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <div class="list-group-item text-center text-muted">
-                                    No hay datos de wallet disponibles
+                                    No wallet data available
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -913,62 +821,34 @@ $db_error = ($link && $link->connect_error) ? "Error de conexion: " . $link->con
             <!-- PLACEHOLDER -->
             <div class="pilot-table mb-4">
                 <h5 class="p-3 mb-0 bg-secondary text-white text-center">
-                    <i class="fas fa-tools"></i> PRÓXIMAMENTE - Más contenido en camino
+                    <i class="fas fa-tools"></i> COMING SOON - More content on the way
                 </h5>
                 <div class="p-4 text-center text-muted">
                     <i class="fas fa-hard-hat fa-3x mb-3"></i>
-                    <p>Esta sección está reservada para contenido futuro.</p>
+                    <p>This section is reserved for future content.</p>
                 </div>
             </div>
         <?php else: ?>
             <div class="alert-warning-custom text-center">
                 <i class="fas fa-info-circle fa-2x mb-2"></i>
-                <h5>No hay pilotos registrados para este comandante</h5>
-                <p class="mb-0">Agrega pilotos con parent_toon_number = <?php echo $fleet_commander_character_id; ?> o parent_toon_number = 0</p>
+                <h5>No pilots registered for this commander</h5>
+                <p class="mb-0">Add pilots with parent_toon_number = <?php echo $fleet_commander_character_id; ?> or parent_toon_number = 0</p>
             </div>
         <?php endif; ?>
 
     <?php endif; ?>
 
-    <!-- Nota de Atribucion -->
+    <!-- Attribution Note -->
     <div class="attribution-note text-center">
-        <i class="fas fa-code"></i> <strong>Atribucion:</strong> Este archivo fue realizado parte por <strong>Qwen</strong> (menu de navegacion superior) 
-        y parte por <strong>DeepSeek R1</strong> (seccion de integridad de flota, estadisticas avanzadas, graficos Chart.js, buscador con paginacion, badges Omega/Alpha, supergroup). 
-        <br><i class="fas fa-palette"></i> Colores y presentacion: estilo DeepSeek.
-        <br><i class="fas fa-calendar"></i> Fecha de fusion: 2026-06-20 | <i class="fas fa-file-code"></i> Archivo: <?php echo basename(__FILE__); ?> | <i class="fas fa-database"></i> PHP <?php echo phpversion(); ?>
+        <i class="fas fa-code"></i> <strong>Attribution:</strong> This file was created partly by <strong>Qwen</strong> (top navigation menu) 
+        y parte por <strong>DeepSeek R1</strong> (fleet integrity section, advanced statistics, Chart.js graphs, search with pagination, Omega/Alpha badges, supergroup). 
+        <br><i class="fas fa-palette"></i> Colors and presentation: DeepSeek style.
+        <br><i class="fas fa-calendar"></i> Merge date: 2026-06-20 | <i class="fas fa-file-code"></i> File: <?php echo basename(__FILE__); ?> | <i class="fas fa-database"></i> PHP <?php echo phpversion(); ?>
     </div>
 
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <hr class="bg-light">
-            <p>
-                <i class="fas fa-code"></i> Modelos: Qwen + DeepSeek R1 | 
-                <i class="fas fa-calendar"></i> Fecha: 2026-06-20 |
-                <i class="fas fa-file-code"></i> Archivo: <?php echo basename(__FILE__); ?> |
-                <i class="fas fa-database"></i> PHP <?php echo phpversion(); ?>
-            </p>
-            <p>
-                <i class="fas fa-chart-line"></i> Integridad de la flota verificada
-                <?php if ($fleet_commander_character_id > 0): ?>
-                    | <i class="fas fa-user-tie"></i> Commander ID: <?php echo $fleet_commander_character_id; ?>
-                <?php endif; ?>
-                | <i class="fas fa-database"></i> <?php echo empty($db_error) ? "Conectado" : "Error DB"; ?>
-            </p>
-        </div>
-    </footer>
-</div>
+    </div>
 
-<!-- Fixed Footer Bar -->
-<div class="fixed-footer">
-    <div class="container-fluid">
-        <div class="row align-items-center">
-            <div class="col-4 text-left">
-                <span class="text-white-50 small ml-3">
-                    <i class="fas fa-anchor mr-1"></i> Estado de Flota: En línea
-                </span>
-            </div>
-            <div class="col-4 text-center">
+<div class="col-4 text-center">
                 <div class="btn-group">
                     <a href="mosaic.php" class="btn btn-link text-white p-2" title="Mosaic"><i class="fas fa-th-large"></i></a>
                     <a href="<?php echo basename(__FILE__); ?>" class="btn btn-link text-white p-2" title="Pilotos"><i class="fas fa-user-astronaut"></i></a>
@@ -994,7 +874,7 @@ document.addEventListener("DOMContentLoaded", function() {
     var raceData = <?php 
         $razas = ["labels" => [], "data" => []];
         foreach ($estadisticas["razas"] as $raza) {
-            $razas["labels"][] = $raza["race"] ?: "Desconocida";
+            $razas["labels"][] = $raza["race"] ?: "Unknown";
             $razas["data"][] = $raza["cantidad"];
         }
         echo json_encode($razas);
