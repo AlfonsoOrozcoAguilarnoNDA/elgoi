@@ -1367,7 +1367,7 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
                             <div class="list-group-item">
                                 <div>
                                     <strong><?php echo htmlspecialchars($topw["toon_name"]); ?></strong>
-                                    <small class="ml-2">(#<?php echo $topw["toon_number"; ?>)</small>
+                                    <small class="ml-2">(#<?php echo $topw["toon_number"]; ?>)</small>
                                 </div>
                                 <span class="badge badge-success"><?php echo number_format(($topw["wallet"] ?? 0) / 1000000, 2); ?> M ISK</span>
                             </div>
