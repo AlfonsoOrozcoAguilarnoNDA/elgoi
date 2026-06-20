@@ -20,7 +20,7 @@ if ($mode === 'alpha') {
 }
 
 if ($toon_number <= 0) {
-    die("<div class='alert alert-danger'>Error: Toon number inválido.</div>");
+    die("<div class='alert alert-danger'>Error: Invalid toon number.</div>");
 }
 
 if ($mode === 'alpha') {
@@ -33,25 +33,25 @@ if ($mode === 'alpha') {
 
 $result_pilot = mysqli_query($link, $sql_pilot);
 if (!$result_pilot || mysqli_num_rows($result_pilot) == 0) {
-    die("<div class='alert alert-danger'>Error: No se puede detectar el piloto $toon_number</div>");
+    die("<div class='alert alert-danger'>Error: Cannot detect pilot $toon_number</div>");
 }
 
 $pilot = mysqli_fetch_assoc($result_pilot);
 mysqli_free_result($result_pilot);
 
 if ($mode === 'alpha' && $pilot['email_pilot'] != $_SESSION['youremail']) {
-    die("<div class='alert alert-danger'>Error: Este piloto pertenece a otro usuario o usted se ha desconectado</div>");
+    die("<div class='alert alert-danger'>Error: This pilot belongs to another user or you have been disconnected</div>");
 }
 
 $pilot_name  = htmlspecialchars($pilot['toon_name']);
-$page_title  = $mode === 'alpha' ? "Alpha/Omega Check - $pilot_name" : "Inventario - $pilot_name";
+$page_title  = $mode === 'alpha' ? "Alpha/Omega Check - $pilot_name" : "Inventory - $pilot_name";
 $portrait    = "https://images.evetech.net/characters/{$toon_number}/portrait";
 
 echo ui_header($page_title);
 echo crew_navbar();
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title><?php echo $page_title; ?></title>
@@ -226,7 +226,7 @@ echo crew_navbar();
         </a>
     </div>
     <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary">
-        <i class="fas fa-arrow-left mr-1"></i> Volver
+        <i class="fas fa-arrow-left mr-1"></i> Back
     </a>
 </div>
 
@@ -255,7 +255,7 @@ if ($mode === 'alpha') {
                 <div class="col-md-10">
                     <h4 class="text-white mb-1"><?php echo $pilot_name; ?></h4>
                     <div class="text-muted"><i class="fas fa-dna mr-1"></i><?php echo htmlspecialchars($pilot['race']); ?></div>
-                    <div class="text-muted mt-1"><i class="fas fa-info-circle mr-1"></i>Análisis EXPANDED — todas las razas</div>
+                    <div class="text-muted mt-1"><i class="fas fa-info-circle mr-1"></i>EXPANDED Analysis — all races</div>
                 </div>
             </div>
         </div>
@@ -328,7 +328,7 @@ if ($mode === 'alpha') {
                             <!-- MUST LEARN -->
                             <td class="col-must">
                                 <?php if (empty($analysis['must_learn'])): ?>
-                                    <p class="text-muted text-center mt-2"><em>Ninguno</em></p>
+                                    <p class="text-muted text-center mt-2"><em>None</em></p>
                                 <?php else: ?>
                                     <table class="table table-sm table-inner mb-0">
                                         <tbody>
@@ -351,7 +351,7 @@ if ($mode === 'alpha') {
                             <!-- NEED TRAIN -->
                             <td>
                                 <?php if (empty($analysis['need_train'])): ?>
-                                    <p class="text-muted text-center mt-2"><em>Ninguno</em></p>
+                                    <p class="text-muted text-center mt-2"><em>None</em></p>
                                 <?php else: ?>
                                     <table class="table table-sm table-inner mb-0">
                                         <tbody>
@@ -363,7 +363,7 @@ if ($mode === 'alpha') {
                                                     <a href="https://esiknife.com/abyss/skill_detail.php?module=dt2&what=<?php echo $skill['type_id']; ?>"
                                                        target="_blank" class="text-info"><?php echo $skill['type_id']; ?></a>
                                                     <small class="d-block text-muted"><?php echo htmlspecialchars($skill['name']); ?></small>
-                                                    <span class="badge badge-warning" style="font-size:0.7rem;">Nivel <?php echo $skill['current']; ?>/<?php echo $skill['max']; ?></span>
+                                                    <span class="badge badge-warning" style="font-size:0.7rem;">Level <?php echo $skill['current']; ?>/<?php echo $skill['max']; ?></span>
                                                     <small class="text-muted">(<?php echo number_format($skill['sp']); ?> SP)</small>
                                                 </td>
                                             </tr>
@@ -376,7 +376,7 @@ if ($mode === 'alpha') {
                             <!-- PERFECT ALPHA -->
                             <td>
                                 <?php if (empty($analysis['perfect_alpha'])): ?>
-                                    <p class="text-muted text-center mt-2"><em>Ninguno</em></p>
+                                    <p class="text-muted text-center mt-2"><em>None</em></p>
                                 <?php else: ?>
                                     <table class="table table-sm table-inner mb-0">
                                         <tbody>
@@ -388,7 +388,7 @@ if ($mode === 'alpha') {
                                                 </td>
                                                 <td>
                                                     <small class="d-block text-muted"><?php echo htmlspecialchars($skill['name']); ?></small>
-                                                    <span class="badge badge-success" style="font-size:0.7rem;">Nivel <?php echo $skill['level']; ?></span>
+                                                    <span class="badge badge-success" style="font-size:0.7rem;">Level <?php echo $skill['level']; ?></span>
                                                     <small class="text-muted">(<?php echo number_format($skill['sp']); ?> SP)</small>
                                                 </td>
                                             </tr>
@@ -401,7 +401,7 @@ if ($mode === 'alpha') {
                             <!-- USEFUL AS OMEGA -->
                             <td>
                                 <?php if (empty($analysis['useful_omega'])): ?>
-                                    <p class="text-muted text-center mt-2"><em>Ninguno</em></p>
+                                    <p class="text-muted text-center mt-2"><em>None</em></p>
                                 <?php else: ?>
                                     <table class="table table-sm table-inner mb-0">
                                         <tbody>
@@ -413,7 +413,7 @@ if ($mode === 'alpha') {
                                                 </td>
                                                 <td>
                                                     <small class="d-block text-muted"><?php echo htmlspecialchars($skill['name']); ?></small>
-                                                    <span class="badge badge-danger" style="font-size:0.7rem;">Nivel <?php echo $skill['current']; ?></span>
+                                                    <span class="badge badge-danger" style="font-size:0.7rem;">Level <?php echo $skill['current']; ?></span>
                                                     <small class="text-muted">(Max Alpha: <?php echo $skill['max']; ?>)</small><br>
                                                     <small class="text-muted">(<?php echo number_format($skill['sp']); ?> SP)</small>
                                                 </td>
@@ -427,7 +427,7 @@ if ($mode === 'alpha') {
                             <!-- OMEGA ONLY -->
                             <td>
                                 <?php if (empty($analysis['omega_only'])): ?>
-                                    <p class="text-muted text-center mt-2"><em>Ninguno</em></p>
+                                    <p class="text-muted text-center mt-2"><em>None</em></p>
                                 <?php else: ?>
                                     <table class="table table-sm table-inner mb-0">
                                         <tbody>
@@ -439,7 +439,7 @@ if ($mode === 'alpha') {
                                                 </td>
                                                 <td>
                                                     <small class="d-block text-muted"><?php echo htmlspecialchars($skill['name']); ?></small>
-                                                    <span class="badge badge-info" style="font-size:0.7rem;">Nivel <?php echo $skill['level']; ?></span>
+                                                    <span class="badge badge-info" style="font-size:0.7rem;">Level <?php echo $skill['level']; ?></span>
                                                     <small class="text-muted">(<?php echo number_format($skill['sp']); ?> SP)</small>
                                                 </td>
                                             </tr>
@@ -488,7 +488,7 @@ if ($mode === 'alpha') {
         <div class="card-body">
             <div class="row" style="font-size:0.85rem;">
                 <div class="col-md-2">
-                    <div class="text-muted"><i class="fas fa-birthday-cake mr-1"></i>Fecha Nac.</div>
+                    <div class="text-muted"><i class="fas fa-birthday-cake mr-1"></i>Date of Birth</div>
                     <div class="text-white"><?php echo $pilot['DOB'] ? date('Y-m-d', strtotime($pilot['DOB'])) : 'N/A'; ?></div>
                 </div>
                 <div class="col-md-2">
@@ -499,7 +499,7 @@ if ($mode === 'alpha') {
                     <?php endif; ?>
                 </div>
                 <div class="col-md-3">
-                    <div class="text-muted"><i class="fas fa-building mr-1"></i>Corporación</div>
+                    <div class="text-muted"><i class="fas fa-building mr-1"></i>Corporation</div>
                     <div class="text-white"><?php echo htmlspecialchars(substr($pilot['corporation'],0,30)); ?></div>
                 </div>
                 <div class="col-md-2">
@@ -507,7 +507,7 @@ if ($mode === 'alpha') {
                     <div style="color:#f39c12;font-family:monospace;"><?php echo number_format($pilot['wallet'],0); ?></div>
                 </div>
                 <div class="col-md-3">
-                    <div class="text-muted"><i class="fas fa-chart-line mr-1"></i>Valor Activos (jitav)</div>
+                    <div class="text-muted"><i class="fas fa-chart-line mr-1"></i>Asset Value (jitav)</div>
                     <div style="color:#28a745;font-weight:700;"><?php echo number_format($pilot['jitav']/1000000,2); ?> MM</div>
                 </div>
             </div>
@@ -524,13 +524,13 @@ if ($mode === 'alpha') {
         </div>
         <div class="col-md-4">
             <div class="stat-card" style="border-left:3px solid <?php echo $pilot['security']>=0?'#28a745':'#dc3545'; ?>;">
-                <div class="stat-label"><i class="fas fa-shield-alt mr-1"></i>Seguridad</div>
+                <div class="stat-label"><i class="fas fa-shield-alt mr-1"></i>Security</div>
                 <div class="stat-value" style="color:<?php echo $pilot['security']>=0?'#28a745':'#dc3545'; ?>;"><?php echo number_format($pilot['security'],2); ?></div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="stat-card" style="border-left:3px solid #17a2b8;">
-                <div class="stat-label"><i class="fas fa-calendar-alt mr-1"></i>Edad</div>
+                <div class="stat-label"><i class="fas fa-calendar-alt mr-1"></i>Age</div>
                 <div class="stat-value" style="color:#17a2b8;">
                     <?php echo $pilot['DOB'] ? number_format(floor((time()-strtotime($pilot['DOB']))/86400)).' d' : 'N/A'; ?>
                 </div>
@@ -547,11 +547,11 @@ if ($mode === 'alpha') {
                 <input class="form-check-input" type="checkbox" value="1" id="hide_negative" name="hide_negative"
                        <?php echo $hide_negative ? 'checked' : ''; ?>>
                 <label class="form-check-label" for="hide_negative">
-                    <i class="fas fa-eye-slash mr-1"></i> Ocultar items filtrados (precios negativos)
+                    <i class="fas fa-eye-slash mr-1"></i> Hide filtered items (negative prices)
                 </label>
             </div>
             <button type="submit" class="btn btn-primary btn-sm">
-                <i class="fas fa-redo mr-1"></i> Aplicar
+                <i class="fas fa-redo mr-1"></i> Apply
             </button>
         </form>
     </div>
@@ -568,7 +568,7 @@ if ($mode === 'alpha') {
     if ($result_top50 && mysqli_num_rows($result_top50) > 0) {
         echo "<div class='card-eve'>";
         echo "<div class='card-header top50-header'>";
-        echo "<h5 class='mb-0'><i class='fas fa-crown mr-2'></i>Top 50 Items Más Caros</h5>";
+        echo "<h5 class='mb-0'><i class='fas fa-crown mr-2'></i>Top 50 Most Expensive Items</h5>";
         echo "</div>";
         echo "<div class='card-body p-0'>";
         echo "<div class='table-responsive'>";
@@ -577,9 +577,9 @@ if ($mode === 'alpha') {
         echo "<th class='text-center' style='width:5%;'>#</th>";
         echo "<th style='width:35%;'><i class='fas fa-cube mr-1'></i>Item</th>";
         echo "<th class='text-center' style='width:10%;'>Qty</th>";
-        echo "<th class='text-right' style='width:15%;'>Precio Unit.</th>";
-        echo "<th class='text-right' style='width:20%;'>Valor Total</th>";
-        echo "<th style='width:15%;'>Ubicación</th>";
+        echo "<th class='text-right' style='width:15%;'>Unit Price</th>";
+        echo "<th class='text-right' style='width:20%;'>Total Value</th>";
+        echo "<th style='width:15%;'>Location</th>";
         echo "</tr></thead><tbody>";
 
         $rank=1; $top50_total=0;
@@ -602,7 +602,7 @@ if ($mode === 'alpha') {
         }
         echo "</tbody>";
         echo "<tfoot><tr>";
-        echo "<td colspan='4' class='text-right text-muted'>TOTAL TOP 50:</td>";
+        echo "<td colspan='4' class='text-right text-muted'>TOP 50 TOTAL:</td>";
         echo "<td class='text-right' style='color:#28a745;font-weight:700;'>" . number_format($top50_total,2) . " ISK</td>";
         echo "<td><small class='text-muted'>(" . number_format($top50_total/1000000,2) . " MM)</small></td>";
         echo "</tr></tfoot>";
@@ -619,7 +619,7 @@ if ($mode === 'alpha') {
     $result_assets = mysqli_query($link, $sql_assets);
 
     if (!$result_assets) {
-        echo "<div class='alert alert-danger'>Error al obtener assets: " . mysqli_error($link) . "</div>";
+        echo "<div class='alert alert-danger'>Error retrieving assets: " . mysqli_error($link) . "</div>";
         echo ui_footer(); exit;
     }
 
@@ -641,19 +641,19 @@ if ($mode === 'alpha') {
     <div class="row mb-3">
         <div class="col-md-4">
             <div class="stat-card" style="border-left:3px solid #007bff;">
-                <div class="stat-label"><i class="fas fa-boxes mr-1"></i>Items Contados</div>
+                <div class="stat-label"><i class="fas fa-boxes mr-1"></i>Counted Items</div>
                 <div class="stat-value" style="color:#007bff;"><?php echo number_format($total_items); ?></div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="stat-card" style="border-left:3px solid #17a2b8;">
-                <div class="stat-label"><i class="fas fa-map-marker-alt mr-1"></i>Ubicaciones</div>
+                <div class="stat-label"><i class="fas fa-map-marker-alt mr-1"></i>Locations</div>
                 <div class="stat-value" style="color:#17a2b8;"><?php echo count($assets_grouped); ?></div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="stat-card" style="border-left:3px solid #28a745;">
-                <div class="stat-label"><i class="fas fa-money-bill-wave mr-1"></i>Valor Calculado</div>
+                <div class="stat-label"><i class="fas fa-money-bill-wave mr-1"></i>Calculated Value</div>
                 <div class="stat-value" style="color:#28a745;"><?php echo number_format($total_value/1000000,2); ?> MM</div>
             </div>
         </div>
@@ -687,10 +687,10 @@ if ($mode === 'alpha') {
         echo "<table class='table table-sm mb-0' style='color:#ced4da;font-size:0.82rem;'>";
         echo "<thead><tr>";
         echo "<th style='width:40%;background:#16191c;color:#6c757d;border-color:#343a40;'>Item</th>";
-        echo "<th class='text-center' style='width:12%;background:#16191c;color:#6c757d;border-color:#343a40;'>Cantidad</th>";
-        echo "<th class='text-right' style='width:18%;background:#16191c;color:#6c757d;border-color:#343a40;'>Precio Unit.</th>";
-        echo "<th class='text-right' style='width:20%;background:#16191c;color:#6c757d;border-color:#343a40;'>Valor Total</th>";
-        echo "<th style='width:10%;background:#16191c;color:#6c757d;border-color:#343a40;'>Estación</th>";
+        echo "<th class='text-center' style='width:12%;background:#16191c;color:#6c757d;border-color:#343a40;'>Quantity</th>";
+        echo "<th class='text-right' style='width:18%;background:#16191c;color:#6c757d;border-color:#343a40;'>Unit Price</th>";
+        echo "<th class='text-right' style='width:20%;background:#16191c;color:#6c757d;border-color:#343a40;'>Total Value</th>";
+        echo "<th style='width:10%;background:#16191c;color:#6c757d;border-color:#343a40;'>Station</th>";
         echo "</tr></thead><tbody>";
 
         foreach ($data['items'] as $item) {
@@ -700,7 +700,7 @@ if ($mode === 'alpha') {
             $val_text  = number_format($fv,2) . ' ISK';
             if ($up < 0) {
                 $val_style = "style='color:#6c757d;font-style:italic;'";
-                $val_text  = 'Filtrado (' . $up . ')';
+                $val_text  = 'Filtered (' . $up . ')';
             } elseif ($fv >= 1000000) {
                 $val_style = "style='color:#28a745;font-weight:700;font-family:monospace;'";
             }
@@ -725,7 +725,7 @@ if ($mode === 'alpha') {
 
     <!-- Total final -->
     <div class="total-final">
-        <div class="label"><i class="fas fa-chart-line mr-2"></i>VALOR TOTAL DE ACTIVOS</div>
+        <div class="label"><i class="fas fa-chart-line mr-2"></i>TOTAL ASSET VALUE</div>
         <div class="text-right">
             <div class="value"><?php echo number_format($total_value/1000000,2); ?> MM ISK</div>
             <small class="text-muted"><?php echo number_format($total_value,2); ?> ISK</small>
