@@ -1065,6 +1065,7 @@ function getPilotStatus($lastsaved) {
                     <a href="<?php echo basename(__FILE__); ?>" class="btn btn-link text-white p-2" title="Pilotos"><i class="fas fa-user-astronaut"></i></a>
                     <a href="#" class="btn btn-link text-white p-2" title="Buscar"><i class="fas fa-search"></i></a>
                     <a href="#" class="btn btn-link text-white p-2" title="Configuracion"><i class="fas fa-cog"></i></a>
+                    <a href="#" class="btn btn-link text-white p-2" title="Exportar"><i class="fas fa-file-export"></i></a></i></a>
                 </div>
             </div>
             <div class="col-4 text-right footer-right">
