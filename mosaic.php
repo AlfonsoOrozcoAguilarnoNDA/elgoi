@@ -674,14 +674,28 @@ sort($non_php_files);
          FOOTER
          ============================================ -->
     <footer class="footer">
-        <div class="footer-left">
-            <span>Fleet Commander System</span>
+
+            <div class="col-4 text-left footer-left">
+                <span class="text-white-50 small ml-3">
+                  <span>Fleet Commander System</span>
             <span>|</span>
             <span>FC: <?php echo htmlspecialchars($_SESSION['fleet_commander_number'] ?? 'N/A'); ?></span>
-        </div>
-        <div class="footer-right">
-            EVE Online ESI Integration • v1.0
-        </div>
+            <span>|</span>
+            <span>Pilots: <?php echo count($pilots); ?></span>
+                </span>
+            </div>
+            <div class="col-4 text-center">
+                <div class="btn-group">
+                    <a href="mosaic.php" class="btn btn-link text-white p-2" title="Mosaic"><i class="fas fa-th-large"></i></a>
+                    <a href="<?php echo basename(__FILE__); ?>" class="btn btn-link text-white p-2" title="Pilotos"><i class="fas fa-user-astronaut"></i></a>
+                    <a href="#" class="btn btn-link text-white p-2" title="Buscar"><i class="fas fa-search"></i></a>
+                    <a href="#" class="btn btn-link text-white p-2" title="Configuracion"><i class="fas fa-cog"></i></a>
+                    <a href="#" class="btn btn-link text-white p-2" title="Exportar"><i class="fas fa-file-export"></i></a></i></a>
+                </div>
+            </div>
+            <div class="col-4 text-right footer-right">
+                <span class="text-muted small mr-3">v1.0.3 | <?php echo date("H:i"); ?> EVE</span>
+            </div>        
     </footer>
     
     <!-- ============================================
