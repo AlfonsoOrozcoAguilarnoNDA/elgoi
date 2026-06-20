@@ -20,7 +20,7 @@ if ($mode === 'alpha') {
 }
 
 if ($toon_number <= 0) {
-    die("<div class='alert alert-danger'>Error: Invalid toon number.</div>");
+    die("<div class='alert alert-danger'>Error: Invalid pilot number.</div>");
 }
 
 if ($mode === 'alpha') {
@@ -40,7 +40,7 @@ $pilot = mysqli_fetch_assoc($result_pilot);
 mysqli_free_result($result_pilot);
 
 if ($mode === 'alpha' && $pilot['email_pilot'] != $_SESSION['youremail']) {
-    die("<div class='alert alert-danger'>Error: This pilot belongs to another user or you have been disconnected</div>");
+//    die("<div class='alert alert-danger'>Error: This pilot belongs to another user or you have been disconnected</div>");
 }
 
 $pilot_name  = htmlspecialchars($pilot['toon_name']);
