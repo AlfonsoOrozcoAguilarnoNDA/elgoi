@@ -1052,7 +1052,7 @@ function getPilotStatus($lastsaved) {
 
 <div class="container-fluid">
         <div class="row align-items-center">
-            <div class="col-4 text-left">
+            <div class="col-4 text-left footer-left">
                 <span class="text-white-50 small ml-3">
                   <span>Fleet Commander System</span>
             <span>|</span>
@@ -1069,7 +1069,7 @@ function getPilotStatus($lastsaved) {
                     <a href="#" class="btn btn-link text-white p-2" title="Configuracion"><i class="fas fa-cog"></i></a>
                 </div>
             </div>
-            <div class="col-4 text-right">
+            <div class="col-4 text-right footer-right">
                 <span class="text-muted small mr-3">v1.0.3 | <?php echo date("H:i"); ?> EVE</span>
             </div>
         </div>
