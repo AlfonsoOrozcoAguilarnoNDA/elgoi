@@ -846,21 +846,6 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
         <br><i class="fas fa-calendar"></i> Merge date: 2026-06-20 | <i class="fas fa-file-code"></i> File: <?php echo basename(__FILE__); ?> | <i class="fas fa-database"></i> PHP <?php echo phpversion(); ?>
     </div>
 
-    </div>
-
-<div class="col-4 text-center">
-                <div class="btn-group">
-                    <a href="mosaic.php" class="btn btn-link text-white p-2" title="Mosaic"><i class="fas fa-th-large"></i></a>
-                    <a href="<?php echo basename(__FILE__); ?>" class="btn btn-link text-white p-2" title="Pilotos"><i class="fas fa-user-astronaut"></i></a>
-                    <a href="#" class="btn btn-link text-white p-2" title="Buscar"><i class="fas fa-search"></i></a>
-                    <a href="#" class="btn btn-link text-white p-2" title="Configuracion"><i class="fas fa-cog"></i></a>
-                </div>
-            </div>
-            <div class="col-4 text-right">
-                <span class="text-muted small mr-3">v1.0.3 | <?php echo date("H:i"); ?> EVE</span>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Scripts -->
