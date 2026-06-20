@@ -15,8 +15,8 @@ check_authorization();
 // ============================================================
 $excludeList = "'Capsule', 'Reaper', 'Ibis', 'Impairor', 'Velator', 
                 'Civilian Miner', 'Civilian Afterburner', 'Civilian Shield Booster',
-                '1MN Civilian Afterburner', 'Civilian Gatling Autocannon', 
-                'Civilian Gatling Railgun', 'Civilian Pulse Laser'";
+                '1MN Civilian Afterburner', 'Civilian Gatling Autocannon',
+                'Civilian Gatling Pulse Laser', 'Civilian Gatling Railgun', 'Civilian Pulse Laser'";
 
 // ============================================================
 // SECTION 1: Safety Assets (with exclusions)
