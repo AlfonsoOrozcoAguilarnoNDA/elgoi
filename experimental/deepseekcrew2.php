@@ -1,6 +1,6 @@
 <?php
 /**
- * Archivo: pilots.php
+ * Archivo: deepseekcrew2.php.php
  * Fecha: 2026-06-20
  * Descripcion: Panel de control de pilotos con integridad de flota.
  *              Fusion de dos scripts: logica de Qwen (arriba) + DeepSeek (abajo).
