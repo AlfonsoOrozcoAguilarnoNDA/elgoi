@@ -4,7 +4,6 @@
  * Fecha: 2026-03-31 09:03
  * 
  * CONFIGURACIÓN INICIAL - Siempre trabajar de esta manera
- * Simplified. Original Kimi, simplified by command by Claude Sonnet 4.6 in june 20
  */
 
 session_start();
@@ -139,7 +138,9 @@ if (!empty($security_error) || !empty($integrity_error)) {
                         numberfits,
                         supergroup,
                         current_ship,
-                        current_location
+                        current_location,
+                        lastsaved,
+                        pocket6
                      FROM PILOTS 
                      WHERE parent_toon_number = ? 
                      ORDER BY supergroup ASC, toon_name ASC";
@@ -177,6 +178,22 @@ if (isset($_GET['logout']) && $_GET['logout'] === 'confirm') {
 function formatMillions($value) {
     if (empty($value)) return '0.00';
     return number_format($value / 1000000, 2);
+}
+
+function getPilotStatus($lastsaved) {
+    if (empty($lastsaved) || $lastsaved === '0000-00-00 00:00:00') {
+        return ['class' => 'secondary', 'label' => 'Sin Datos'];
+    }
+    $last = strtotime($lastsaved);
+    $now = time();
+    $diff = ($now - $last) / 3600;
+    if ($diff < 24) {
+        return ['class' => 'success', 'label' => 'Activo'];
+    } elseif ($diff < 168) {
+        return ['class' => 'warning', 'label' => 'Reciente'];
+    } else {
+        return ['class' => 'danger', 'label' => 'Inactivo'];
+    }
 }
 
 ?>
@@ -604,6 +621,11 @@ function formatMillions($value) {
             color: #f85149;
         }
         
+        .pocket-secondary {
+            background: rgba(139, 148, 158, 0.15);
+            color: #8b949e;
+        }
+        
         .evermarks {
             color: #a371f7;
             font-weight: 600;
@@ -907,6 +929,8 @@ function formatMillions($value) {
                         <th>DaysQ</th>
                         <th>Ship</th>
                         <th>Location</th>
+                        <th>Estado</th>
+                        <th>Pocket6</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -930,6 +954,12 @@ function formatMillions($value) {
                                 $location_display = 'System: ' . $location_data['solar_system_id'];
                             }
                         }
+                        
+                        // Estado del piloto segun lastsaved
+                        $status = getPilotStatus($pilot['lastsaved'] ?? null);
+                        
+                        // Pocket6
+                        $pocket6 = strtoupper($pilot['pocket6'] ?? 'CLEAN');
                     ?>
                     <tr data-toon="<?php echo $pilot['toon_number']; ?>">
                         <td>
@@ -992,6 +1022,20 @@ function formatMillions($value) {
                         <td><?php echo htmlspecialchars($ship_display); ?></td>
                         
                         <td><?php echo htmlspecialchars($location_display); ?></td>
+                        
+                        <?php
+                            $status_class_map = ['success' => 'pocket-clean', 'warning' => 'pocket-warning', 'danger' => 'pocket-danger', 'secondary' => 'pocket-secondary'];
+                            $status_css = $status_class_map[$status['class']] ?? 'pocket-secondary';
+                        ?>
+                        <td><span class="pocket-status <?php echo $status_css; ?>"><?php echo htmlspecialchars($status['label']); ?></span></td>
+                        
+                        <td>
+                            <?php if ($pocket6 !== 'CLEAN'): ?>
+                            <span class="pocket-status pocket-danger"><?php echo htmlspecialchars($pocket6); ?></span>
+                            <?php else: ?>
+                            <span class="pocket-status pocket-clean">CLEAN</span>
+                            <?php endif; ?>
+                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
