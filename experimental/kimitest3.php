@@ -32,39 +32,6 @@ if (mysqli_num_rows($check_column) == 0) {
 }
 
 // ============================================
-// PROCESS AJAX SUPERGROUP UPDATE
-// ============================================
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_supergroup') {
-    header('Content-Type: application/json');
-    
-    $toon_number = intval($_POST['toon_number'] ?? 0);
-    $new_supergroup = intval($_POST['supergroup'] ?? 1);
-    
-    // Verify that the pilot belongs to this commander
-    $verify_query = "SELECT parent_toon_number FROM PILOTS WHERE toon_number = ? LIMIT 1";
-    $verify_stmt = mysqli_prepare($link, $verify_query);
-    mysqli_stmt_bind_param($verify_stmt, "i", $toon_number);
-    mysqli_stmt_execute($verify_stmt);
-    $verify_result = mysqli_stmt_get_result($verify_stmt);
-    
-    if ($row = mysqli_fetch_assoc($verify_result)) {
-        if ($row['parent_toon_number'] == ($_SESSION['character_id'] ?? 0)) {
-            $update_query = "UPDATE PILOTS SET supergroup = ? WHERE toon_number = ?";
-            $update_stmt = mysqli_prepare($link, $update_query);
-            mysqli_stmt_bind_param($update_stmt, "ii", $new_supergroup, $toon_number);
-            
-            if (mysqli_stmt_execute($update_stmt)) {
-                echo json_encode(['success' => true, 'message' => 'Supergroup updated']);
-                exit;
-            }
-        }
-    }
-    
-    echo json_encode(['success' => false, 'message' => 'Unauthorized or error']);
-    exit;
-}
-
-// ============================================
 // SECURITY VALIDATION 1: Check other Fleet Commanders
 // ============================================
 $fc_check_query = "SELECT fleet_commander_number, pilot_name, character_id 
@@ -546,102 +513,36 @@ function getPilotStatus($lastsaved) {
         }
         
         /* ============================================
-           EDITABLE SUPERGROUP
+           SUPERGROUP (READ-ONLY)
            ============================================ */
-        .supergroup-cell {
-            position: relative;
-        }
-        
-        .supergroup-display {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 6px;
-            background: rgba(88, 166, 255, 0.1);
-            border: 1px solid #30363d;
-            transition: all 0.3s ease;
-        }
-        
-        .supergroup-display:hover {
-            background: rgba(88, 166, 255, 0.2);
-            border-color: #58a6ff;
-        }
-        
         .supergroup-value {
             font-weight: 600;
             color: #58a6ff;
+            background: rgba(88, 166, 255, 0.1);
+            border: 1px solid #30363d;
+            padding: 5px 10px;
+            border-radius: 6px;
+            display: inline-block;
             min-width: 30px;
-            text-align: center;
         }
         
-        .supergroup-edit {
-            color: #8b949e;
-            font-size: 12px;
+        /* ============================================
+           SHIP / LOCATION (MERGED)
+           ============================================ */
+        .ship-location-cell {
+            text-align: left;
+            line-height: 1.4;
         }
         
-        .supergroup-form {
-            display: none;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .supergroup-form.active {
-            display: inline-flex;
-        }
-        
-        .supergroup-input {
-            width: 60px;
-            background: rgba(13, 17, 23, 0.95);
-            border: 1px solid #58a6ff;
+        .ship-line {
             color: #c9d1d9;
-            padding: 5px 8px;
-            border-radius: 4px;
-            text-align: center;
-            font-weight: 600;
-        }
-        
-        .supergroup-input:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
-        }
-        
-        .sg-btn {
-            width: 28px;
-            height: 28px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            font-weight: 500;
             font-size: 12px;
-            transition: all 0.2s ease;
         }
         
-        .sg-btn-save {
-            background: #238636;
-            color: white;
-        }
-        
-        .sg-btn-save:hover {
-            background: #3fb950;
-        }
-        
-        .sg-btn-cancel {
-            background: #30363d;
+        .location-line {
             color: #8b949e;
-        }
-        
-        .sg-btn-cancel:hover {
-            background: #484f58;
-            color: #c9d1d9;
-        }
-        
-        .sg-saving {
-            color: #58a6ff;
-            font-size: 12px;
+            font-size: 11px;
         }
         
         /* ============================================
@@ -782,8 +683,7 @@ function getPilotStatus($lastsaved) {
                         <th>Queue End</th>
                         <th><i class="fas fa-sync-alt"></i></th>
                         <th>DaysQ</th>
-                        <th>Ship</th>
-                        <th>Location</th>
+                        <th>Ship / Location</th>
                         <th>Status</th>
                         <th>Pocket6</th>
                     </tr>
@@ -830,29 +730,9 @@ function getPilotStatus($lastsaved) {
                             </div>
                         </td>
                         
-                        <!-- EDITABLE SUPERGROUP -->
-                        <td class="supergroup-cell">
-                            <div class="supergroup-display" onclick="editSupergroup(<?php echo $pilot['toon_number']; ?>)">
-                                <span class="supergroup-value" id="sg-value-<?php echo $pilot['toon_number']; ?>">
-                                    <?php echo intval($pilot['supergroup'] ?? 1); ?>
-                                </span>
-                                <i class="fas fa-pencil-alt supergroup-edit"></i>
-                            </div>
-                            <div class="supergroup-form" id="sg-form-<?php echo $pilot['toon_number']; ?>">
-                                <input type="number" 
-                                       class="supergroup-input" 
-                                       id="sg-input-<?php echo $pilot['toon_number']; ?>"
-                                       value="<?php echo intval($pilot['supergroup'] ?? 1); ?>"
-                                       min="1"
-                                       max="999"
-                                       onkeypress="handleEnter(event, <?php echo $pilot['toon_number']; ?>)">
-                                <button class="sg-btn sg-btn-save" onclick="saveSupergroup(<?php echo $pilot['toon_number']; ?>)" title="Save">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                                <button class="sg-btn sg-btn-cancel" onclick="cancelEdit(<?php echo $pilot['toon_number']; ?>)" title="Cancel">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
+                        <!-- SUPERGROUP (READ-ONLY) -->
+                        <td>
+                            <span class="supergroup-value"><?php echo intval($pilot['supergroup'] ?? 1); ?></span>
                         </td>
                         
                         <td>
@@ -874,9 +754,11 @@ function getPilotStatus($lastsaved) {
                         
                         <td class="stat-number"><?php echo $pilot['daysq'] ?? 0; ?></td>
                         
-                        <td><?php echo htmlspecialchars($ship_display); ?></td>
-                        
-                        <td><?php echo htmlspecialchars($location_display); ?></td>
+                        <!-- SHIP / LOCATION (MERGED) -->
+                        <td class="ship-location-cell">
+                            <div class="ship-line"><?php echo htmlspecialchars($ship_display); ?></div>
+                            <div class="location-line"><?php echo htmlspecialchars($location_display); ?></div>
+                        </td>
                         
                         <?php
                             $status_class_map = ['success' => 'pocket-clean', 'warning' => 'pocket-warning', 'danger' => 'pocket-danger', 'secondary' => 'pocket-secondary'];
@@ -926,12 +808,9 @@ function getPilotStatus($lastsaved) {
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
     
     <script>
-        let table;
-        let editingToon = null;
-        
         $(document).ready(function() {
             // Initialize DataTable
-            table = $('#pilotsTable').DataTable({
+            $('#pilotsTable').DataTable({
                 pageLength: 200,
                 order: [[1, 'asc']], // Sort by supergroup by default
                 language: {
@@ -971,98 +850,6 @@ function getPilotStatus($lastsaved) {
                 }
             });
         });
-        
-        // ============================================
-        // SUPERGROUP EDITING
-        // ============================================
-        function editSupergroup(toonNumber) {
-            // Cancel previous edit if any
-            if (editingToon && editingToon !== toonNumber) {
-                cancelEdit(editingToon);
-            }
-            
-            editingToon = toonNumber;
-            
-            // Hide display, show form
-            document.getElementById('sg-value-' + toonNumber).parentElement.style.display = 'none';
-            document.getElementById('sg-form-' + toonNumber).classList.add('active');
-            
-            // Focus on input
-            var input = document.getElementById('sg-input-' + toonNumber);
-            input.focus();
-            input.select();
-        }
-        
-        function cancelEdit(toonNumber) {
-            document.getElementById('sg-value-' + toonNumber).parentElement.style.display = 'inline-flex';
-            document.getElementById('sg-form-' + toonNumber).classList.remove('active');
-            editingToon = null;
-        }
-        
-        function handleEnter(event, toonNumber) {
-            if (event.key === 'Enter') {
-                saveSupergroup(toonNumber);
-            } else if (event.key === 'Escape') {
-                cancelEdit(toonNumber);
-            }
-        }
-        
-        function saveSupergroup(toonNumber) {
-            var newValue = document.getElementById('sg-input-' + toonNumber).value;
-            
-            // Validate
-            if (newValue < 1 || newValue > 999) {
-                showToast('Supergroup must be between 1 and 999', true);
-                return;
-            }
-            
-            // Show saving indicator
-            var form = document.getElementById('sg-form-' + toonNumber);
-            form.innerHTML = '<span class="sg-saving"><i class="fas fa-spinner fa-spin"></i> Saving...</span>';
-            
-            // Send AJAX
-            $.ajax({
-                url: window.location.href,
-                method: 'POST',
-                data: {
-                    action: 'update_supergroup',
-                    toon_number: toonNumber,
-                    supergroup: newValue
-                },
-                success: function(response) {
-                    if (response.success) {
-                        // Update displayed value
-                        document.getElementById('sg-value-' + toonNumber).textContent = newValue;
-                        
-                        // Restore form for next time
-                        form.innerHTML = `
-                            <input type="number" class="supergroup-input" id="sg-input-${toonNumber}" 
-                                   value="${newValue}" min="1" max="999" 
-                                   onkeypress="handleEnter(event, ${toonNumber})">
-                            <button class="sg-btn sg-btn-save" onclick="saveSupergroup(${toonNumber})" title="Save">
-                                <i class="fas fa-check"></i>
-                            </button>
-                            <button class="sg-btn sg-btn-cancel" onclick="cancelEdit(${toonNumber})" title="Cancel">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        `;
-                        
-                        cancelEdit(toonNumber);
-                        showToast('Supergroup updated successfully');
-                        
-                        // Redraw table to reorder
-                        table.draw();
-                    } else {
-                        showToast(response.message || 'Error updating supergroup', true);
-                        cancelEdit(toonNumber);
-                    }
-                },
-                error: function() {
-                    showToast('Network error. Please try again.', true);
-                    cancelEdit(toonNumber);
-                }
-            });
-        }
         
         // ============================================
         // UTILITIES
@@ -1105,9 +892,8 @@ function getPilotStatus($lastsaved) {
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 hideLogoutModal();
-                if (editingToon) cancelEdit(editingToon);
             }
         });
     </script>
 </body>
-</html>
+</html>    
