@@ -4,7 +4,7 @@
  * Shows safety assets, off-station asset counts, and detailed off-station assets
  */
 
-require_once 'config.php';
+require_once '../config.php';
 
 // ============================================================
 // SECTION 1: Safety Assets
