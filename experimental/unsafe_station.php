@@ -3,6 +3,8 @@
  * EVE Assets Analysis Dashboard
  * Recursive CTE with exclusions and orphan detection
  * MariaDB 11.8.6+
+ * License GPL
+ * Alfonso Orozco Aguilar
  */
 
 require_once '../config.php';
@@ -242,6 +244,9 @@ while ($row = mysqli_fetch_assoc($orphan_result)) {
         code { background-color: #21262d; color: #ff7b72; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
         .orphan-row { background-color: rgba(137, 87, 229, 0.1) !important; }
         .orphan-row:hover { background-color: rgba(137, 87, 229, 0.2) !important; }
+        .evewho-link { color: #58a6ff; text-decoration: none; }
+        .evewho-link:hover { color: #79c0ff; text-decoration: underline; }
+        .evewho-link i { font-size: 0.8em; margin-left: 4px; }
     </style>
 </head>
 <body>
@@ -251,7 +256,7 @@ while ($row = mysqli_fetch_assoc($orphan_result)) {
     <!-- Header -->
     <div class="row mb-4">
         <div class="col-12 text-center">
-            <h1><i class="fas fa-project-diagram section-icon"></i>EVE Assets Analysis Dashboard</h1>
+            <h1><i class="fas fa-truck-loading mr-2 text-warning"></i>EVE Assets Analysis Dashboard</h1>
             <p class="text-muted">Recursive Location Chain Tracing &mdash; Off-Station Detection</p>
         </div>
     </div>
@@ -480,6 +485,7 @@ while ($row = mysqli_fetch_assoc($orphan_result)) {
                         <tr>
                             <th>#</th>
                             <th>Orphan Toon Number</th>
+                            <th>EVEWho</th>
                             <th class="text-right">Asset Count</th>
                             <th>Action</th>
                         </tr>
@@ -488,10 +494,17 @@ while ($row = mysqli_fetch_assoc($orphan_result)) {
                         <?php 
                         $idx = 1;
                         foreach ($orphan_data as $orphan): 
+                            $evewho_url = "https://evewho.com/character/" . $orphan['toon_number'];
                         ?>
                         <tr class="orphan-row">
                             <td class="text-muted"><?php echo $idx++; ?></td>
                             <td><code style="font-size: 1.1em;"><?php echo $orphan['toon_number']; ?></code></td>
+                            <td>
+                                <a href="<?php echo $evewho_url; ?>" target="_blank" class="evewho-link" title="View on EVEWho">
+                                    <?php echo $evewho_url; ?>
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                            </td>
                             <td class="text-right">
                                 <span class="badge orphan-badge"><?php echo number_format($orphan['orphan_asset_count']); ?> items</span>
                             </td>
