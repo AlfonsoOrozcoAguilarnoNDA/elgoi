@@ -2,8 +2,10 @@
 /**
  * Fleet Commander - Pilot Management System with Supergroup Editing
  * Fecha: 2026-03-31 09:03
+ * License GPL
  * 
  * CONFIGURACIÓN INICIAL - Siempre trabajar de esta manera
+ * Simplified. Ori9ginal Kimi, simplified by command by Claude Sonnet 4.6
  */
 
 session_start();
@@ -12,14 +14,14 @@ session_start();
 // VERIFICACIÓN DE SESIÓN
 // ============================================
 if (!isset($_SESSION['is_authenticated']) || $_SESSION['is_authenticated'] !== true) {
-    header('Location: ../fleet_login.php');
+    header('Location: fleet_login.php');
     exit;
 }
+
 // ============================================
 // INCLUIR CONFIGURACIÓN DE BD
 // ============================================
 require_once '../config.php';
-check_authorization();
 // Asume que $link ya está disponible como conexión MySQLi
 
 // ============================================
@@ -898,48 +900,14 @@ function formatMillions($value) {
                     <tr>
                         <th>Pilot</th>
                         <th>Supergroup</th>
-                        <th>Profession</th>
-                        <th>Sec</th>
                         <th>SP (M)</th>
-                        <th>Type</th>
                         <th>Queue End</th>
-                        <th>Wallet (M)</th>
-                        <th><i class="fas fa-globe"></i></th>
-                        <th><i class="fas fa-industry"></i></th>
-                        <th><i class="fas fa-graduation-cap"></i></th>
                         <th><i class="fas fa-sync-alt"></i></th>
-                        <th>Ships</th>
-                        <th>Pocket</th>
                         <th>DaysQ</th>
-                        <th>Items</th>
-                        <th>Evermarks</th>
-                        <th>Fits</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($pilots as $pilot): 
-                        $sec = floatval($pilot['security'] ?? 0);
-                        if ($sec >= 0.5) {
-                            $sec_class = 'security-high';
-                        } elseif ($sec >= 0.0) {
-                            $sec_class = 'security-medium';
-                        } else {
-                            $sec_class = 'security-low';
-                        }
-                        
-                        $has_planets = ($pilot['planets'] ?? '') <> '[]';
-                        $has_jobs = ($pilot['jobs'] ?? '') <> '[]';
-                        $has_queue = ($pilot['queue'] ?? '') <> '[]';
-                        
-                        $pocket = strtoupper($pilot['pocket6'] ?? 'CLEAN');
-                        if ($pocket === 'CLEAN') {
-                            $pocket_class = 'pocket-clean';
-                        } elseif (in_array($pocket, ['WARNING', 'CAUTION'])) {
-                            $pocket_class = 'pocket-warning';
-                        } else {
-                            $pocket_class = 'pocket-danger';
-                        }
-                    ?>
+                    <?php foreach ($pilots as $pilot): ?>
                     <tr data-toon="<?php echo $pilot['toon_number']; ?>">
                         <td>
                             <div class="pilot-info-cell">
@@ -979,10 +947,6 @@ function formatMillions($value) {
                             </div>
                         </td>
                         
-                        <td><span class="profession"><?php echo htmlspecialchars($pilot['tradefield'] ?? 'n/a'); ?></span></td>
-                        
-                        <td class="security-status <?php echo $sec_class; ?>"><?php echo number_format($sec, 2); ?></td>
-                        
                         <td>
                             <div class="sp-value"><?php echo formatMillions($pilot['skillpoints']); ?></div>
                             <?php if (!empty($pilot['unalloc']) && $pilot['unalloc'] > 0): ?>
@@ -990,27 +954,8 @@ function formatMillions($value) {
                             <?php endif; ?>
                         </td>
                         
-                        <td><span class="acctype"><?php echo htmlspecialchars($pilot['acctype'] ?? 'Unknown'); ?></span></td>
-                        
                         <td class="queue-finish">
                             <?php echo !empty($pilot['finishqueue']) ? date('Y-m-d H:i', strtotime($pilot['finishqueue'])) : '<span style="color:#484f58">-</span>'; ?>
-                        </td>
-                        
-                        <td class="wallet"><?php echo formatMillions($pilot['wallet']); ?> M</td>
-                        
-                        <td class="status-icon">
-                            <i class="fas fa-globe <?php echo $has_planets ? 'status-active' : 'status-inactive'; ?>" 
-                               title="<?php echo $has_planets ? 'Has Planets' : 'No Planets'; ?>"></i>
-                        </td>
-                        
-                        <td class="status-icon">
-                            <i class="fas fa-industry <?php echo $has_jobs ? 'status-active' : 'status-inactive'; ?>" 
-                               title="<?php echo $has_jobs ? 'Has Jobs' : 'No Jobs'; ?>"></i>
-                        </td>
-                        
-                        <td class="status-icon">
-                            <i class="fas fa-graduation-cap <?php echo $has_queue ? 'status-training' : 'status-inactive'; ?>" 
-                               title="<?php echo $has_queue ? 'Training Active' : 'No Training'; ?>"></i>
                         </td>
                         
                         <td class="status-icon">
@@ -1019,23 +964,7 @@ function formatMillions($value) {
                                onclick="updatePilot(<?php echo $pilot['toon_number']; ?>)"></i>
                         </td>
                         
-                        <td class="stat-number <?php echo ($pilot['numships'] ?? 0) > 50 ? 'stat-good' : 'stat-warning'; ?>">
-                            <?php echo number_format($pilot['numships'] ?? 0); ?>
-                        </td>
-                        
-                        <td><span class="pocket-status <?php echo $pocket_class; ?>"><?php echo htmlspecialchars($pocket); ?></span></td>
-                        
                         <td class="stat-number"><?php echo $pilot['daysq'] ?? 0; ?></td>
-                        
-                        <td class="stat-number <?php echo ($pilot['numitems'] ?? 0) > 1000 ? 'stat-good' : 'stat-warning'; ?>">
-                            <?php echo number_format($pilot['numitems'] ?? 0); ?>
-                        </td>
-                        
-                        <td class="evermarks"><?php echo number_format($pilot['evermarks'] ?? 0); ?></td>
-                        
-                        <td class="stat-number <?php echo ($pilot['numberfits'] ?? -1) > 0 ? 'stat-good' : 'stat-inactive'; ?>">
-                            <?php echo $pilot['numberfits'] ?? -1; ?>
-                        </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -1093,7 +1022,7 @@ function formatMillions($value) {
         $(document).ready(function() {
             // Inicializar DataTable
             table = $('#pilotsTable').DataTable({
-                pageLength: 25,
+                pageLength: 200,
                 order: [[1, 'asc']], // Ordenar por supergroup por defecto
                 language: {
                     search: "Search pilots:",
@@ -1107,7 +1036,7 @@ function formatMillions($value) {
                     }
                 },
                 columnDefs: [
-                    { orderable: false, targets: [8, 9, 10, 11] }, // Iconos no ordenables
+                    { orderable: false, targets: [4] }, // Icono Update no ordenable
                     { width: "120px", targets: 1 } // Ancho fijo para supergroup
                 ],
                 initComplete: function() {
