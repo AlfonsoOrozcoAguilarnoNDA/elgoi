@@ -681,7 +681,7 @@ sort($non_php_files);
             <span>|</span>
             <span>FC: <?php echo htmlspecialchars($_SESSION['fleet_commander_number'] ?? 'N/A'); ?></span>
             <span>|</span>
-            <span>Pilots: <?php echo count($pilots); ?></span>
+            <span>Pilots: X</span>
                 </span>
             </div>
             <div class="col-4 text-center">
