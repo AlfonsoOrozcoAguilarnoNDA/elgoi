@@ -11,12 +11,10 @@ session_start();
 // ============================================
 // VERIFICACIÓN DE SESIÓN
 // ============================================
-/*if (!isset($_SESSION['is_authenticated']) || $_SESSION['is_authenticated'] !== true) {
+if (!isset($_SESSION['is_authenticated']) || $_SESSION['is_authenticated'] !== true) {
     header('Location: ../fleet_login.php');
     exit;
 }
-*/
-
 // ============================================
 // INCLUIR CONFIGURACIÓN DE BD
 // ============================================
