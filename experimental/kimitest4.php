@@ -14,8 +14,7 @@
 // ============================================================================
 // GROUP CONFIGURATION - MODIFY GROUP NAMES HERE (TEXT STRINGS)
 // ============================================================================
-$GRUPO_1_NOMBRES = ["Alpha", "Bravo", "Charlie", "Delta"];   // Section 1 pilots
-$GRUPO_2_NOMBRES = ["Echo", "Foxtrot", "Golf", "Hotel"];      // Section 2 comparison
+$GRUPO_2_NOMBRES = ["Alpha", "Bravo", "Charlie", "Delta"];   // Section 2 pilots
 
 $GRUPO_1_SUPERGROUP = 1;   // Section Qwen (top)
 $GRUPO_2_SUPERGROUP = 2;   // Section DeepSeek / comparison (bottom)
