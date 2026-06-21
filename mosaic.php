@@ -126,7 +126,62 @@ sort($non_php_files);
             padding-top: 120px; /* Espacio para las dos barras fijas */
             padding-bottom: 60px; /* Espacio para el footer */
         }
-        
+        /* ============================================
+		   DROPDOWN
+		   ============================================ */
+		/* ============================================
+   DROPDOWN HAULING - VERTICAL
+   ============================================ */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.dropdown-toggle i {
+    font-size: 14px;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #1a1a2e;
+    border: 1px solid #333;
+    border-radius: 6px 6px 0 0;
+    padding: 6px 0;
+    margin-bottom: 8px;
+    min-width: 140px;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.4);
+    z-index: 1000;
+}
+
+/* Opciones en VERTICAL (una debajo de otra) */
+.dropdown-menu a {
+    display: block;
+    padding: 10px 20px;
+    color: #ccc;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.dropdown-menu a:hover {
+    background-color: #333;
+    color: #fff;
+}
+
+/* Mostrar al hacer clic */
+.dropdown.open .dropdown-menu {
+    display: block;
+}
         /* ============================================
            BARRAS DE NAVEGACIÓN FIJAS
            ============================================ */
