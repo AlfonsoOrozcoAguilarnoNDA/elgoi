@@ -1493,7 +1493,7 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
         <div class="attribution-note">
             <i class="fas fa-code"></i> <strong>Attribution:</strong> This file was created partly by <strong>Qwen</strong> (top navigation menu)
             and partly by <strong>DeepSeek R1</strong> (fleet integrity section, advanced statistics, Chart.js graphs).
-            <br><i class="fas fa-palette"></i> Colors and presentation: Fleet Commander Dark Theme bt Kimi, merged ny Claude
+            <br><i class="fas fa-palette"></i> Colors and presentation: Fleet Commander Dark Theme bt Kimi, merged by Claude Sonnet
             <br><i class="fas fa-calendar"></i> Merge date: 2026-06-20 | <i class="fas fa-file-code"></i> File: <?php echo basename(__FILE__); ?> | <i class="fas fa-database"></i> PHP <?php echo phpversion(); ?>
         </div>
 
