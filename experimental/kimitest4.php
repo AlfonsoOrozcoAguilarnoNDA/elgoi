@@ -1090,8 +1090,8 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
         <!-- ================================================================ -->
         <div class="placeholder-box">
             <i class="fas fa-tools"></i>
-            <h3>Pilot Management Table</h3>
-            <p>Próximamente</p>
+            <h3>PlaceHolder for something in the future</h3>
+            <p>Soon</p>
         </div>
 
         <?php else: ?>
