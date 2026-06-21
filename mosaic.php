@@ -40,7 +40,7 @@ Creamos mosaico
 */
 
 $tiles = [
-    showTile("specific/settings.php", "fa-cogs", "secondary"),
+    showTile("adminer-5.4.2-mysql-en.php", "fa-database", "dark"),
 	showTile("crew/moneymakers.php", "fa-coins", "primary"),    
     showTile("crew/biometrics.php", "fa-fingerprint", "primary"),
 	showTile("crew/apex_roster.php", "fa-users", "primary"),
@@ -62,8 +62,7 @@ $tiles = [
     showTile("crew/spy.php", "fa-user-secret", "dark")    
 ];
 
-$tiles2 = [		
-	showTile("adminer-5.4.2-mysql-en.php", "fa-database", "dark"),
+$tiles2 = [
 	showTile("crew/longtermplan.php", "fa-map", "primary"),
 	showTile("experimental/kimitest4.php", "fa-chart-pie", "primary"),
 	showTile("experimental/unsafe_station.php", "fa-truck-loading", "danger"),
@@ -592,7 +591,7 @@ sort($non_php_files);
             <a target='_blank' href="https://forums.eveonline.com">Forums</a>
             <a target='_blank' href="https://eveconomy.online/item/32876">Economy</a>
             <a target='_blank' href="https://janice.e-351.com/">Janice</a>          
-            <a href="#">Settings</a>
+            <i class="fas fa-cogs"></i><a href="#"> Settings</a>
         </div>
         <div class="nav-info">
             <span class="pilot-badge">
