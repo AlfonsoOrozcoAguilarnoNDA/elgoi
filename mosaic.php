@@ -126,11 +126,8 @@ sort($non_php_files);
             padding-top: 120px; /* Espacio para las dos barras fijas */
             padding-bottom: 60px; /* Espacio para el footer */
         }
-        /* ============================================
-		   DROPDOWN
-		   ============================================ */
-		/* ============================================
-   DROPDOWN HAULING - VERTICAL
+ /* ============================================
+   DROPDOWN HAULING - ABRE HACIA ABAJO
    ============================================ */
 .dropdown {
     position: relative;
@@ -151,20 +148,20 @@ sort($non_php_files);
 .dropdown-menu {
     display: none;
     position: absolute;
-    bottom: 100%;
+    top: 100%;           /* Abre hacia ABAJO */
     left: 50%;
     transform: translateX(-50%);
     background-color: #1a1a2e;
     border: 1px solid #333;
-    border-radius: 6px 6px 0 0;
+    border-radius: 0 0 6px 6px;  /* Bordes redondeados abajo */
     padding: 6px 0;
-    margin-bottom: 8px;
+    margin-top: 8px;     /* Espacio debajo del botón */
     min-width: 140px;
-    box-shadow: 0 -4px 12px rgba(0,0,0,0.4);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);  /* Sombra hacia abajo */
     z-index: 1000;
 }
 
-/* Opciones en VERTICAL (una debajo de otra) */
+/* Opciones en vertical */
 .dropdown-menu a {
     display: block;
     padding: 10px 20px;
@@ -619,7 +616,7 @@ sort($non_php_files);
                 <a href="#" class="dropdown-toggle" onclick="event.preventDefault(); this.parentElement.classList.toggle('open');">
                     <i class="fas fa-truck"></i>
                     Hauling
-                    <i class="fas fa-caret-up"></i>
+                    <i class="fas fa-caret-down"></i>
                 </a>
                 <div class="dropdown-menu">
                     <a href="#">Red Frog</a>
