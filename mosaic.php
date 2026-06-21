@@ -65,6 +65,7 @@ $tiles = [
 $tiles2 = [		
 	showTile("adminer-5.4.2-mysql-en.php", "fa-database", "dark"),
 	showTile("crew/longtermplan.php", "fa-map", "primary"),
+	showTile("crew/kimitest4.php", "fa-chart-pie", "primary"),
 	showTile("experimental/unsafe_station.php", "fa-truck-loading", "danger"),
 	showTile("industry/slots.php", "fa-industry", "info"),
 	showTile("industry/ammo.php", "fa-industry", "info"),
