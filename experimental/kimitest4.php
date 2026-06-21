@@ -2,12 +2,13 @@
 /**
  * File: deepseekcrew2.php
  * Date: 2026-06-20
+ * Licence : GPL
+ * Alfonso Orozco Aguilar - Work in progress
  * Description: Fleet pilot dashboard with fleet integrity.
- *              Merged from two scripts: Qwen logic (top) + DeepSeek (bottom).
- *              Section 2 placeholder replaced with the Pilot Management table
+ *              Merged from two scripts: Qwen logic (top) + DeepSeek (bottom). 
  *              (formerly a standalone script), encapsulated as a reusable function.
  *              Redesigned with Fleet Commander dark aesthetic.
- * Models: DeepSeek R1 (March 2026) | Aesthetic: Fleet Commander
+ * Models: DeepSeek R1 graphs (March 2026) | Aesthetic: Kimi | Claude 4.6 Sonet Merged
  */
 
 // ============================================================================
@@ -1491,8 +1492,8 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
         <!-- Attribution Note -->
         <div class="attribution-note">
             <i class="fas fa-code"></i> <strong>Attribution:</strong> This file was created partly by <strong>Qwen</strong> (top navigation menu)
-            and partly by <strong>DeepSeek R1</strong> (fleet integrity section, advanced statistics, Chart.js graphs, pilot management table with supergroup, Omega/Alpha badges).
-            <br><i class="fas fa-palette"></i> Colors and presentation: Fleet Commander Dark Theme.
+            and partly by <strong>DeepSeek R1</strong> (fleet integrity section, advanced statistics, Chart.js graphs).
+            <br><i class="fas fa-palette"></i> Colors and presentation: Fleet Commander Dark Theme bt Kimi, merged ny Claude
             <br><i class="fas fa-calendar"></i> Merge date: 2026-06-20 | <i class="fas fa-file-code"></i> File: <?php echo basename(__FILE__); ?> | <i class="fas fa-database"></i> PHP <?php echo phpversion(); ?>
         </div>
 
@@ -1583,7 +1584,6 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 <?php endif; ?>
-
 </body>
 </html>
 <?php $link->close(); ?>
