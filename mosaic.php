@@ -72,8 +72,7 @@ $tiles2 = [
 	showTile("industry/calc_p1.php", "fa-calculator", "info"),	
 	showTile("experimental/whereare.php", "fa-globe", "success"),
 	showTile("experimental/newpanels.php", "fa-users", "info"),	
-    showTile("experimental/thesix.php", "fa-users", "primary"),	
-    showTile("logistics/hauling.php", "fa-truck", "secondary")    
+    showTile("experimental/thesix.php", "fa-users", "primary")    
 ];
 
 // ============================================
@@ -530,7 +529,7 @@ sort($non_php_files);
     </style>
 </head>
 <body>
-    <!-- ============================================
+      <!-- ============================================
          BARRA DE NAVEGACIÓN SUPERIOR
          ============================================ -->
     <nav class="nav-bar nav-bar-top">
@@ -539,8 +538,8 @@ sort($non_php_files);
             <a href="#">Dashboard</a>
             <a target='_blank' href="https://reddit.com/r/Eve/new/">Reddit</a>
             <a target='_blank' href="https://forums.eveonline.com">Forums</a>
-			<a target='_blank' href="https://eveconomy.online/item/32876">Economy</a>
-			<a target='_blank' href="https://janice.e-351.com/">Janice</a>			
+            <a target='_blank' href="https://eveconomy.online/item/32876">Economy</a>
+            <a target='_blank' href="https://janice.e-351.com/">Janice</a>          
             <a href="#">Settings</a>
         </div>
         <div class="nav-info">
@@ -555,28 +554,28 @@ sort($non_php_files);
          BARRA DE NAVEGACIÓN INFERIOR
          ============================================ -->
     <nav class="nav-bar nav-bar-bottom">
-    <div class="nav-links">
-        <a href="#">Active Fleets</a>
-        <a href="#">Pending</a>
-        <a href="#">History</a>
-        
-        <!-- Dropdown Hauling -->
-        <div class="dropdown">
-            <a href="#" class="dropdown-toggle">
-                <i class="fas fa-truck"></i>
-                Hauling
-                <i class="fas fa-caret-up"></i>
-            </a>
-            <div class="dropdown-menu">
-                <a href="#">Red Frog</a>
-                <a href="#">PushX</a>
-                <a href="#">Moonspire</a>
+        <div class="nav-links">
+            <a href="#">Active Fleets</a>
+            <a href="#">Pending</a>
+            <a href="#">History</a>
+            
+            <!-- Dropdown Hauling -->
+            <div class="dropdown">
+                <a href="#" class="dropdown-toggle" onclick="event.preventDefault(); this.parentElement.classList.toggle('open');">
+                    <i class="fas fa-truck"></i>
+                    Hauling
+                    <i class="fas fa-caret-down"></i>
+                </a>
+                <div class="dropdown-menu">
+                    <a href="#">Red Frog</a>
+                    <a href="#">PushX</a>
+                    <a href="#">Moonspire</a>
+                </div>
             </div>
+            
+            <a href="#">Reports</a>
         </div>
-        
-        <a href="#">Reports</a>
-    </div>
-</nav>
+    </nav>
     
     <!-- ============================================
          CONTENIDO PRINCIPAL
