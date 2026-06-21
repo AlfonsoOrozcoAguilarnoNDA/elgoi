@@ -5,8 +5,7 @@
  * Licence : GPL
  * Alfonso Orozco Aguilar - Work in progress
  * Description: Fleet pilot dashboard with fleet integrity.
- *              Merged from two scripts: Qwen logic (top) + DeepSeek (bottom). 
- *              (formerly a standalone script), encapsulated as a reusable function.
+ *              Merged from many scripts encapsulated as a reusable function.
  *              Redesigned with Fleet Commander dark aesthetic.
  * Models: DeepSeek R1 graphs (March 2026) | Aesthetic: Kimi | Claude 4.6 Sonet Merged
  */
@@ -14,9 +13,8 @@
 // ============================================================================
 // GROUP CONFIGURATION - MODIFY GROUP NAMES HERE (TEXT STRINGS)
 // ============================================================================
-$GRUPO_2_NOMBRES = ["Alpha", "Bravo", "Charlie", "Delta"];   // Section 2 pilots
 
-$GRUPO_1_SUPERGROUP = 1;   // Section Qwen (top)
+$GRUPO_1_SUPERGROUP = 1;  
 $GRUPO_2_SUPERGROUP = 2;   // Section DeepSeek / comparison (bottom)
 
 // ============================================================================
@@ -231,7 +229,7 @@ function obtenerEstadisticasFlota($conexion, $commander_id = 0) {
 }
 
 // ============================================================================
-// OBTENER DATOS DE PILOTOS PARA SECCION 1 (Qwen) - por supergroup
+// OBTENER DATOS DE PILOTOS PARA SECCION 1 
 // ============================================================================
 $pilots_grupo1 = [];
 $totalPilots_grupo1 = 0;
@@ -1024,12 +1022,12 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
         <!-- ================================================================ -->
         <!-- SECCION 2: SKILL DISTRIBUTION COMPARISON (GRUPO 2) -->
         <!-- ================================================================ -->
-        <div class="section-divider"><span>Section 2: Skill Distribution Comparison - <?php echo implode(", ", $GRUPO_2_NOMBRES); ?></span></div>
+        <div class="section-divider"><span>Section 2: Skill Distribution Comparison</span></div>
 
         <div class="row mb-4">
             <div class="col-md-12 text-center mb-4">
                 <h2 style="color:#58a6ff;font-size:22px;"><i class="fas fa-chart-bar"></i> Skill Distribution Comparison</h2>
-                <p style="color:#8b949e;font-size:14px;">Comparing skill distribution among pilots: <?php echo implode(", ", $GRUPO_2_NOMBRES); ?></p>
+                <p style="color:#8b949e;font-size:14px;">Comparing skill distribution among pilots of the current supergroup</p>
             </div>
         </div>
 
@@ -1105,9 +1103,8 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
 
         <!-- Attribution Note -->
         <div class="attribution-note">
-            <i class="fas fa-code"></i> <strong>Attribution:</strong> This file was created partly by <strong>Qwen</strong> (top navigation menu)
-            and partly by <strong>DeepSeek R1</strong> (fleet integrity section, advanced statistics, Chart.js graphs).
-            <br><i class="fas fa-palette"></i> Colors and presentation: Fleet Commander Dark Theme bt Kimi, merged by Claude Sonnet
+            <i class="fas fa-code"></i> <strong>Attribution:</strong> This file was created partly by <strong>DeepSeek R1</strong> (fleet integrity section, advanced statistics, Chart.js graphs).
+            <br><i class="fas fa-palette"></i>and partly by <strong>Kimi</strong>strong></strong> Colors and presentation, merged by <strong>Claude Sonnet</strong>
             <br><i class="fas fa-calendar"></i> Merge date: 2026-06-20 | <i class="fas fa-file-code"></i> File: <?php echo basename(__FILE__); ?> | <i class="fas fa-database"></i> PHP <?php echo phpversion(); ?>
         </div>
 
