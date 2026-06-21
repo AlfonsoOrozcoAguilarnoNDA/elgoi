@@ -451,42 +451,12 @@ function renderPilotsManagementTable($conexion, $character_id) {
             </tbody>
         </table>
     </div>
-    <script>
-        $(function() {
-            $('#pilotsTable').DataTable({
-                pageLength: 200,
-                order: [[1, 'asc']],
-                language: {
-                    search: "Search pilots:",
-                    lengthMenu: "Show _MENU_ pilots per page",
-                    info: "Showing _START_ to _END_ of _TOTAL_ pilots",
-                    paginate: { first: "First", last: "Last", next: "Next", previous: "Previous" }
-                },
-                columnDefs: [
-                    { width: "120px", targets: 1 },
-                    { orderable: false, targets: [8] }
-                ],
-                initComplete: function() {
-                    this.api().columns(1).every(function() {
-                        var column = this;
-                        var select = $('<select class="supergroup-filter"><option value="">All Groups</option></select>')
-                            .appendTo($(column.header()).empty())
-                            .on('change', function() {
-                                var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                                column.search(val ? '^' + val + '$' : '', true, false).draw();
-                            });
-                        column.data().unique().sort().each(function(d, j) {
-                            var val = $(d).find('.supergroup-value').text().trim();
-                            if (val) {
-                                select.append('<option value="' + val + '">Group ' + val + '</option>');
-                            }
-                        });
-                    });
-                }
-            });
-        });
-    </script>
     <?php
+    // NOTE: the $('#pilotsTable').DataTable({...}) initialization script is NOT
+    // emitted here. It runs at the bottom of the page, after jQuery and the
+    // DataTables JS libraries are loaded — see the closing <script> block near
+    // </body>. Putting it here would fire before those libraries exist on a
+    // page (like this dashboard) that loads its scripts at the end of <body>.
     return ob_get_clean();
 }
 
@@ -1532,6 +1502,47 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
 <!-- DataTables JS (used by the Pilot Management table) -->
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+
+<?php if ($mostrar_contenido): ?>
+<!-- DataTable initialization for the Pilot Management table (#pilotsTable).
+     Runs here, after jQuery + DataTables JS are loaded above. -->
+<script>
+$(function() {
+    if ($('#pilotsTable').length === 0) return; // table not rendered (e.g. security alert shown instead)
+    $('#pilotsTable').DataTable({
+        pageLength: 200,
+        order: [[1, 'asc']],
+        language: {
+            search: "Search pilots:",
+            lengthMenu: "Show _MENU_ pilots per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ pilots",
+            paginate: { first: "First", last: "Last", next: "Next", previous: "Previous" }
+        },
+        columnDefs: [
+            { width: "120px", targets: 1 },
+            { orderable: false, targets: [8] }
+        ],
+        initComplete: function() {
+            this.api().columns(1).every(function() {
+                var column = this;
+                var select = $('<select class="supergroup-filter"><option value="">All Groups</option></select>')
+                    .appendTo($(column.header()).empty())
+                    .on('change', function() {
+                        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                        column.search(val ? '^' + val + '$' : '', true, false).draw();
+                    });
+                column.data().unique().sort().each(function(d, j) {
+                    var val = $(d).find('.supergroup-value').text().trim();
+                    if (val) {
+                        select.append('<option value="' + val + '">Group ' + val + '</option>');
+                    }
+                });
+            });
+        }
+    });
+});
+</script>
+<?php endif; ?>
 
 <?php if ($mostrar_contenido && isset($estadisticas["razas"]) && count($estadisticas["razas"]) > 0): ?>
 <script>
