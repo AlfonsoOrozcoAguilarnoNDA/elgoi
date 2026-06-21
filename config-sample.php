@@ -130,20 +130,15 @@ function aValues319b($Qx) {
  */
 function geticons($toon_number) {
     global $link;
-
     $toon_number = (int)$toon_number;
     $res = mysqli_query($link, "SELECT planets, jobs, finishqueue FROM PILOTS WHERE toon_number = $toon_number LIMIT 1");
-
     if (!$res || mysqli_num_rows($res) === 0) {
         return '<span class="text-muted">—</span>';
     }
-
     $p = mysqli_fetch_assoc($res);
-
     $hasPlanets = (!empty($p['planets']) && $p['planets'] !== '[]');
     $hasJobs    = (!empty($p['jobs'])    && $p['jobs']    !== '[]');
     $ahora      = date('Y-m-d H:i:s');
-
     // Lógica del birrete
     if (!empty($p['finishqueue']) && $p['finishqueue'] > $ahora) {
         $birrete = 'text-success';
@@ -152,15 +147,33 @@ function geticons($toon_number) {
     } else {
         $birrete = 'text-secondary';
     }
-
     return '
-	<style>.industry-icons {
+	<style>
+.industry-icons {
     display: inline-flex;
     gap: 9px;
     align-items: center;
     font-size: 1.05rem;
 }
-.industry-icons i { cursor: default; }
+.industry-icons i {
+    cursor: default;
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+.industry-icons i:hover {
+    transform: rotate(180deg);
+}
+.industry-icons a {
+    display: inline-block;
+    line-height: 0;
+}
+.industry-icons a .icon-action {
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+.industry-icons a:hover .icon-action {
+    transform: rotate(180deg);
+}
 </style>
     <div class="industry-icons">
         <i class="fas fa-globe-asia '     . ($hasPlanets ? 'text-success' : 'text-secondary') . '" title="Planetas Activos"></i>
