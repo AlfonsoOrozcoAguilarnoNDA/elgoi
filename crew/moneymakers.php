@@ -1,7 +1,8 @@
 <?php
 /* 
-License MIT
+License GPL
 Alfonso Orozco Aguilar
+This file sum a many important fileds of the crew.
 
 */
 /**
@@ -328,7 +329,10 @@ $sqlPilots = "SELECT
                 security,
                 skillpoints,
                 unalloc,
-                acctype
+                acctype,
+                daysq,
+                current_ship,
+                current_location
               FROM PILOTS
               $whereClause
               ORDER BY (skillpoints + IFNULL(unalloc,0)) DESC";
@@ -509,7 +513,27 @@ function getColorPocket($pocket) {
 }
 .industry-icons i { cursor: default; }
 .industry-icons .icon-action { cursor: pointer; transition: color 0.15s; }
-.industry-icons .icon-action:hover { color: #fff !important; }		
+.industry-icons .icon-action:hover { color: #fff !important; }
+
+        /* SP split (assigned / unallocated) */
+        .sp-value {
+            font-weight: bold;
+            color: #5dade2;
+        }
+        .sp-unalloc {
+            font-size: 0.72rem;
+            color: #d29922;
+        }
+
+        /* Ship / location line under corp */
+        .ship-line {
+            font-size: 0.72rem;
+            color: #adb5bd;
+        }
+        .location-line {
+            font-size: 0.72rem;
+            color: #6c757d;
+        }
     </style>
 </head>
 <body>
@@ -598,6 +622,7 @@ function getColorPocket($pocket) {
 					<th title="Jita Value"><i class="fas fa-dollar"></i> Jitav</th>
                     <th title="Wallet in millions ISK"><i class="fas fa-wallet"></i> Wallet M</th>
                     <th title="Planetary and industrial activity">PI / Jobs</th>
+                    <th title="Days remaining in training queue">DaysQ</th>
                     <th title="GF">GF</th>
                     <th title="Number of fits">Fits</th>
                     <th title="Security status">Sec.</th>
@@ -609,7 +634,6 @@ function getColorPocket($pocket) {
                 <?php
                 $rowNum = 1;
                 while ($p = mysqli_fetch_assoc($resPilots)):
-                    $totalSP    = (($p['skillpoints'] ?? 0) + ($p['unalloc'] ?? 0)) / 1000000;
                     $walletM    = ($p['wallet'] ?? 0) / 1000000;                                        
                     $pocketColor = getColorPocket($p['pocket6']);
                     $secVal     = (float)($p['security'] ?? 0);
@@ -628,6 +652,26 @@ function getColorPocket($pocket) {
 
                     // Pocket light or dark text
                     $pocketBadgeClass = in_array(strtoupper(trim($p['pocket6'] ?? '')), ['YENN','SANGO']) ? 'dark-text' : '';
+
+                    // Ship (decode JSON with escaped slashes)
+                    $ship_display = '—';
+                    if (!empty($p['current_ship'])) {
+                        $ship_data = json_decode(stripslashes($p['current_ship']), true);
+                        if (!empty($ship_data['ship_name'])) {
+                            $ship_display = $ship_data['ship_name'];
+                        }
+                    }
+
+                    // Location (decode JSON with escaped slashes)
+                    $location_display = '—';
+                    if (!empty($p['current_location'])) {
+                        $location_data = json_decode(stripslashes($p['current_location']), true);
+                        if (!empty($location_data['station_id'])) {
+                            $location_display = 'Station ' . $location_data['station_id'];
+                        } elseif (!empty($location_data['solar_system_id'])) {
+                            $location_display = 'System: ' . $location_data['solar_system_id'];
+                        }
+                    }
                 ?>
                 <tr>
                     <td class="text-center text-muted"><?php echo $rowNum++; ?></td>
@@ -644,6 +688,8 @@ function getColorPocket($pocket) {
                             <i class="fas fa-building mr-1" style="color:#5dade2;"></i><?php echo htmlspecialchars($p['corporation_name']); ?>
                         </small>
                         <?php endif; ?>
+                        <br><small class="ship-line"><?php echo htmlspecialchars($ship_display); ?></small>
+                        <br><small class="location-line"><?php echo htmlspecialchars($location_display); ?></small>
                     </td>
 
                     <td class="text-center">
@@ -675,6 +721,8 @@ function getColorPocket($pocket) {
 
                     </td>
 
+                    <td class="text-center"><?php echo (int)($p['daysq'] ?? 0); ?></td>
+
                     <td class="text-center"><?php echo (int)($p['gf'] ?? 0); ?></td>
 
                     <td class="text-center"><?php echo (int)($p['numberfits'] ?? 0); ?></td>
@@ -683,7 +731,12 @@ function getColorPocket($pocket) {
                         <?php echo number_format($secVal, 2); ?>
                     </td>
 
-                    <td class="text-right val-sp"><?php echo number_format($totalSP, 2); ?></td>
+                    <td class="text-right">
+                        <div class="sp-value"><?php echo number_format(($p['skillpoints'] ?? 0) / 1000000, 2); ?></div>
+                        <?php if (!empty($p['unalloc']) && $p['unalloc'] > 0): ?>
+                        <div class="sp-unalloc">+<?php echo number_format($p['unalloc'] / 1000000, 2); ?></div>
+                        <?php endif; ?>
+                    </td>
 
                     <td class="text-center">
                         <i class="fas <?php echo $accIcon; ?> acctype-icon"
@@ -708,7 +761,7 @@ $(document).ready(function() {
     $('#tablaPilotos').DataTable({
         pageLength: 100,
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-        order: [[13, 'desc']], // Sort by SP descending by default
+        ordering: false, // server-side order already applied (skillpoints + unalloc DESC); no client sort
         language: {
             search:         "Search:",
             lengthMenu:     "Show _MENU_ pilots",
@@ -724,9 +777,8 @@ $(document).ready(function() {
             }
         },
         columnDefs: [
-            { orderable: false, targets: [1, 10] }, // Image and PI/Jobs not sortable
-            { className: "text-center", targets: [0, 1, 3, 9, 10, 11, 12, 14] },
-            { className: "text-right",  targets: [5, 6, 7, 8, 13] }
+            { className: "text-center", targets: [0, 1, 3, 9, 10, 11, 12, 13, 15] },
+            { className: "text-right",  targets: [5, 6, 7, 8, 14] }
         ]		
     });
 });
