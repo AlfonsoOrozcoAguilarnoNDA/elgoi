@@ -564,7 +564,7 @@ sort($non_php_files);
                 <a href="#" class="dropdown-toggle" onclick="event.preventDefault(); this.parentElement.classList.toggle('open');">
                     <i class="fas fa-truck"></i>
                     Hauling
-                    <i class="fas fa-caret-down"></i>
+                    <i class="fas fa-caret-up"></i>
                 </a>
                 <div class="dropdown-menu">
                     <a href="#">Red Frog</a>
@@ -576,6 +576,7 @@ sort($non_php_files);
             <a href="#">Reports</a>
         </div>
     </nav>
+</body>
     
     <!-- ============================================
          CONTENIDO PRINCIPAL
