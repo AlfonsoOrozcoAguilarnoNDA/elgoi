@@ -49,16 +49,17 @@ $tiles = [
     showTile("crew/28_days_control.php", "fa-user-clock", "danger"),
     showTile("crew/career_plan.php", "fa-sitemap", "dark"),
     showTile("crew/compare.php", "fa-balance-scale", "light"),
+	showTile("specific/get_market.php", "fa-chart-line", "success"),
     showTile("specific/balance.php", "fa-coins", "warning"),
-	showTile("industry/slots.php", "fa-industry", "info"),
-    showTile("specific/get_market.php", "fa-chart-line", "success"),
+	showTile("industry/slots.php", "fa-industry", "info"),    
     showTile("specific/skybreaker.php", "fa-rocket", "danger"),
 	showTile("specific/explode.php", "fa-bomb", "light"),    
     
     showTile("updater.php", "fa-satellite-dish", "dark"),
     showTile("industry/inventory_pi.php", "fa-layer-group", "secondary"),    
     showTile("industry/minerals_bpo_bpc.php", "fa-gem", "warning"),	
-    showTile("industry/jobs.php", "fa-industry", "info"),    
+    showTile("industry/jobs.php", "fa-industry", "info"),
+	showTile("experimental/unsafe_station.php", "fa-truck-loading", "danger"),
     showTile("specific/ships_and_5m.php", "fa-id-badge", "secondary"),  
     //showTile("combat/pvp.php", "fa-crosshairs", "danger")    
     showTile("crew/spy.php", "fa-user-secret", "dark")    
@@ -66,7 +67,7 @@ $tiles = [
 
 $tiles2 = [	
 	showTile("experimental/kimitest4.php", "fa-chart-pie", "primary"),
-	showTile("experimental/unsafe_station.php", "fa-truck-loading", "danger"),	
+	
 	showTile("industry/ammo.php", "fa-industry", "info"),
 	showTile("industry/calc_p1.php", "fa-calculator", "info"),	
 	showTile("experimental/whereare.php", "fa-globe", "success"),
