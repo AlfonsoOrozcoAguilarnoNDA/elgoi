@@ -231,236 +231,6 @@ function obtenerEstadisticasFlota($conexion, $commander_id = 0) {
     return $estadisticas;
 }
 
-/**
- * renderPilotsManagementTable
- *
- * Renders the full pilot management table (DataTables-powered) for a given
- * fleet commander. Originally a standalone script; encapsulated here so it
- * can be reused from other pages by including this file and calling the
- * function with an open mysqli connection.
- *
- * NOTE: This function assumes session/auth checks and the one-time
- * "supergroup" column migration are handled OUTSIDE this function (by the
- * caller), since those are page-level / one-time concerns, not per-render
- * concerns.
- *
- * @param mysqli $conexion      Open mysqli connection (OOP style)
- * @param int    $character_id  Fleet commander character_id to filter pilots by
- *                               (PILOTS.parent_toon_number = $character_id)
- * @return string                HTML markup for the pilots table section
- */
-function renderPilotsManagementTable($conexion, $character_id) {
-    // --------------------------------------------------------------
-    // SECURITY VALIDATION 1: Check other Fleet Commanders
-    // --------------------------------------------------------------
-    $fc_check_query = "SELECT fleet_commander_number, pilot_name, character_id
-                        FROM fleet_commanders
-                        WHERE installation_id = 1 AND character_id != ?";
-    $fc_stmt = $conexion->prepare($fc_check_query);
-    $fc_stmt->bind_param("i", $character_id);
-    $fc_stmt->execute();
-    $fc_result = $fc_stmt->get_result();
-
-    $security_error = '';
-    if ($fc_result->num_rows > 0) {
-        $security_error = "SECURITY ALERT: Another Fleet Commander detected in system. " .
-                           "Access denied. Contact administrator.";
-    }
-
-    // --------------------------------------------------------------
-    // SECURITY VALIDATION 2: Verify pilot integrity
-    // --------------------------------------------------------------
-    $integrity_error = '';
-    if (empty($security_error)) {
-        $integrity_query = "SELECT COUNT(*) as foreign_pilots
-                             FROM PILOTS
-                             WHERE parent_toon_number != ? AND parent_toon_number != 0";
-        $int_stmt = $conexion->prepare($integrity_query);
-        $int_stmt->bind_param("i", $character_id);
-        $int_stmt->execute();
-        $int_data = $int_stmt->get_result()->fetch_assoc();
-
-        if ($int_data['foreign_pilots'] > 0) {
-            $integrity_error = "INTEGRITY VIOLATION: Found " . $int_data['foreign_pilots'] .
-                                " pilot(s) not belonging to this Fleet Commander. " .
-                                "Table not displayed for security reasons.";
-        }
-    }
-
-    // --------------------------------------------------------------
-    // IF THERE ARE SECURITY ERRORS, RETURN THE ALERT MARKUP ONLY
-    // --------------------------------------------------------------
-    if (!empty($security_error) || !empty($integrity_error)) {
-        $error_message = !empty($security_error) ? $security_error : $integrity_error;
-        $html = '<div class="security-alert">';
-        $html .= '<i class="fas fa-shield-alt"></i>';
-        $html .= '<h2>Security Violation Detected</h2>';
-        $html .= '<p>' . htmlspecialchars($error_message) . '</p>';
-        $html .= '</div>';
-        return $html;
-    }
-
-    // --------------------------------------------------------------
-    // GET PILOTS FOR THE FLEET COMMANDER
-    // --------------------------------------------------------------
-    $pilots_query = "SELECT
-                        toon_number,
-                        toon_name,
-                        tradefield,
-                        security,
-                        skillpoints,
-                        unalloc,
-                        acctype,
-                        finishqueue,
-                        wallet,
-                        planets,
-                        jobs,
-                        queue,
-                        numships,
-                        pocket6,
-                        daysq,
-                        numitems,
-                        evermarks,
-                        numberfits,
-                        supergroup,
-                        current_ship,
-                        current_location,
-                        lastsaved
-                     FROM PILOTS
-                     WHERE parent_toon_number = ?
-                     ORDER BY supergroup ASC, toon_name ASC";
-
-    $pilot_stmt = $conexion->prepare($pilots_query);
-    $pilot_stmt->bind_param("i", $character_id);
-    $pilot_stmt->execute();
-    $pilots_result = $pilot_stmt->get_result();
-
-    $pilots = [];
-    while ($row = $pilots_result->fetch_assoc()) {
-        $pilots[] = $row;
-    }
-
-    // --------------------------------------------------------------
-    // BUILD TABLE MARKUP
-    // --------------------------------------------------------------
-    ob_start();
-    ?>
-    <div class="pilots-container">
-        <table id="pilotsTable" class="display" style="width:100%">
-            <thead>
-                <tr>
-                    <th>Pilot</th>
-                    <th>Supergroup</th>
-                    <th>SP (M)</th>
-                    <th>Queue End</th>
-                    <th>DaysQ</th>
-                    <th>Ship / Location</th>
-                    <th>Status</th>
-                    <th>Pocket6</th>
-                    <th><i class="fas fa-sync-alt"></i></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($pilots as $pilot):
-                    // Decode current_ship (JSON with escaped slashes)
-                    $ship_display = '-';
-                    if (!empty($pilot['current_ship'])) {
-                        $ship_data = json_decode(stripslashes($pilot['current_ship']), true);
-                        if (!empty($ship_data['ship_name'])) {
-                            $ship_display = $ship_data['ship_name'];
-                        }
-                    }
-
-                    // Decode current_location (JSON with escaped slashes)
-                    $location_display = '-';
-                    if (!empty($pilot['current_location'])) {
-                        $location_data = json_decode(stripslashes($pilot['current_location']), true);
-                        if (!empty($location_data['station_id'])) {
-                            $location_display = 'Station ' . $location_data['station_id'];
-                        } elseif (!empty($location_data['solar_system_id'])) {
-                            $location_display = 'System: ' . $location_data['solar_system_id'];
-                        }
-                    }
-
-                    // Pilot status based on lastsaved
-                    $status = getPilotStatus($pilot['lastsaved'] ?? null);
-
-                    // Pocket6
-                    $pocket6 = strtoupper($pilot['pocket6'] ?? 'CLEAN');
-
-                    $status_class_map = ['success' => 'pocket-clean', 'warning' => 'pocket-warning', 'danger' => 'pocket-danger', 'secondary' => 'pocket-secondary'];
-                    $status_css = $status_class_map[$status['class']] ?? 'pocket-secondary';
-                ?>
-                <tr data-toon="<?php echo $pilot['toon_number']; ?>">
-                    <td>
-                        <div class="pilot-info-cell">
-                            <img src="https://images.evetech.net/characters/<?php echo $pilot['toon_number']; ?>/portrait?size=64"
-                                 alt="<?php echo htmlspecialchars($pilot['toon_name']); ?>"
-                                 class="pilot-portrait"
-                                 onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect fill=%22%2330363d%22 width=%2264%22 height=%2264%22/><text fill=%22%238b949e%22 x=%2232%22 y=%2236%22 text-anchor=%22middle%22 font-size=%2224%22>?</text></svg>'">
-                            <div>
-                                <div class="pilot-name"><?php echo htmlspecialchars($pilot['toon_name']); ?></div>
-                                <div class="pilot-number">#<?php echo $pilot['toon_number']; ?></div>
-                            </div>
-                        </div>
-                    </td>
-
-                    <!-- SUPERGROUP (READ-ONLY) -->
-                    <td>
-                        <span class="supergroup-value"><?php echo intval($pilot['supergroup'] ?? 1); ?></span>
-                    </td>
-
-                    <td>
-                        <div class="sp-value"><?php echo formatMillions($pilot['skillpoints']); ?></div>
-                        <?php if (!empty($pilot['unalloc']) && $pilot['unalloc'] > 0): ?>
-                        <div class="sp-unalloc">+<?php echo formatMillions($pilot['unalloc']); ?></div>
-                        <?php endif; ?>
-                    </td>
-
-                    <td class="queue-finish">
-                        <?php echo !empty($pilot['finishqueue']) ? date('Y-m-d H:i', strtotime($pilot['finishqueue'])) : '<span style="color:#484f58">-</span>'; ?>
-                    </td>
-
-                    <td class="stat-number"><?php echo $pilot['daysq'] ?? 0; ?></td>
-
-                    <!-- SHIP / LOCATION (MERGED) -->
-                    <td class="ship-location-cell">
-                        <div class="ship-line"><?php echo htmlspecialchars($ship_display); ?></div>
-                        <div class="location-line"><?php echo htmlspecialchars($location_display); ?></div>
-                    </td>
-
-                    <td><span class="pocket-status <?php echo $status_css; ?>"><?php echo htmlspecialchars($status['label']); ?></span></td>
-
-                    <td>
-                        <?php if ($pocket6 !== 'CLEAN'): ?>
-                        <span class="pocket-status pocket-danger"><?php echo htmlspecialchars($pocket6); ?></span>
-                        <?php else: ?>
-                        <span class="pocket-status pocket-clean">CLEAN</span>
-                        <?php endif; ?>
-                    </td>
-
-                    <td class="status-icon">
-                        <a href="../devauthcallback.php?pilot_id=<?php echo $pilot['toon_number']; ?>"
-                           target="_blank"
-                           title="Update pilot data"
-                           class="status-update">
-                            <i class="fas fa-sync-alt"></i>
-                        </a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    <?php
-    // NOTE: the $('#pilotsTable').DataTable({...}) initialization script is NOT
-    // emitted here. It runs at the bottom of the page, after jQuery and the
-    // DataTables JS libraries are loaded — see the closing <script> block near
-    // </body>. Putting it here would fire before those libraries exist on a
-    // page (like this dashboard) that loads its scripts at the end of <body>.
-    return ob_get_clean();
-}
-
 // ============================================================================
 // OBTENER DATOS DE PILOTOS PARA SECCION 1 (Qwen) - por supergroup
 // ============================================================================
@@ -521,12 +291,9 @@ $integridad = verificarIntegridadFlota($link, $fleet_commander_character_id);
 $mostrar_contenido = $integridad["valido"];
 
 $estadisticas = [];
-$pilots_management_html = "";
 
 if ($mostrar_contenido) {
     $estadisticas = obtenerEstadisticasFlota($link, $fleet_commander_character_id);
-    // Pilot management table (formerly the second standalone script), now a reusable function call
-    $pilots_management_html = renderPilotsManagementTable($link, $fleet_commander_character_id);
 }
 
 $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->connect_error : "";
@@ -541,9 +308,6 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-    <!-- DataTables CSS (used by the Pilot Management table) -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
     <style>
         * {
             margin: 0;
@@ -787,7 +551,7 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
         }
 
         /* ============================================
-           TABLES (base style, shared; DataTables overrides below)
+           TABLES (base style, shared)
            ============================================ */
         table {
             width: 100%;
@@ -1028,184 +792,32 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
         }
 
         /* ============================================
-           PILOT MANAGEMENT TABLE (Section 2 content)
-           Section-specific rules only; base table/alert/
-           card styles above are shared and NOT repeated here.
+           PLACEHOLDER (Pilot Management table removed)
            ============================================ */
-        .pilots-container {
+        .placeholder-box {
             background: rgba(22, 27, 34, 0.8);
-            border: 1px solid #30363d;
+            border: 1px dashed #30363d;
             border-radius: 12px;
-            padding: 20px;
+            padding: 50px 20px;
+            text-align: center;
+            color: #8b949e;
         }
 
-        /* DataTables wrapper overrides */
-        .dataTables_wrapper {
-            color: #c9d1d9;
-        }
-
-        .dataTables_length, .dataTables_filter, .dataTables_info, .dataTables_paginate {
+        .placeholder-box i {
+            font-size: 36px;
+            color: #58a6ff;
             margin-bottom: 15px;
-            color: #8b949e !important;
+            display: block;
         }
 
-        .dataTables_length select, .dataTables_filter input {
-            background: rgba(13, 17, 23, 0.95);
-            border: 1px solid #30363d;
+        .placeholder-box h3 {
             color: #c9d1d9;
-            padding: 5px 10px;
-            border-radius: 4px;
+            font-size: 18px;
+            margin-bottom: 8px;
         }
 
-        .dataTables_filter input:focus {
-            outline: none;
-            border-color: #58a6ff;
-        }
-
-        table.dataTable {
-            background: transparent;
-            border-collapse: collapse;
-            width: 100% !important;
-        }
-
-        .dataTables_paginate .paginate_button {
-            background: rgba(48, 54, 61, 0.5) !important;
-            border: 1px solid #30363d !important;
-            color: #8b949e !important;
-            border-radius: 4px !important;
-            margin: 0 2px !important;
-        }
-
-        .dataTables_paginate .paginate_button:hover {
-            background: rgba(88, 166, 255, 0.2) !important;
-            border-color: #58a6ff !important;
-            color: #58a6ff !important;
-        }
-
-        .dataTables_paginate .paginate_button.current {
-            background: #58a6ff !important;
-            border-color: #58a6ff !important;
-            color: #0d1117 !important;
-        }
-
-        .pilot-info-cell {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .pilot-portrait {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: 2px solid #30363d;
-            object-fit: cover;
-        }
-
-        .pilot-name {
-            font-weight: 600;
-            color: #c9d1d9;
+        .placeholder-box p {
             font-size: 13px;
-        }
-
-        .pilot-number {
-            font-size: 10px;
-            color: #6e7681;
-            font-family: 'Courier New', monospace;
-        }
-
-        .sp-value {
-            font-family: 'Courier New', monospace;
-            color: #7ee787;
-            font-weight: 600;
-            font-size: 12px;
-        }
-
-        .sp-unalloc {
-            font-size: 10px;
-            color: #d29922;
-        }
-
-        .queue-finish {
-            font-family: 'Courier New', monospace;
-            font-size: 11px;
-            color: #a371f7;
-        }
-
-        .stat-number {
-            font-family: 'Courier New', monospace;
-            font-weight: 600;
-            font-size: 12px;
-        }
-
-        .status-icon {
-            font-size: 16px;
-        }
-
-        .status-update {
-            color: #58a6ff;
-            display: inline-block;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-
-        .status-update:hover {
-            transform: rotate(180deg);
-        }
-
-        .pocket-status {
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .pocket-clean {
-            background: rgba(63, 185, 80, 0.15);
-            color: #3fb950;
-        }
-
-        .pocket-warning {
-            background: rgba(210, 153, 34, 0.15);
-            color: #d29922;
-        }
-
-        .pocket-danger {
-            background: rgba(248, 81, 73, 0.15);
-            color: #f85149;
-        }
-
-        .pocket-secondary {
-            background: rgba(139, 148, 158, 0.15);
-            color: #8b949e;
-        }
-
-        .supergroup-value {
-            font-weight: 600;
-            color: #58a6ff;
-            background: rgba(88, 166, 255, 0.1);
-            border: 1px solid #30363d;
-            padding: 5px 10px;
-            border-radius: 6px;
-            display: inline-block;
-            min-width: 30px;
-        }
-
-        .ship-location-cell {
-            text-align: left;
-            line-height: 1.4;
-        }
-
-        .ship-line {
-            color: #c9d1d9;
-            font-weight: 500;
-            font-size: 12px;
-        }
-
-        .location-line {
-            color: #8b949e;
-            font-size: 11px;
         }
     </style>
 </head>
@@ -1474,10 +1086,13 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
         </div>
 
         <!-- ================================================================ -->
-        <!-- PILOT MANAGEMENT TABLE (formerly placeholder) -->
-        <!-- Rendered via renderPilotsManagementTable($link, $fleet_commander_character_id) -->
+        <!-- PILOT MANAGEMENT TABLE — REMOVED (placeholder) -->
         <!-- ================================================================ -->
-        <?php echo $pilots_management_html; ?>
+        <div class="placeholder-box">
+            <i class="fas fa-tools"></i>
+            <h3>Pilot Management Table</h3>
+            <p>Próximamente</p>
+        </div>
 
         <?php else: ?>
         <div class="security-alert" style="border-color:#d29922;background:rgba(210,153,34,0.1);">
@@ -1498,52 +1113,6 @@ $db_error = ($link && $link->connect_error) ? "Connection error: " . $link->conn
         </div>
 
     </main>
-
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
-<!-- DataTables JS (used by the Pilot Management table) -->
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-
-<?php if ($mostrar_contenido): ?>
-<!-- DataTable initialization for the Pilot Management table (#pilotsTable).
-     Runs here, after jQuery + DataTables JS are loaded above. -->
-<script>
-$(function() {
-    if ($('#pilotsTable').length === 0) return; // table not rendered (e.g. security alert shown instead)
-    $('#pilotsTable').DataTable({
-        pageLength: 200,
-        order: [[1, 'asc']],
-        language: {
-            search: "Search pilots:",
-            lengthMenu: "Show _MENU_ pilots per page",
-            info: "Showing _START_ to _END_ of _TOTAL_ pilots",
-            paginate: { first: "First", last: "Last", next: "Next", previous: "Previous" }
-        },
-        columnDefs: [
-            { width: "120px", targets: 1 },
-            { orderable: false, targets: [8] }
-        ],
-        initComplete: function() {
-            this.api().columns(1).every(function() {
-                var column = this;
-                var select = $('<select class="supergroup-filter"><option value="">All Groups</option></select>')
-                    .appendTo($(column.header()).empty())
-                    .on('change', function() {
-                        var val = $.fn.dataTable.util.escapeRegex($(this).val());
-                        column.search(val ? '^' + val + '$' : '', true, false).draw();
-                    });
-                column.data().unique().sort().each(function(d, j) {
-                    var val = $(d).find('.supergroup-value').text().trim();
-                    if (val) {
-                        select.append('<option value="' + val + '">Group ' + val + '</option>');
-                    }
-                });
-            });
-        }
-    });
-});
-</script>
-<?php endif; ?>
 
 <?php if ($mostrar_contenido && isset($estadisticas["razas"]) && count($estadisticas["razas"]) > 0): ?>
 <script>
