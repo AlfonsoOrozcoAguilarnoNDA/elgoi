@@ -44,6 +44,7 @@ $tiles = [
 	showTile("crew/moneymakers.php", "fa-coins", "primary"),    
     showTile("crew/biometrics.php", "fa-fingerprint", "primary"),
 	showTile("crew/apex_roster.php", "fa-users", "primary"),
+	showTile("crew/longtermplan.php", "fa-map", "primary"),
     showTile("crew/skill_inspector.php", "fa-clipboard-check", "primary"),	
     showTile("crew/28_days_control.php", "fa-user-clock", "danger"),
     showTile("crew/career_plan.php", "fa-sitemap", "dark"),
@@ -62,8 +63,7 @@ $tiles = [
     showTile("crew/spy.php", "fa-user-secret", "dark")    
 ];
 
-$tiles2 = [
-	showTile("crew/longtermplan.php", "fa-map", "primary"),
+$tiles2 = [	
 	showTile("experimental/kimitest4.php", "fa-chart-pie", "primary"),
 	showTile("experimental/unsafe_station.php", "fa-truck-loading", "danger"),
 	showTile("industry/slots.php", "fa-industry", "info"),
