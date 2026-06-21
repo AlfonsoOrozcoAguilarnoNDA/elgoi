@@ -60,7 +60,7 @@ $tiles = [
     showTile("industry/inventory_pi.php", "fa-layer-group", "secondary"),    
     showTile("industry/minerals_bpo_bpc.php", "fa-gem", "warning"),	
     
-	showTile("industry/slots_ceo.php", "fa-user-tie", "info"),
+	showTile("industry/slots_and_ceo.php", "fa-user-tie", "info"),
 	showTile("experimental/unsafe_station.php", "fa-truck-loading", "danger"),
     showTile("specific/ships_and_5m.php", "fa-id-badge", "secondary"),  
     //showTile("combat/pvp.php", "fa-crosshairs", "danger")    
