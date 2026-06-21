@@ -555,13 +555,28 @@ sort($non_php_files);
          BARRA DE NAVEGACIÓN INFERIOR
          ============================================ -->
     <nav class="nav-bar nav-bar-bottom">
-        <div class="nav-links">
-            <a href="#">Active Fleets</a>
-            <a href="#">Pending</a>
-            <a href="#">History</a>
-            <a href="#">Reports</a>
+    <div class="nav-links">
+        <a href="#">Active Fleets</a>
+        <a href="#">Pending</a>
+        <a href="#">History</a>
+        
+        <!-- Dropdown Hauling -->
+        <div class="dropdown">
+            <a href="#" class="dropdown-toggle">
+                <i class="fas fa-truck"></i>
+                Hauling
+                <i class="fas fa-caret-up"></i>
+            </a>
+            <div class="dropdown-menu">
+                <a href="#">Red Frog</a>
+                <a href="#">PushX</a>
+                <a href="#">Moonspire</a>
+            </div>
         </div>
-    </nav>
+        
+        <a href="#">Reports</a>
+    </div>
+</nav>
     
     <!-- ============================================
          CONTENIDO PRINCIPAL
