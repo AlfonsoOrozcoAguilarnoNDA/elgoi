@@ -260,7 +260,7 @@ sort($non_php_files);
         
         .metro-tile {
             position: relative;
-            height: 120px;
+            height: 90px;
             border-radius: 4px;
             padding: 15px;
             display: flex;
