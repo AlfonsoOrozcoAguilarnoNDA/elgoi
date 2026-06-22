@@ -13,101 +13,60 @@ This file sum a many important fileds of the crew.
 require_once '../config.php';
 
 function renewskills($who){
-// who = toon number
-list($name,$pilot,$data)=avalues319("select toon_name,email_pilot,skills from PILOTS where toon_number='$who'");
-if ($name=="") die("The pilot $who ".PilotfromInternet($who)." is not in the database (4)");
-$name=addslashes($name);
-if ($data=='[]') die("no data(1) for $name");
-$where="in <a href='../devauthcallback.php?pilot_id=$who' target='_blank'>this link</a> when you do it, press f5 to reload here";
-if (str_replace("Timeout contacting tranquility","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try updating him/her later $where");
-if (str_replace("unexpected end of JSON","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try updating him/her later $where");
-if (str_replace("504 Gateway","",$data)<>$data) die("Sorry, skills are damaged in pilot $name, try updating him/her later $where");
+    list($name,$pilot,$data)=avalues319("select toon_name,email_pilot,skills from PILOTS where toon_number='$who'");
+    if ($name=="") die("The pilot $who ".PilotfromInternet($who)." is not in the database (4)");
+    $name=addslashes($name);
+    if ($data=='[]') die("no data(1) for $name");
+    
+    $where="in <a href='../devauthcallback.php?pilot_id=$who' target='_blank'>this link</a> when you do it, press f5 to reload here";
+    if (str_replace("Timeout contacting tranquility","",$data)!=$data) die("Sorry, skills are damaged in pilot $name, try updating him/her later $where");
+    if (str_replace("unexpected end of JSON","",$data)!=$data) die("Sorry, skills are damaged in pilot $name, try updating him/her later $where");
+    if (str_replace("504 Gateway","",$data)!=$data) die("Sorry, skills are damaged in pilot $name, try updating him/her later $where");
 
-$data=stripslashes($data);
-//echo "<li>	$name</li>";
-$xml=json2xml($data);
-	
-$xml = new SimpleXMLElement($xml);
-	
-$sql="delete from EVE_CHARSKILLS where toon='$who'";
-doaction($sql,"error checking skills $who");
-list($dummy)=avalues319("select skills from PILOTS where toon_number='$who'");
-//echo "<h3>Pilot: $name (9)</h3>";     
-$acctype="Maybe Omega";
-foreach($xml->skills->item as $item){ 
-    $what=$item->skill_id;
-    $description=description($what);
-    if ($description=='') $description='n/a';    
+    $data=stripslashes($data);    
     
-    $active=$item->active_skill_level;
-    if ($active=='') $active=0;    
-    $dif=abs($item->trained_skill_level-$item->active_skill_level);    
+    $json = json_decode($data, true);  // true = array asociativo
+    if ($json === null) {
+        die("Invalid JSON for pilot $name");
+    }
     
-    if ($dif>0) $acctype='Alpha';            
-    list($maxalpha)=avalues319("select EXPANDED from ALPHA_CLONES where numberskill='$what'");
-    if ($active >$maxalpha and $active>0)  $acctype="Omega";
-	$toon_name=addslashes($name);
-	list($thegroup)=avalues319("select groupid from invTypes2 where typeid='$what'");
-	list($group_name)=avalues319("select groupName from invGroups where groupid=$thegroup");;
-    $sql="insert into EVE_CHARSKILLS (toon,toon_name,typeID,skillpoints,rank,description,group_name) values 
-       ('$who','$name',$what,$item->skillpoints_in_skill,$item->trained_skill_level,'$description','$group_name')";
-     doaction($sql,"error inserting skills");  
-}
-$sql="update PILOTS set acctype='$acctype' where toon_number='$who'";
-doaction($sql,"error inserting skills");  
-}// renewskills
-function json2xml($json) {
-// Copyright: Maurits van der Schee <maurits@vdschee.nl>
-// Description: Convert from JSON to XML and back.
-// License: MIT
-    $a = json_decode($json);
-    $d = new DOMDocument();
-    $c = $d->createElement("root");
-    $d->appendChild($c);
-    $t = function($v) {
-        $type = gettype($v);
-        switch($type) {
-            case 'integer': return 'number';
-            case 'double':  return 'number';
-            default: return strtolower($type);
-        }
-    };
-    $f = function($f,$c,$a,$s=false) use ($t,$d) {
-        $c->setAttribute('type', $t($a));
-        if ($t($a) != 'array' && $t($a) != 'object') {
-            if ($t($a) == 'boolean') {
-                $c->appendChild($d->createTextNode($a?'true':'false'));
-            } else {
-                if (!is_null($a)) $c->appendChild($d->createTextNode($a));
-            }
-        } else {
-            foreach($a as $k=>$v) {
-                if ($k == '__type' && $t($a) == 'object') {
-                    $c->setAttribute('__type', $v);
-                } else {
-                    if ($t($v) == 'object') {
-                        $ch = $c->appendChild($d->createElementNS(null, $s ? 'item' : $k));
-                        $f($f, $ch, $v);
-                    } else if ($t($v) == 'array') {
-                        $ch = $c->appendChild($d->createElementNS(null, $s ? 'item' : $k));
-                        $f($f, $ch, $v, true);
-                    } else {
-                        $va = $d->createElementNS(null, $s ? 'item' : $k);
-                        if ($t($v) == 'boolean') {
-                            $va->appendChild($d->createTextNode($v?'true':'false'));
-                        } else {
-                            $va->appendChild($d->createTextNode($v));
-                        }
-                        $ch = $c->appendChild($va);
-                        $ch->setAttribute('type', $t($v));
-                    }
-                }
-            }
-        }
-    };
-    $f($f,$c,$a,$t($a)=='array');
-    return $d->saveXML($d->documentElement);
-} //json2xml
+    $skills = $json['skills'];
+    
+    $sql="delete from EVE_CHARSKILLS where toon='$who'";
+    doaction($sql,"error checking skills $who");
+    
+    $toon_name=addslashes($name);
+    $acctype="Maybe Omega";    
+    
+    foreach($skills as $item){ 	 
+        $what = $item['skill_id'];
+        $description = description($what);
+        if ($description=='') $description='n/a';    
+        
+        $active = $item['active_skill_level'];
+        if ($active=='') $active=0;    
+        $dif = abs($item['trained_skill_level'] - $item['active_skill_level']);    
+        
+        if ($dif>0) $acctype='Alpha';            
+        list($maxalpha)=avalues319("select EXPANDED from ALPHA_CLONES where numberskill='$what'");
+        if ($active > $maxalpha and $active>0) $acctype="Omega";
+        
+        list($thegroup)=avalues319("select groupid from invTypes where typeid='$what'");
+		if($thegroup=="") die("The group of skill $thegroup cant be retrieved. Check invtypes table in row $what");
+        list($group_name)=avalues319("select groupName from invGroups where groupid=$thegroup");
+        
+        $sql="insert into EVE_CHARSKILLS (toon,toon_name,typeID,skillpoints,rank,description,group_name) values 
+           ('$who','$name',$what,{$item['skillpoints_in_skill']},{$item['trained_skill_level']},'$description','$group_name')";        
+        
+        doaction($sql,"error inserting skills");  
+    }
+	if ($toon_name=="Sue Rtuda") {
+       echo "<li>LOOP ENDED. Total iterations should be: " . count($skills) . "</li>";
+    }
+    
+    $sql="update PILOTS set acctype='$acctype' where toon_number='$who'";
+    doaction($sql,"error inserting skills");  
+} // renewskills
 function description($value){
 //http://eve-files.com/chribba/typeid.txt
 $sql="select typeName as description from invTypes where typeID='$value'";
@@ -118,7 +77,7 @@ $sql="select typeName as description from invTypes where typeID='$value'";
     https://market.fuzzwork.co.uk/type/23061/
     
 */      
-        //if ($value==47911) $pass="Entropic Radiation Sink II";
+        //if ($value==47911) $pass="Entropic Radiation Sink II";	 
      if ($pass=='') $pass=$value;
      $pass=addslashes($pass);
 return $pass;
