@@ -14,7 +14,7 @@ check_authorization();
 date_default_timezone_set('America/Mexico_City');
 
 // ---------------------------------------------------------------------
-// CREAR TABLA SI NO EXISTE
+// CREATE TABLE IF NOT EXISTS
 // ---------------------------------------------------------------------
 $sql_create_economy = "
 CREATE TABLE IF NOT EXISTS POCKET_ECONOMY (
@@ -29,12 +29,12 @@ CREATE TABLE IF NOT EXISTS POCKET_ECONOMY (
 mysqli_query($link, $sql_create_economy);
 
 // ---------------------------------------------------------------------
-// PROCESAR ACCIONES DE ECONOMÍA
+// PROCESS ECONOMY ACTIONS
 // ---------------------------------------------------------------------
-$mensaje = '';
-$tipo_mensaje = '';
+$message = '';
+$message_type = '';
 
-// AGREGAR REGISTRO
+// ADD RECORD
 if (isset($_POST['action']) && $_POST['action'] === 'add_economy') {
     $pocket = mysqli_real_escape_string($link, trim($_POST['pocket']));
     $sistema = mysqli_real_escape_string($link, trim($_POST['sistema']));
@@ -44,16 +44,16 @@ if (isset($_POST['action']) && $_POST['action'] === 'add_economy') {
         $sql = "INSERT INTO POCKET_ECONOMY (pocket, sistema, millones_isk) VALUES ('$pocket', '$sistema', $millones)";
         if (mysqli_query($link, $sql)) {
             $hora = date('H:i:s');
-            $mensaje = "Se agregó sistema <strong>$sistema</strong> en <strong>$pocket</strong> a las $hora";
-            $tipo_mensaje = "success";
+            $message = "System <strong>$sistema</strong> in <strong>$pocket</strong> added at $hora";
+            $message_type = "success";
         } else {
-            $mensaje = "Error al agregar: " . mysqli_error($link);
-            $tipo_mensaje = "danger";
+            $message = "Error adding: " . mysqli_error($link);
+            $message_type = "danger";
         }
     }
 }
 
-// ACTUALIZAR REGISTRO
+// UPDATE RECORD
 if (isset($_POST['action']) && $_POST['action'] === 'update_economy') {
     $id = (int)$_POST['id'];
     $millones = (float)$_POST['millones_isk'];
@@ -64,17 +64,17 @@ if (isset($_POST['action']) && $_POST['action'] === 'update_economy') {
 
     $sql = "UPDATE POCKET_ECONOMY SET millones_isk = $millones WHERE id = $id";
     if (mysqli_query($link, $sql)) {
-        $fecha_hora = date('d/m/Y') . ' a las ' . date('H:i:s');
-        $mensaje = "Sistema <strong>" . $info['sistema'] . "</strong> del pocket <strong>" . $info['pocket'] . "</strong> se actualizó a " . number_format($millones, 2) . " millones el $fecha_hora (México)";
-        $tipo_mensaje = "info";
+        $fecha_hora = date('d/m/Y') . ' at ' . date('H:i:s');
+        $message = "System <strong>" . $info['sistema'] . "</strong> from pocket <strong>" . $info['pocket'] . "</strong> updated to " . number_format($millones, 2) . " millions on $fecha_hora (Mexico)";
+        $message_type = "info";
     } else {
-        $mensaje = "Error al actualizar: " . mysqli_error($link);
-        $tipo_mensaje = "danger";
+        $message = "Error updating: " . mysqli_error($link);
+        $message_type = "danger";
     }
     mysqli_free_result($result_info);
 }
 
-// MODIFICAR CANTIDAD (SUMAR/RESTAR)
+// MODIFY AMOUNT (ADD/SUBTRACT)
 if (isset($_POST['action']) && $_POST['action'] === 'modify_economy') {
     $id = (int)$_POST['sistema_id'];
     $modificacion = (float)$_POST['modificacion'];
@@ -91,17 +91,17 @@ if (isset($_POST['action']) && $_POST['action'] === 'modify_economy') {
         if (mysqli_query($link, $sql)) {
             $hora = date('H:i:s');
             $signo = $modificacion >= 0 ? '+' : '';
-            $mensaje = "Sistema <strong>" . $info['sistema'] . "</strong> en <strong>" . $info['pocket'] . "</strong> modificado " . $signo . number_format($modificacion, 2) . ", nuevo total: <strong>" . number_format($nuevo_valor, 2) . "</strong> a las $hora";
-            $tipo_mensaje = "success";
+            $message = "System <strong>" . $info['sistema'] . "</strong> in <strong>" . $info['pocket'] . "</strong> modified by " . $signo . number_format($modificacion, 2) . ", new total: <strong>" . number_format($nuevo_valor, 2) . "</strong> at $hora";
+            $message_type = "success";
         } else {
-            $mensaje = "Error al modificar: " . mysqli_error($link);
-            $tipo_mensaje = "danger";
+            $message = "Error modifying: " . mysqli_error($link);
+            $message_type = "danger";
         }
     }
     mysqli_free_result($result_info);
 }
 
-// ELIMINAR REGISTRO
+// DELETE RECORD
 if (isset($_GET['delete_id'])) {
     $id = (int)$_GET['delete_id'];
 
@@ -111,48 +111,48 @@ if (isset($_GET['delete_id'])) {
 
     $sql = "DELETE FROM POCKET_ECONOMY WHERE id = $id";
     if (mysqli_query($link, $sql)) {
-        $fecha_hora = date('d/m/Y') . ' a las ' . date('H:i:s');
-        $mensaje = "Sistema <strong>" . $info['sistema'] . "</strong> del pocket <strong>" . $info['pocket'] . "</strong> se eliminó el $fecha_hora (México)";
-        $tipo_mensaje = "warning";
+        $fecha_hora = date('d/m/Y') . ' at ' . date('H:i:s');
+        $message = "System <strong>" . $info['sistema'] . "</strong> from pocket <strong>" . $info['pocket'] . "</strong> deleted on $fecha_hora (Mexico)";
+        $message_type = "warning";
     } else {
-        $mensaje = "Error al eliminar: " . mysqli_error($link);
-        $tipo_mensaje = "danger";
+        $message = "Error deleting: " . mysqli_error($link);
+        $message_type = "danger";
     }
     mysqli_free_result($result_info);
 }
 
 // ---------------------------------------------------------------------
-// OBTENER DATOS ECONOMÍA
+// GET ECONOMY DATA
 // ---------------------------------------------------------------------
-$pockets_disponibles = array('Other', 'Clean', 'Exper', 'Lucky', 'Nokia', 'Yenn', 'Sango');
-$datos_por_pocket = array();
-$gran_total = 0;
+$available_pockets = array('Other', 'Clean', 'Exper', 'Lucky', 'Nokia', 'Yenn', 'Sango');
+$data_by_pocket = array();
+$grand_total = 0;
 
-foreach ($pockets_disponibles as $pocket) {
+foreach ($available_pockets as $pocket) {
     $pocket_escaped = mysqli_real_escape_string($link, $pocket);
     $sql = "SELECT * FROM POCKET_ECONOMY WHERE pocket = '$pocket_escaped' ORDER BY millones_isk DESC";
     $result = mysqli_query($link, $sql);
 
     if ($result && mysqli_num_rows($result) > 0) {
-        $registros = array();
+        $records = array();
         $total_pocket = 0;
 
         while ($row = mysqli_fetch_assoc($result)) {
-            $registros[] = $row;
+            $records[] = $row;
             $total_pocket += (float)$row['millones_isk'];
         }
 
-        $datos_por_pocket[$pocket] = array(
-            'registros' => $registros,
+        $data_by_pocket[$pocket] = array(
+            'records' => $records,
             'total' => $total_pocket
         );
 
-        $gran_total += $total_pocket;
+        $grand_total += $total_pocket;
         mysqli_free_result($result);
     }
 }
 
-$colores_pocket = array(
+$pocket_colors = array(
     'Nokia' => '#ffcccc',
     'Yenn' => '#f5f5f5',
     'Exper' => '#ccffcc',
@@ -162,23 +162,23 @@ $colores_pocket = array(
     'Other' => '#ffd8b3'
 );
 
-// Todos los sistemas para el combo de modificar
-$sql_todos_sistemas = "SELECT id, pocket, sistema, millones_isk FROM POCKET_ECONOMY ORDER BY pocket ASC, sistema ASC";
-$result_todos_sistemas = mysqli_query($link, $sql_todos_sistemas);
-$todos_sistemas = array();
-if ($result_todos_sistemas) {
-    while ($row = mysqli_fetch_assoc($result_todos_sistemas)) {
-        $todos_sistemas[] = $row;
+// All systems for the modify dropdown
+$sql_all_systems = "SELECT id, pocket, sistema, millones_isk FROM POCKET_ECONOMY ORDER BY pocket ASC, sistema ASC";
+$result_all_systems = mysqli_query($link, $sql_all_systems);
+$all_systems = array();
+if ($result_all_systems) {
+    while ($row = mysqli_fetch_assoc($result_all_systems)) {
+        $all_systems[] = $row;
     }
-    mysqli_free_result($result_todos_sistemas);
+    mysqli_free_result($result_all_systems);
 }
 
-// IP y versión PHP
-$user_ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'IP desconocida';
+// IP and PHP version
+$user_ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : 'Unknown IP';
 $php_version = phpversion();
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>EVE Pocket Economy</title>
@@ -192,7 +192,7 @@ $php_version = phpversion();
             color: #f8f9fa;
         }
         .navbar-brand { font-weight: 600; }
-        .btn-salir { color: #ffeb3b !important; }
+        .btn-exit { color: #ffeb3b !important; }
 
         .footer-fixed {
             position: fixed;
@@ -237,21 +237,43 @@ $php_version = phpversion();
         .table-pocket tbody tr:hover { background-color: rgba(0,0,0,0.05); }
         .pocket-total { background-color: rgba(0,0,0,0.2) !important; font-weight: 700; font-size: 1.05rem; }
 
-        .gran-total-box {
+        .grand-total-box {
             background-color: #222;
             padding: 25px;
             border-radius: 8px;
             border: 3px solid #0078d7;
             text-align: center;
             margin-bottom: 30px;
-            margin-top: 30px;
         }
-        .gran-total-box h3 { color: #0078d7; font-weight: 700; margin-bottom: 10px; }
-        .gran-total-amount { font-size: 2.5rem; font-weight: 700; color: #00ff00; }
+        .grand-total-box h3 { color: #0078d7; font-weight: 700; margin-bottom: 10px; }
+        .grand-total-amount { font-size: 2.5rem; font-weight: 700; color: #00ff00; }
 
         .form-inline-edit { display: inline-flex; align-items: center; gap: 5px; }
         .form-inline-edit input { width: 110px; padding: 2px 6px; font-size: 0.9rem; }
         .btn-sm-custom { padding: 2px 8px; font-size: 0.85rem; }
+
+        .jumbotron-custom {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            color: #e0e0e0;
+        }
+        .jumbotron-custom h2 {
+            color: #00d4ff;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        .jumbotron-custom p {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            margin-bottom: 0;
+        }
+        .jumbotron-custom .highlight {
+            color: #ffeb3b;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -259,28 +281,56 @@ $php_version = phpversion();
 
 <div class="container-fluid">
 
-    <?php if (!empty($mensaje)): ?>
+    <?php if (!empty($message)): ?>
     <div class="row">
         <div class="col-12">
-            <div class="alert alert-<?php echo $tipo_mensaje; ?> alert-dismissible fade show" role="alert">
-                <?php echo $mensaje; ?>
+            <div class="alert alert-<?php echo $message_type; ?> alert-dismissible fade show" role="alert">
+                <?php echo $message; ?>
                 <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
             </div>
         </div>
     </div>
     <?php endif; ?>
 
-    <div class="row" id="agregar">
-        <div class="col-12 col-lg-6">
+    <!-- JUMBOTRON / PLACEHOLDER -->
+    <div class="row">
+        <div class="col-12">
+            <div class="jumbotron-custom">
+                <h2><i class="fas fa-info-circle"></i> About This Section</h2>
+                <p>
+                    The purpose of this section is to keep track of <span class="highlight">small in-game amounts</span> 
+                    for <span class="highlight">political reasons</span>, without relying on Excel spreadsheets. 
+                    All units are expressed in <span class="highlight">millions of ISK</span>. Use the forms below 
+                    to add, edit, or modify system balances within each pocket.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- GRAND TOTAL + ADD / EDIT SECTIONS (ALL AT THE TOP) -->
+    <div class="row" id="manage">
+        <!-- GRAND TOTAL -->
+        <div class="col-12 col-lg-4">
+            <div class="grand-total-box">
+                <h3><i class="fas fa-wallet"></i> GRAND TOTAL</h3>
+                <div class="grand-total-amount">
+                    <?php echo number_format($grand_total, 2); ?> M ISK
+                </div>
+                <small class="text-muted">Sum of all pockets</small>
+            </div>
+        </div>
+
+        <!-- ADD NEW SYSTEM -->
+        <div class="col-12 col-lg-4">
             <div class="form-dark">
-                <h5><i class="fas fa-plus-circle"></i> Agregar Nuevo Sistema</h5>
+                <h5><i class="fas fa-plus-circle"></i> Add New System</h5>
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="add_economy">
                     <div class="form-row">
                         <div class="form-group col-md-4">
                             <label for="pocket">Pocket *</label>
                             <select class="form-control" id="pocket" name="pocket" required>
-                                <option value="">-- Selecciona --</option>
+                                <option value="">-- Select --</option>
                                 <option value="Other">Other</option>
                                 <option value="Clean">Clean</option>
                                 <option value="Exper">Exper</option>
@@ -291,51 +341,52 @@ $php_version = phpversion();
                             </select>
                         </div>
                         <div class="form-group col-md-5">
-                            <label for="sistema">Sistema *</label>
+                            <label for="sistema">System *</label>
                             <input type="text" class="form-control" id="sistema" name="sistema"
-                                   placeholder="Ej: JITA, AMARR, etc." required>
+                                   placeholder="Ex: JITA, AMARR, etc." required>
                         </div>
                         <div class="form-group col-md-3">
-                            <label for="millones_isk">Millones ISK *</label>
+                            <label for="millones_isk">Millions ISK *</label>
                             <input type="number" step="0.01" class="form-control" id="millones_isk"
                                    name="millones_isk" placeholder="0.00" required>
                         </div>
                     </div>
                     <button type="submit" class="btn btn-success">
-                        <i class="fas fa-save"></i> Agregar Sistema
+                        <i class="fas fa-save"></i> Add System
                     </button>
                 </form>
             </div>
         </div>
 
-        <div class="col-12 col-lg-6">
+        <!-- MODIFY SYSTEM AMOUNT -->
+        <div class="col-12 col-lg-4">
             <div class="form-dark">
-                <h5><i class="fas fa-edit"></i> Modificar Cantidad de Sistema</h5>
-                <?php if (empty($todos_sistemas)): ?>
-                <div class="alert alert-warning">Primero debes agregar al menos un sistema.</div>
+                <h5><i class="fas fa-edit"></i> Modify System Amount</h5>
+                <?php if (empty($all_systems)): ?>
+                <div class="alert alert-warning">You must add at least one system first.</div>
                 <?php else: ?>
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="modify_economy">
                     <div class="form-group">
-                        <label for="sistema_id">Sistema *</label>
+                        <label for="sistema_id">System *</label>
                         <select class="form-control" id="sistema_id" name="sistema_id" required>
-                            <option value="">-- Selecciona un sistema --</option>
-                            <?php foreach ($todos_sistemas as $sys): ?>
+                            <option value="">-- Select a system --</option>
+                            <?php foreach ($all_systems as $sys): ?>
                             <option value="<?php echo $sys['id']; ?>">
                                 <?php echo htmlspecialchars($sys['pocket']); ?> - <?php echo htmlspecialchars($sys['sistema']); ?>
-                                (actual: <?php echo number_format($sys['millones_isk'], 2); ?>)
+                                (current: <?php echo number_format($sys['millones_isk'], 2); ?>)
                             </option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="modificacion">Cantidad a Sumar/Restar *</label>
+                        <label for="modificacion">Amount to Add/Subtract *</label>
                         <input type="number" step="0.01" class="form-control" id="modificacion"
-                               name="modificacion" placeholder="Ej: +3.16 o -5.50" required>
-                        <small class="text-muted">Usa números positivos para sumar (+3.16) o negativos para restar (-5.50)</small>
+                               name="modificacion" placeholder="Ex: +3.16 or -5.50" required>
+                        <small class="text-muted">Use positive numbers to add (+3.16) or negative to subtract (-5.50)</small>
                     </div>
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-calculator"></i> Modificar Cantidad
+                        <i class="fas fa-calculator"></i> Modify Amount
                     </button>
                 </form>
                 <?php endif; ?>
@@ -343,35 +394,36 @@ $php_version = phpversion();
         </div>
     </div>
 
-    <?php if (empty($datos_por_pocket)): ?>
+    <!-- POCKET TABLES -->
+    <?php if (empty($data_by_pocket)): ?>
     <div class="row">
         <div class="col-12">
             <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> No hay sistemas registrados aún.
-                <a href="#agregar" class="alert-link">Agrega tu primer sistema</a>.
+                <i class="fas fa-info-circle"></i> No systems registered yet.
+                <a href="#manage" class="alert-link">Add your first system</a>.
             </div>
         </div>
     </div>
     <?php else: ?>
     <div class="row">
-        <?php foreach ($datos_por_pocket as $pocket => $data): ?>
+        <?php foreach ($data_by_pocket as $pocket => $data): ?>
         <div class="col-12 col-md-6 col-lg-4">
             <div class="pocket-table">
-                <div class="pocket-header" style="background-color: <?php echo $colores_pocket[$pocket]; ?>;">
+                <div class="pocket-header" style="background-color: <?php echo $pocket_colors[$pocket]; ?>;">
                     <?php echo htmlspecialchars($pocket); ?>
                 </div>
-                <div class="table-pocket-wrapper" style="background-color: <?php echo $colores_pocket[$pocket]; ?>;">
+                <div class="table-pocket-wrapper" style="background-color: <?php echo $pocket_colors[$pocket]; ?>;">
                     <table class="table table-pocket table-sm table-bordered">
                         <thead>
                             <tr>
                                 <th width="50">#</th>
-                                <th>Sistema</th>
+                                <th>System</th>
                                 <th width="120">M ISK</th>
-                                <th width="80">Acc.</th>
+                                <th width="80">Act.</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($data['registros'] as $reg): ?>
+                            <?php foreach ($data['records'] as $reg): ?>
                             <tr>
                                 <td><?php echo $reg['id']; ?></td>
                                 <td><strong><?php echo htmlspecialchars($reg['sistema']); ?></strong></td>
@@ -382,7 +434,7 @@ $php_version = phpversion();
                                         <input type="number" step="0.01" name="millones_isk"
                                                value="<?php echo number_format($reg['millones_isk'], 2, '.', ''); ?>"
                                                class="form-control form-control-sm" required>
-                                        <button type="submit" class="btn btn-primary btn-sm-custom" title="Guardar">
+                                        <button type="submit" class="btn btn-primary btn-sm-custom" title="Save">
                                             <i class="fas fa-save"></i>
                                         </button>
                                     </form>
@@ -390,8 +442,8 @@ $php_version = phpversion();
                                 <td>
                                     <a href="?delete_id=<?php echo $reg['id']; ?>"
                                        class="btn btn-danger btn-sm-custom"
-                                       title="Eliminar"
-                                       onclick="return confirm('¿Eliminar <?php echo htmlspecialchars($reg['sistema']); ?>?');">
+                                       title="Delete"
+                                       onclick="return confirm('Delete <?php echo htmlspecialchars($reg['sistema']); ?>?');">
                                         <i class="fas fa-trash"></i>
                                     </a>
                                 </td>
@@ -408,18 +460,6 @@ $php_version = phpversion();
         </div>
         <?php endforeach; ?>
     </div>
-
-    <div class="row" id="totales">
-        <div class="col-12 col-lg-6 offset-lg-3">
-            <div class="gran-total-box">
-                <h3><i class="fas fa-wallet"></i> GRAN TOTAL</h3>
-                <div class="gran-total-amount">
-                    <?php echo number_format($gran_total, 2); ?> M ISK
-                </div>
-                <small class="text-muted">Suma de todos los pockets</small>
-            </div>
-        </div>
-    </div>
     <?php endif; ?>
 
 </div>
@@ -427,8 +467,8 @@ $php_version = phpversion();
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    function confirmarSalida() {
-        return confirm('¿Seguro que deseas salir?');
+    function confirmExit() {
+        return confirm('Are you sure you want to exit?');
     }
 </script>
 <?php echo ui_footer(); ?>
