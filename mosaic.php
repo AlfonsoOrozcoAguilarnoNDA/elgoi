@@ -71,6 +71,8 @@ $tiles2 = [
 	showTile("experimental/kimitest4.php", "fa-chart-pie", "primary"),
 	
 	showTile("industry/ammo.php", "fa-industry", "info"),
+	showTile("industry/ready_to_build.php", "fa-list-ol", "danger"),
+	showTile("industry/craftable_now.php", "fa-list-ol", "warning"),	
 	showTile("industry/calc_p1.php", "fa-calculator", "info"),	
 	showTile("experimental/whereare.php", "fa-globe", "success"),
 	showTile("experimental/newpanels.php", "fa-users", "info"),	
