@@ -6,28 +6,47 @@
  * @author    Alfonso Orozco Aguilar (VibeCodingMexico.com) 
  * @coauthor  Kimi K2.6 (Moonshot AI)
  * @license   GPL-2.0-or-later
- * @version   1.2.0
- * @date      2026-05-31
+ * @version   1.3.0
+ * @date      2026-06-22
  */
 
 require_once '../config.php';
-
+check_authorization();
 // ---------------------------------------------------------------------------
 // CONFIGURATION & VALIDATION
 // ---------------------------------------------------------------------------
-$selected_skill = isset($_GET['skill']) ? trim($_GET['skill']) : '';
+
+// CHANGED: Now we receive skill_id (number) instead of skill (name)
+$selected_skill_id = isset($_GET['skill_id']) ? intval($_GET['skill_id']) : 0;
 $selected_pocket = isset($_GET['pocket6']) ? trim($_GET['pocket6']) : 'ALL';
 
 // Exclusion filter: admin/inventory characters
 $exclusion_sql = "LOWER(p.toon_name) NOT LIKE '%catalog%' AND LOWER(p.toon_name) NOT LIKE '%vps%'";
 
-// Get available skills list
+// Get available skills list (now includes ID for the dropdown value)
 $skills_available = [];
-$q_skills = "SELECT DISTINCT TRIM(Description) as Description FROM EVE_CHARSKILLS WHERE Description != '' ORDER BY TRIM(Description) ASC";
+$q_skills = "SELECT DISTINCT TRIM(Description) as Description, TypeId as skill_id 
+             FROM EVE_CHARSKILLS 
+             WHERE Description != '' 
+             ORDER BY TRIM(Description) ASC";
 $r_skills = $link->query($q_skills);
 if ($r_skills) {
     while ($row = $r_skills->fetch_assoc()) {
-        $skills_available[] = $row['Description'];
+        $skills_available[] = [
+            'id' => $row['skill_id'],
+            'name' => $row['Description']
+        ];
+    }
+}
+
+// Resolve skill name from ID for display purposes
+$selected_skill = '';
+if ($selected_skill_id > 0) {
+    foreach ($skills_available as $skill) {
+        if ($skill['id'] == $selected_skill_id) {
+            $selected_skill = $skill['name'];
+            break;
+        }
     }
 }
 
@@ -45,7 +64,7 @@ if ($r_pockets) {
 // QUERY: PILOTS WITH THE SKILL
 // ---------------------------------------------------------------------------
 $have_skill = [];
-if ($selected_skill !== '') {
+if ($selected_skill_id > 0 && $selected_skill !== '') {
     $sql_have = "SELECT 
                     p.toon_name,
                     s.rank,
@@ -53,11 +72,11 @@ if ($selected_skill !== '') {
                     p.Pocket6
                  FROM EVE_CHARSKILLS s
                  INNER JOIN PILOTS p ON p.toon_number = s.toon
-                 WHERE s.Description = ?
+                 WHERE s.TypeId = ?          -- CHANGED: Filter by skill ID (number)
                  AND " . $exclusion_sql;
 
-    $params = [$selected_skill];
-    $types = 's';
+    $params = [$selected_skill_id];          // CHANGED: Pass the numeric ID
+    $types = 'i';                            // CHANGED: Integer type
 
     if ($selected_pocket !== 'ALL') {
         $sql_have .= " AND p.Pocket6 = ?";
@@ -83,7 +102,7 @@ if ($selected_skill !== '') {
 // QUERY: PILOTS WITHOUT THE SKILL
 // ---------------------------------------------------------------------------
 $missing_skill = [];
-if ($selected_skill !== '') {
+if ($selected_skill_id > 0 && $selected_skill !== '') {
     $sql_missing = "SELECT 
                         p.toon_name,
                         p.Pocket6,
@@ -91,12 +110,12 @@ if ($selected_skill !== '') {
                         p.unalloc
                      FROM PILOTS p
                      WHERE p.toon_number NOT IN (
-                         SELECT toon FROM EVE_CHARSKILLS WHERE TRIM(Description) = ?
+                         SELECT toon FROM EVE_CHARSKILLS WHERE TypeId = ?   -- CHANGED: Filter by ID
                      )
                      AND " . $exclusion_sql;
 
-    $params2 = [$selected_skill];
-    $types2 = 's';
+    $params2 = [$selected_skill_id];          // CHANGED: Pass numeric ID
+    $types2 = 'i';                            // CHANGED: Integer type
 
     if ($selected_pocket !== 'ALL') {
         $sql_missing .= " AND p.Pocket6 = ?";
@@ -236,13 +255,14 @@ function get_pocket_text($val) {
                 <div class="card-body">
                     <form method="GET" action="" class="form-inline">
                         <div class="form-group mr-3">
-                            <label for="skill" class="mr-2"><strong>Skill:</strong></label>
-                            <select name="skill" id="skill" class="form-control" required>
+                            <label for="skill_id" class="mr-2"><strong>Skill:</strong></label>
+                            <!-- CHANGED: name="skill_id" and value is now the numeric ID -->
+                            <select name="skill_id" id="skill_id" class="form-control" required>
                                 <option value="">-- Select a skill --</option>
                                 <?php foreach ($skills_available as $skill): ?>
-                                    <option value="<?php echo htmlspecialchars($skill); ?>" 
-                                        <?php echo ($selected_skill === $skill) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($skill); ?>
+                                    <option value="<?php echo intval($skill['id']); ?>" 
+                                        <?php echo ($selected_skill_id == $skill['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($skill['name']); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -267,7 +287,7 @@ function get_pocket_text($val) {
                             <i class="fas fa-search"></i> Search
                         </button>
 
-                        <?php if ($selected_skill !== ''): ?>
+                        <?php if ($selected_skill_id > 0): ?>
                             <a href="?" class="btn btn-secondary ml-2">
                                 <i class="fas fa-undo"></i> Clear
                             </a>
@@ -278,7 +298,7 @@ function get_pocket_text($val) {
         </div>
     </div>
 
-    <?php if ($selected_skill !== ''): ?>
+    <?php if ($selected_skill_id > 0 && $selected_skill !== ''): ?>
 
     <!-- EXCLUSION NOTE -->
     <div class="row">
