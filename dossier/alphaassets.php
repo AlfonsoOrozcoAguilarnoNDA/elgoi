@@ -791,6 +791,7 @@ function typea($value) {
     list($pass)=avalues319("Select Combination from SkillAttributes where TypeId='$value'");
     if ($pass=="") $pass="n/a";
     $color="";
+    $color=" style='background-color:white; color:black'";
     if ($pass=="Perception/Willpower")  $color=" style='background-color:cyan'";
     if ($pass=="Willpower/Perception")  $color=" style='background-color:yellow'";
     if ($pass=="Intelligence/Perception") $color=" style='background-color:lime'";
