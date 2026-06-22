@@ -13,11 +13,11 @@ echo ui_generate_navbar();
 echo "<div style='overflow-x: auto;' class='row flex-row flex-nowrap ml-3 mt-4 pb-4 pt-2'><div>";
 
 $pocket="";
-$usuario=1 ; // debugm is the supergroup
+$usuario=_SESSION['pilot_name']; ; // debugm is the supergroup
 set_time_limit(60);
-echo Showdashboard_skills($pocket);
+echo Showdashboard_skills($pocket,$usuario);
 
-echo showdashboard_diplomatic($pocket); // no necesita filtro por pocket 
+echo showdashboard_diplomatic($pocket,$usuario); // no necesita filtro por pocket 
 
 
 echo "</span>";
@@ -28,15 +28,14 @@ echo "</div>";
 echo ui_footer();
 // } // dreamteam
 
-function Showdashboard_diplomatic($pocket){ // no necesita pocket
+function Showdashboard_diplomatic($pocket,$usuario){ // no necesita pocket
 //die($_SESSION['character_id']);
-if ($_SESSION['pilot_name']=='Inactive Seller') $usuario=1; // depura
 
 //print_r($_SESSION);
 global $link;
 $cad="";
 // emmpezamos a llenar un valor para simplificar laconsulta
-$sql = "SELECT toon_number,toon_name,skillpoints from PILOTS where supergroup	='$usuario' order by skillpoints desc";
+$sql = "SELECT toon_number,toon_name,skillpoints from PILOTS where parent_toon_number	='$usuario' order by skillpoints desc";
 //$cad .= "$sql";
 //die($sql);
 $cadenapilotos="";
@@ -55,7 +54,7 @@ $filtropocket="";
 if ($pocket<>"") {
    $filtropocket= " and pocket6='$pocket'";  
 }
-$sql = "SELECT toon_number,toon_name,skillpoints,race from PILOTS where supergroup	='$usuario'
+$sql = "SELECT toon_number,toon_name,skillpoints,race from PILOTS where parent_toon_number	='$usuario'
 and toon_name in ($cadenapilotos)
 $filtropocket order by NPC_rep desc";
 
@@ -188,10 +187,9 @@ mysqli_free_result($result);
 return $cad;
 } // Showdashboarddiplomatic
 
-function Showdashboard_skills($pocket){
+function Showdashboard_skills($pocket,$usuario){
 global $link;
 $cad="";
-//if ($_SESSION['pilot_name']=='Inactive Seller')$usuario=1 ; // depura
 // en ocasiones, por detalles de eve algunos skills tiene un valor masalto e imposible.esta es una correccion
 list($dummy)=avalues319b("update EVE_CHARSKILLS set skillpoints=1024000 where typeID=2495 and Skillpoints>1024000");
 list($dummy)=avalues319b("update EVE_CHARSKILLS set skillpoints=256000 where typeID=3301 and Skillpoints>256000");
@@ -200,11 +198,12 @@ list($dummy)=avalues319b("update EVE_CHARSKILLS set skillpoints=256000 where typ
 list($dummy)=avalues319b("update EVE_CHARSKILLS set skillpoints=512000 where typeID=3394 and Skillpoints>512000");
 list($dummy)=avalues319b("update EVE_CHARSKILLS set skillpoints=768000 where typeID=3411 and Skillpoints>768000");
 // emmpezamos a llenar un valor para simplificar laconsulta
-$sql = "SELECT toon_number,toon_name,skillpoints from PILOTS where supergroup	='$usuario'";
+$sql = "SELECT toon_number,toon_name,skillpoints from PILOTS where parent_toon_number	='$usuario'";
 //$cad .= "$sql";
 if ($result = mysqli_query($link, $sql)) {
+  $commander= $_SESSION['pilot_name'];
   while ($obj = mysqli_fetch_object($result)) {
-    $cad2="update EVE_CHARSKILLS set toon_name='$obj->toon_name',PILOT_SP=$obj->skillpoints,owner_email='not needed' where toon='$obj->toon_number'";
+    $cad2="update EVE_CHARSKILLS set toon_name='$obj->toon_name',PILOT_SP=$obj->skillpoints,owner_email='$commander' where toon='$obj->toon_number'";
     //$cad .= "<li>$obj->toon_number $obj->toon_name $cad";
     list($dummy)=avalues319b($cad2);
   }
@@ -215,7 +214,8 @@ $filtropocket="";
 if ($pocket<>"") {
    $filtropocket= " and pocket6='$pocket'";  
 }
-$sql = "SELECT toon_number,toon_name,skillpoints,race from PILOTS where supergroup	='$usuario' $filtropocket order by skillpoints desc";
+$usuario= $_SESSION['character_id']; // fleete cpommander  
+$sql = "SELECT toon_number,toon_name,skillpoints,race from PILOTS where parent_toon_number	='$usuario' $filtropocket order by skillpoints desc";
 
 $cad .= "<table class='table table-bordered'><tr>";
 $dash1="";
@@ -232,6 +232,7 @@ if ($result = mysqli_query($link, $sql)) {
     $sql="select * from EVE_CHARSKILLS where toon='$obj->toon_number'  order by typeID";
 if ($result2 = mysqli_query($link, $sql)) {
   $ren=0;
+  $usuario=$_SESSION['pilot_name']; // name of commander
   while ($obj2 = mysqli_fetch_object($result2)) {    
     list($quien)=avalues319b("select toon_name from EVE_CHARSKILLS where typeID=$obj2->typeID and owner_email='$usuario' order by skillpoints desc,PILOT_SP desc");
     if ($quien==$obj->toon_name and $obj2->rank > 0){
