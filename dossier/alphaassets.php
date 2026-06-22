@@ -757,7 +757,7 @@ function check_alpha_omega($toon_number, $race) {
     while ($alpha_skill = mysqli_fetch_assoc($rs_alpha)) {
         $type_id=$alpha_skill['numberskill']; $skill_name=$alpha_skill['SKILL']; $max_level=(int)$alpha_skill['max_level'];
         $sql_pilot = "SELECT rank, skillpoints FROM EVE_CHARSKILLS WHERE toon = $toon_number AND typeID = $type_id";
-        list($current_level, $sp) = avalues319($sql_pilot);
+        list($current_level, $sp) = avalues319b($sql_pilot);
         if ($current_level===''||$current_level===null) {
             $result['must_learn'][] = ['type_id'=>$type_id,'name'=>$skill_name];
         } elseif ($current_level < $max_level) {
@@ -777,7 +777,7 @@ function check_alpha_omega($toon_number, $race) {
     while ($pilot_skill = mysqli_fetch_assoc($rs_all)) {
         $type_id = $pilot_skill['typeID'];
         $sql_check = "SELECT COUNT(numberskill) as count FROM ALPHA_CLONES WHERE numberskill = $type_id AND $race > 0";
-        list($in_alpha) = avalues319($sql_check);
+        list($in_alpha) = avalues319b($sql_check);
         if ($in_alpha == 0) {
             $result['omega_only'][] = ['type_id'=>$type_id,'name'=>$pilot_skill['Description'],'level'=>$pilot_skill['rank'],'sp'=>$pilot_skill['skillpoints']];
             $result['omega_only_sp'] += $pilot_skill['skillpoints'];
@@ -786,27 +786,6 @@ function check_alpha_omega($toon_number, $race) {
     mysqli_free_result($rs_all);
     return $result;
 }
-
-function avalues319($Qx) {
-    global $link;
-    $rsX = mysqli_query($link, $Qx);
-    $Qx2 = strtolower($Qx);
-    if (left($Qx2,6)<>'select') return "";
-    $aDataX = [];
-    $rows = mysqli_num_rows($rsX);
-    if ($rows==0) return ["",""];
-    $Campos = mysqli_num_fields($rsX);
-    while ($regX = mysqli_fetch_array($rsX)) {
-        for($iX=0;$iX<$Campos;$iX++){
-            $finfo=mysqli_fetch_field_direct($rsX,$iX);
-            $aDataX[]=$regX[$finfo->name];
-        }
-    }
-    return $aDataX;
-}
-
-function left($str,$length)  { return substr($str,0,$length); }
-function right($str,$length) { return substr($str,-$length); }
 
 function typea($value) {
     list($pass)=avalues319("Select Combination from SkillAttributes where TypeId='$value'");
