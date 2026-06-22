@@ -241,7 +241,7 @@ if ($result2 = mysqli_query($link, $sql)) {
       $ren++;
       $visible += $obj2->skillpoints;
       $enlace="<a target='_blank' href='abyss/skill_detail.php?module=dt2&what=$obj2->typeID'>$obj2->typeID</a>"; // old style
-      $enlace="<a target='_blank' href='skillinspector.php?skill_id=$obj2->typeID&pocket6=ALL'>$obj2->typeID</a>";      
+      $enlace="<a target='_blank' href='skill_inspector.php?skill_id=$obj2->typeID&pocket6=ALL'>$obj2->typeID</a>";      
       list($maxa)=avalues319b("select EXPANDED from ALPHA_CLONES where numberskill=$obj2->typeID");
       $sty="";
       if ($maxa>0) $sty=" style='background-color:#ffc0cb'";
