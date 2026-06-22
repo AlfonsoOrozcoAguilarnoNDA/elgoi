@@ -78,7 +78,7 @@ if ($result2 = mysqli_query($link, $sql)) {
         $total += $obj2->reputation;
     $enlace="<a target='_blank' href='index.php?module=dp2&what=$obj2->target'>$obj2->target</a>";
     $sty="";
-    list($maxh)=avalues319("select max(reputation) from DIPLOMATIC where pilot_name in ($cadenapilotos) and target='$obj2->target'");
+    list($maxh)=avalues319b("select max(reputation) from DIPLOMATIC where pilot_name in ($cadenapilotos) and target='$obj2->target'");
     
     
           
@@ -233,12 +233,12 @@ if ($result = mysqli_query($link, $sql)) {
 if ($result2 = mysqli_query($link, $sql)) {
   $ren=0;
   while ($obj2 = mysqli_fetch_object($result2)) {    
-    list($quien)=avalues319("select toon_name from EVE_CHARSKILLS where typeID=$obj2->typeID and owner_email='$usuario' order by skillpoints desc,PILOT_SP desc");
+    list($quien)=avalues319b("select toon_name from EVE_CHARSKILLS where typeID=$obj2->typeID and owner_email='$usuario' order by skillpoints desc,PILOT_SP desc");
     if ($quien==$obj->toon_name and $obj2->rank > 0){
       $ren++;
       $visible += $obj2->skillpoints;
       $enlace="<a target='_blank' href='abyss/skill_detail.php?module=dt2&what=$obj2->typeID'>$obj2->typeID</a>";
-      list($maxa)=avalues319("select EXPANDED from ALPHA_CLONES where numberskill=$obj2->typeID");
+      list($maxa)=avalues319b("select EXPANDED from ALPHA_CLONES where numberskill=$obj2->typeID");
       $sty="";
       if ($maxa>0) $sty=" style='background-color:#ffc0cb'";
       $typecolor=typeA($obj2->typeID);    
