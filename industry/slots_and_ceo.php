@@ -24,6 +24,16 @@ define('ADVANCED_MASS_PRODUCTION_TYPEID', 24625);
 define('MAX_SLOTS', 11);
 
 // ============================================
+// DEBUG LOGGING (para diagnosticar problemas ESI)
+// ============================================
+function esi_log(string $message): void {
+    $logfile = __DIR__ . '/esi_debug.log';
+    $timestamp = date('Y-m-d H:i:s');
+    file_put_contents($logfile, "[$timestamp] $message
+", FILE_APPEND | LOCK_EX);
+}
+
+// ============================================
 // ESI API FUNCTIONS (no token)
 // ============================================
 
@@ -33,14 +43,16 @@ define('MAX_SLOTS', 11);
 function esi_get(string $endpoint): ?array {
     $url = 'https://esi.evetech.net/latest' . $endpoint;
 
+    esi_log("ESI GET: $url");
+
     $ch = curl_init();
     curl_setopt_array($ch, [
         CURLOPT_URL => $url,
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_TIMEOUT => 10,
+        CURLOPT_TIMEOUT => 15,
         CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_USERAGENT => 'EVE-ProductionDashboard/1.0 (contact@example.com)',
+        CURLOPT_USERAGENT => 'EVE-ProductionDashboard/1.0 (alfonso@vibecodingmexico.com)',
         CURLOPT_HTTPHEADER => [
             'Accept: application/json',
             'Content-Type: application/json'
@@ -49,13 +61,28 @@ function esi_get(string $endpoint): ?array {
 
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curl_error = curl_error($ch);
     curl_close($ch);
 
-    if ($http_code === 200 && $response !== false) {
-        $data = json_decode($response, true);
-        return is_array($data) ? $data : null;
+    if ($curl_error) {
+        esi_log("CURL ERROR [$endpoint]: $curl_error");
+        return null;
     }
 
+    esi_log("HTTP $http_code for $endpoint");
+
+    if ($http_code === 200 && $response !== false && $response !== '') {
+        $data = json_decode($response, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($data)) {
+            esi_log("SUCCESS: " . json_encode($data));
+            return $data;
+        } else {
+            esi_log("JSON decode error: " . json_last_error_msg());
+            return null;
+        }
+    }
+
+    esi_log("FAILED: HTTP $http_code, response: " . substr($response ?? '', 0, 200));
     return null;
 }
 
@@ -63,28 +90,88 @@ function esi_get(string $endpoint): ?array {
  * Gets the corporation_id of a character
  */
 function get_character_corp(int $character_id): ?int {
+    $cache_key = 'char_corp_' . $character_id;
+    if (isset($_SESSION[$cache_key])) {
+        return $_SESSION[$cache_key];
+    }
+
     $data = esi_get('/characters/' . $character_id . '/');
-    return isset($data['corporation_id']) ? (int)$data['corporation_id'] : null;
+    if ($data === null || !isset($data['corporation_id'])) {
+        esi_log("No corporation_id for character $character_id");
+        return null;
+    }
+
+    $corp_id = (int)$data['corporation_id'];
+    $_SESSION[$cache_key] = $corp_id;
+    esi_log("Character $character_id -> Corp $corp_id");
+
+    usleep(50000); // 50ms rate limit
+    return $corp_id;
+}
+
+/**
+ * Gets corporation details (name + ticker) with session cache
+ */
+function get_corp_details(int $corporation_id): ?array {
+    $cache_key = 'corp_details_' . $corporation_id;
+
+    // Check session cache first
+    if (isset($_SESSION[$cache_key]) && is_array($_SESSION[$cache_key])) {
+        esi_log("CACHE HIT for corp $corporation_id");
+        return $_SESSION[$cache_key];
+    }
+
+    esi_log("FETCHING corp $corporation_id from ESI");
+    $data = esi_get('/corporations/' . $corporation_id . '/');
+
+    if ($data === null) {
+        esi_log("NULL response for corp $corporation_id");
+        return null;
+    }
+
+    // ESI returns 'name' (not 'corporation_name') for /corporations/{id}/
+    // Let's check both possible field names
+    $corp_name = $data['name'] ?? $data['corporation_name'] ?? null;
+    $ticker = $data['ticker'] ?? null;
+
+    esi_log("Corp $corporation_id fields: name=" . ($corp_name ?? 'NULL') . ", ticker=" . ($ticker ?? 'NULL'));
+
+    if ($corp_name === null || $ticker === null) {
+        esi_log("MISSING FIELDS for corp $corporation_id. Available: " . implode(', ', array_keys($data)));
+        return null;
+    }
+
+    $result = [
+        'name' => $corp_name,
+        'ticker' => $ticker
+    ];
+
+    // Cache in session
+    $_SESSION[$cache_key] = $result;
+
+    usleep(50000); // 50ms rate limit
+    return $result;
 }
 
 /**
  * Gets the ceo_id of a corporation
  */
 function get_corp_ceo(int $corporation_id): ?int {
-    $data = esi_get('/corporations/' . $corporation_id . '/');
-    return isset($data['ceo_id']) ? (int)$data['ceo_id'] : null;
-}
+    $cache_key = 'corp_ceo_' . $corporation_id;
+    if (isset($_SESSION[$cache_key])) {
+        return $_SESSION[$cache_key];
+    }
 
-/**
- * Gets corporation details (name + ticker)
- */
-function get_corp_details(int $corporation_id): ?array {
     $data = esi_get('/corporations/' . $corporation_id . '/');
-    if ($data === null) return null;
-    return [
-        'name' => $data['corporation_name'] ?? 'Unknown',
-        'ticker' => $data['ticker'] ?? '???'
-    ];
+    if ($data === null || !isset($data['ceo_id'])) {
+        return null;
+    }
+
+    $ceo_id = (int)$data['ceo_id'];
+    $_SESSION[$cache_key] = $ceo_id;
+
+    usleep(50000);
+    return $ceo_id;
 }
 
 /**
@@ -94,31 +181,24 @@ function get_corp_details(int $corporation_id): ?array {
 function is_ceo(int $character_id): bool {
     $cache_key = 'ceo_check_' . $character_id;
 
-    // If already in session cache, return
     if (isset($_SESSION[$cache_key])) {
         return $_SESSION[$cache_key];
     }
 
-    // Get character's corporation
     $corp_id = get_character_corp($character_id);
     if ($corp_id === null) {
         $_SESSION[$cache_key] = false;
         return false;
     }
 
-    // Get corporation's CEO
     $ceo_id = get_corp_ceo($corp_id);
     if ($ceo_id === null) {
         $_SESSION[$cache_key] = false;
         return false;
     }
 
-    // Compare
     $is_ceo = ($ceo_id === $character_id);
     $_SESSION[$cache_key] = $is_ceo;
-
-    // Small pause to respect rate limits (no token = 20 req/s)
-    usleep(100000); // 0.1 seconds = max 10 req/s (conservative)
 
     return $is_ceo;
 }
@@ -163,7 +243,6 @@ $filter_tradefield = isset($_GET['tradefield']) ? $_GET['tradefield'] : 'ALL';
 // ============================================
 // BUILD MAIN QUERY
 // ============================================
-// FIXED: No COALESCE to distinguish NULL (doesn't have skill) from 0 (level 0)
 $sql = "
     SELECT 
         p.toon_number,
@@ -190,23 +269,18 @@ $sql = "
     WHERE 1=1
 ";
 
-// Apply filters
 if ($filter_pocket !== 'ALL') {
     $safe_pocket = mysqli_real_escape_string($link, $filter_pocket);
     $sql .= " AND p.pocket6 = '$safe_pocket'";
 }
-
 if ($filter_acctype !== 'ALL') {
     $safe_acctype = mysqli_real_escape_string($link, $filter_acctype);
     $sql .= " AND p.acctype = '$safe_acctype'";
 }
-
 if ($filter_tradefield !== 'ALL') {
     $safe_tradefield = mysqli_real_escape_string($link, $filter_tradefield);
     $sql .= " AND p.tradefield = '$safe_tradefield'";
 }
-
-// Order by SP descending
 $sql .= " ORDER BY sp_millions DESC";
 
 $result = mysqli_query($link, $sql);
@@ -219,53 +293,55 @@ $total_pilots = 0;
 $total_slots = 0;
 $max_slots_pilot = 0;
 $pilots_with_slots = [];
-$ceos_list = []; // Array to store CEOs
+$ceos_list = [];
 
 if ($result) {
     mysqli_data_seek($result, 0);
     while ($row = mysqli_fetch_assoc($result)) {
 
-        // ============================================
-        // FIXED: Slot logic with NULL vs 0 distinction
-        // ============================================
-        $mass_level = $row['mass_prod_level'];     // NULL = doesn't have, 0-5 = has
-        $adv_level = $row['adv_mass_prod_level'];  // NULL = doesn't have, 0-5 = has
+        $mass_level = $row['mass_prod_level'];
+        $adv_level = $row['adv_mass_prod_level'];
 
-        // If doesn't have Mass Production (NULL), can't have Advanced
         if ($mass_level === null) {
             $mass_level = null;
-            $adv_level = null; // Force NULL even if DB says otherwise (prerequisite not met)
+            $adv_level = null;
         }
 
-        // Calculate slots: base 1 + Mass Production (0-5) + Advanced Mass Production (0-5)
-        // Only add if has the skill (not NULL)
         $mass_bonus = ($mass_level !== null) ? (int)$mass_level : 0;
         $adv_bonus = ($adv_level !== null) ? (int)$adv_level : 0;
 
         $slots = 1 + $mass_bonus + $adv_bonus;
         $slots = min($slots, MAX_SLOTS);
 
-        // Check if CEO (only if valid toon_number)
-        $is_ceo = false;
+        // CEO check + Corp details
+        $is_ceo_flag = false;
         $corp_info = null;
-        if (!empty($row['toon_number']) && is_numeric($row['toon_number'])) {
-            $is_ceo = is_ceo((int)$row['toon_number']);
+        $corp_id = null;
 
-            // If CEO, get corporation details
-            if ($is_ceo) {
-                $corp_id = get_character_corp((int)$row['toon_number']);
+        if (!empty($row['toon_number']) && is_numeric($row['toon_number'])) {
+            $char_id = (int)$row['toon_number'];
+
+            // Check CEO status
+            $is_ceo_flag = is_ceo($char_id);
+
+            // If CEO, get corp details
+            if ($is_ceo_flag) {
+                $corp_id = get_character_corp($char_id);
+                esi_log("CEO detected: {$row['toon_name']} (char:$char_id) -> corp:$corp_id");
+
                 if ($corp_id !== null) {
                     $corp_info = get_corp_details($corp_id);
-                    usleep(100000); // Rate limit respect
+                    esi_log("Corp info for $corp_id: " . json_encode($corp_info ?? 'NULL'));
                 }
             }
         }
 
         $pilot_data = array_merge($row, [
             'slots' => $slots,
-            'es_ceo' => $is_ceo,
-            'mass_prod_level' => $mass_level,     // Preserve NULL
-            'adv_mass_prod_level' => $adv_level,   // Preserve NULL
+            'es_ceo' => $is_ceo_flag,
+            'mass_prod_level' => $mass_level,
+            'adv_mass_prod_level' => $adv_level,
+            'corp_id' => $corp_id,
             'corp_name' => $corp_info['name'] ?? 'Unknown Corp',
             'corp_ticker' => $corp_info['ticker'] ?? '???'
         ]);
@@ -279,8 +355,7 @@ if ($result) {
 
         $pilots_with_slots[] = $pilot_data;
 
-        // If CEO, add to list
-        if ($is_ceo) {
+        if ($is_ceo_flag) {
             $ceos_list[] = $pilot_data;
         }
     }
@@ -291,7 +366,7 @@ usort($ceos_list, function($a, $b) {
     return strcasecmp($a['toon_name'], $b['toon_name']);
 });
 
-// Pocket colors (for badge)
+// Pocket colors
 function getColorPocket($pocket) {
     $p = strtoupper(trim($pocket ?? ''));
     return match($p) {
@@ -313,10 +388,7 @@ function getColorPocket($pocket) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EVE Online — Production Slots Dashboard</title>
 
-    <!-- Bootstrap 4.6 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-
-    <!-- Font Awesome 5.15.4 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
 
     <style>
@@ -331,8 +403,6 @@ function getColorPocket($pocket) {
             border-bottom: 2px solid #495057;
             margin-bottom: 0;
         }
-
-        /* ── FILTER BAR ── */
         .filter-bar {
             background-color: #16191c;
             border-bottom: 2px solid #007bff;
@@ -351,8 +421,6 @@ function getColorPocket($pocket) {
             border-color: #007bff;
             box-shadow: none;
         }
-
-        /* ── CARDS ── */
         .card {
             background-color: #1e2126;
             border: 1px solid #343a40;
@@ -365,8 +433,6 @@ function getColorPocket($pocket) {
             font-weight: 600;
             font-size: 0.9rem;
         }
-
-        /* ── STATS CARDS ── */
         .stats-card {
             text-align: center;
             padding: 15px;
@@ -385,8 +451,6 @@ function getColorPocket($pocket) {
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
-        /* ── TABLE ── */
         .table {
             color: #e0e0e0;
             font-size: 0.82rem;
@@ -415,8 +479,6 @@ function getColorPocket($pocket) {
         .table tbody tr:hover {
             background-color: #2a3040 !important;
         }
-
-        /* ── POCKET BADGE ── */
         .pocket-badge {
             display: inline-block;
             padding: 2px 8px;
@@ -427,8 +489,6 @@ function getColorPocket($pocket) {
             border-radius: 2px;
         }
         .pocket-badge.dark-text { color: #111; }
-
-        /* ── SKILL LEVELS ── */
         .skill-level {
             display: inline-block;
             width: 24px;
@@ -440,66 +500,31 @@ function getColorPocket($pocket) {
             font-size: 0.75rem;
             margin: 0 1px;
         }
-        .skill-active {
-            background-color: #28a745;
-            color: #fff;
-        }
-        .skill-inactive {
-            background-color: #343a40;
-            color: #6c757d;
-        }
+        .skill-active { background-color: #28a745; color: #fff; }
+        .skill-inactive { background-color: #343a40; color: #6c757d; }
         .skill-null {
             background-color: #2a2d31;
             color: #495057;
             border: 1px dashed #495057;
         }
-
-        /* ── SLOT BADGES ── */
         .badge-slot {
             font-size: 0.85rem;
             padding: 4px 10px;
             border-radius: 4px;
             font-weight: bold;
         }
-        .badge-slot-max {
-            background-color: #28a745;
-            color: #fff;
-        }
-        .badge-slot-high {
-            background-color: #17a2b8;
-            color: #fff;
-        }
-        .badge-slot-mid {
-            background-color: #ffc107;
-            color: #000;
-        }
-        .badge-slot-low {
-            background-color: #dc3545;
-            color: #fff;
-        }
-
-        /* ── ACCOUNT TYPE BADGES ── */
-        .omega-badge {
-            background-color: #f1c40f;
-            color: #000;
-        }
-        .maybe-badge {
-            background-color: #e67e22;
-            color: #000;
-        }
-        .alpha-badge {
-            background-color: #95a5a6;
-            color: #fff;
-        }
-
-        /* ── SP VALUE ── */
+        .badge-slot-max { background-color: #28a745; color: #fff; }
+        .badge-slot-high { background-color: #17a2b8; color: #fff; }
+        .badge-slot-mid { background-color: #ffc107; color: #000; }
+        .badge-slot-low { background-color: #dc3545; color: #fff; }
+        .omega-badge { background-color: #f1c40f; color: #000; }
+        .maybe-badge { background-color: #e67e22; color: #000; }
+        .alpha-badge { background-color: #95a5a6; color: #fff; }
         .sp-value {
             font-family: 'Courier New', monospace;
             font-weight: bold;
             color: #5dade2;
         }
-
-        /* ── CEO BADGE ── */
         .ceo-badge {
             background-color: #f1c40f;
             color: #000;
@@ -510,26 +535,7 @@ function getColorPocket($pocket) {
             margin-left: 5px;
             text-transform: uppercase;
         }
-
-        /* ── CEO CARD ── */
-        .ceo-card {
-            border-left: 3px solid #f1c40f;
-        }
-        .ceo-avatar {
-            width: 38px;
-            height: 38px;
-            border-radius: 50%;
-            border: 2px solid #f1c40f;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            color: #f1c40f;
-            font-weight: bold;
-            margin-right: 10px;
-            background-color: #1e2126;
-        }
-
-        /* ── TRADEFIELD PILL ── */
+        .ceo-card { border-left: 3px solid #f1c40f; }
         .trade-pill {
             background-color: #2d3748;
             color: #bb86fc;
@@ -538,28 +544,20 @@ function getColorPocket($pocket) {
             font-size: 0.75rem;
             white-space: nowrap;
         }
-
-        /* ── FORMULA ── */
         .formula-text {
             font-family: 'Courier New', monospace;
             font-size: 0.8rem;
             color: #6c757d;
         }
-
-        /* ── STATUS TEXT ── */
         .status-max { color: #28a745; }
         .status-high { color: #17a2b8; }
         .status-mid { color: #ffc107; }
         .status-low { color: #dc3545; }
-
-        /* ── SKILL NULL TEXT ── */
         .skill-null-text {
             color: #495057;
             font-size: 0.7rem;
             font-style: italic;
         }
-
-        /* ── BUTTONS ── */
         .btn-filter {
             background-color: #007bff;
             border-color: #007bff;
@@ -571,23 +569,39 @@ function getColorPocket($pocket) {
             color: #fff;
         }
 
-        /* ── CORP INFO IN CEO CARDS ── */
-        .corp-info-line {
+        /* ── CEO CARD CORP INFO ── */
+        .ceo-corp-info {
+            display: flex;
+            align-items: center;
+            margin-top: 4px;
+            gap: 6px;
+        }
+        .ceo-corp-logo {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            flex-shrink: 0;
+        }
+        .ceo-corp-name {
             color: #f1c40f;
             font-size: 0.75rem;
             font-weight: 600;
-            margin-top: 2px;
         }
-        .corp-info-line .corp-ticker {
+        .ceo-corp-ticker {
             color: #adb5bd;
             font-family: 'Courier New', monospace;
             font-weight: 700;
+            font-size: 0.75rem;
+        }
+        .ceo-corp-unknown {
+            color: #dc3545;
+            font-size: 0.7rem;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
 
-    <!-- NAVBAR -->
     <nav class="navbar navbar-dark navbar-eve px-3">
         <span class="navbar-brand mb-0 h5">
             <i class="fas fa-industry mr-2"></i>Production Slots Dashboard
@@ -597,10 +611,8 @@ function getColorPocket($pocket) {
         </span>
     </nav>
 
-    <!-- FILTERS -->
     <div class="filter-bar">
         <form method="GET" class="form-inline flex-wrap" style="gap:10px;">
-
             <label class="text-light mr-1"><i class="fas fa-user-secret mr-1"></i>Pocket:</label>
             <select name="pocket6" class="form-control form-control-sm mr-3">
                 <option value="ALL" <?php echo ($filter_pocket === 'ALL') ? 'selected' : ''; ?>>-- All --</option>
@@ -640,7 +652,6 @@ function getColorPocket($pocket) {
                 <i class="fas fa-times mr-1"></i> Clear
             </a>
             <?php endif; ?>
-
         </form>
     </div>
 
@@ -662,16 +673,16 @@ function getColorPocket($pocket) {
                     <?php foreach ($ceos_list as $ceo): 
                         $ceoPocketColor = getColorPocket($ceo['pocket6']);
                         $ceoPocketClass = in_array(strtoupper(trim($ceo['pocket6'] ?? '')), ['YENN','SANGO']) ? 'dark-text' : '';
+                        $has_corp_logo = !empty($ceo['corp_id']) && $ceo['corp_id'] > 0;
                     ?>
                     <div class="col-md-3 col-sm-6 mb-3">
                         <div class="d-flex align-items-center p-2" style="background: #22262c; border-radius: 6px; border: 1px solid #343a40;">
                             <img src="https://images.evetech.net/characters/<?php echo (int)$ceo['toon_number']; ?>/portrait?size=64"
                                  class="mr-2" style="width:38px; height:38px; border-radius:50%; border:2px solid #f1c40f;" 
                                  alt="<?php echo htmlspecialchars($ceo['toon_name']); ?>">
-                            <div>
+                            <div style="min-width: 0;">
                                 <div class="font-weight-bold text-white">
                                     <?php echo htmlspecialchars($ceo['toon_name']); ?>
-                                    <!-- CEO badge removed - redundant in this section -->
                                 </div>
                                 <small class="text-muted">
                                     <span class="pocket-badge <?php echo $ceoPocketClass; ?>" style="background-color:<?php echo $ceoPocketColor; ?>;">
@@ -679,11 +690,22 @@ function getColorPocket($pocket) {
                                     </span>
                                     <span class="ml-1"><i class="fas fa-industry mr-1"></i><?php echo $ceo['slots']; ?> slots</span>
                                 </small>
-                                <!-- Corporation name and ticker -->
-                                <div class="corp-info-line">
-                                    <i class="fas fa-building mr-1"></i>
-                                    <?php echo htmlspecialchars($ceo['corp_name']); ?> 
-                                    <span class="corp-ticker">[<?php echo htmlspecialchars($ceo['corp_ticker']); ?>]</span>
+                                <!-- Corporation info with logo -->
+                                <div class="ceo-corp-info">
+                                    <?php if ($has_corp_logo): ?>
+                                        <img src="https://images.evetech.net/corporations/<?php echo (int)$ceo['corp_id']; ?>/logo?size=32"
+                                             class="ceo-corp-logo"
+                                             alt="<?php echo htmlspecialchars($ceo['corp_ticker']); ?>"
+                                             onerror="this.style.display='none'">
+                                    <?php endif; ?>
+                                    <?php if ($ceo['corp_name'] !== 'Unknown Corp'): ?>
+                                        <span class="ceo-corp-name"><?php echo htmlspecialchars($ceo['corp_name']); ?></span>
+                                        <span class="ceo-corp-ticker">[<?php echo htmlspecialchars($ceo['corp_ticker']); ?>]</span>
+                                    <?php else: ?>
+                                        <span class="ceo-corp-unknown">
+                                            <i class="fas fa-exclamation-circle mr-1"></i>Corp data unavailable
+                                        </span>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -753,7 +775,6 @@ function getColorPocket($pocket) {
                             $counter = 1;
                             foreach ($pilots_with_slots as $pilot): 
 
-                                // Slot badge class
                                 if ($pilot['slots'] >= 11) {
                                     $slot_class = 'badge-slot-max';
                                     $slot_icon = 'fa-check-circle';
@@ -768,7 +789,6 @@ function getColorPocket($pocket) {
                                     $slot_icon = 'fa-arrow-down';
                                 }
 
-                                // Account type badge class
                                 $acc_class = '';
                                 $acc_icon = '';
                                 switch(strtolower($pilot['acctype'])) {
@@ -822,7 +842,6 @@ function getColorPocket($pocket) {
                                 <td class="text-right">
                                     <span class="sp-value"><?php echo number_format($pilot['sp_millions'], 2); ?> M</span>
                                 </td>
-                                <!-- Mass Production -->
                                 <td class="text-center">
                                     <?php if ($pilot['mass_prod_level'] === null): ?>
                                         <span class="skill-level skill-null" title="Does not have this skill">-</span>
@@ -838,7 +857,6 @@ function getColorPocket($pocket) {
                                         <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
-                                <!-- Advanced Mass Production -->
                                 <td class="text-center">
                                     <?php if ($pilot['adv_mass_prod_level'] === null): ?>
                                         <span class="skill-level skill-null" title="Does not have this skill (requires Mass Production)">-</span>
@@ -894,7 +912,6 @@ function getColorPocket($pocket) {
             </div>
         </div>
 
-        <!-- Footer -->
         <div class="text-center mt-4 mb-4 text-muted">
             <small>
                 <i class="fas fa-code mr-1"></i>EVE Online Production Dashboard | 
@@ -905,14 +922,12 @@ function getColorPocket($pocket) {
 
     </div>
 
-    <!-- Bootstrap 4.6 JS -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>
 <?php
-// Close connection
 if (isset($link)) {
     mysqli_close($link);
 }
