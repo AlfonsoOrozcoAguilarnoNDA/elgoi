@@ -275,5 +275,36 @@ mysqli_free_result($result);
 // valor llenado.
 return $cad;
 } // Showdashboardskills
+function specialcolorNPC($corp){  
+      $der=" style='background-color:#99ccff';";
+      $rower="";
+    if ($corp=='1000035') $rower=$der;
+    if ($corp=='1000057') $rower=$der;
+    if ($corp=='1000086') $rower=$der;
+    if ($corp=='1000049') $rower=$der;
+    if ($corp=='1000120') $rower=$der;
+    if ($corp=='1000130') $rower=$der;      
+      // no in hogh sec
+      $elk="orange";      
+    if ($corp==1000124) $rower=" style='background-color:$elk'";
+    if ($corp==1000127) $rower=" style='background-color:$elk'";
+    if ($corp==1000128) $rower=" style='background-color:$elk'";
+    if ($corp==1000129) $rower=" style='background-color:$elk'"; // epic arc only
+    if ($corp==1000134) $rower=" style='background-color:$elk'";
+    if ($corp==1000135) $rower=" style='background-color:$elk'";
+    if ($corp==1000136) $rower=" style='background-color:$elk'";
+    if ($corp==1000138) $rower=" style='background-color:$elk'";
+    if ($corp==1000141) $rower=" style='background-color:$elk'";
+    if ($corp==1000159) $rower=" style='background-color:$elk'";
+    if ($corp==1000161) $rower=" style='background-color:$elk'";
+    if ($corp==1000162) $rower=" style='background-color:$elk'";
+    // warfare
+    $elk="yellow";
+    if ($corp==1000179) $rower=" style='background-color:$elk'";
+    if ($corp==1000180) $rower=" style='background-color:$elk'";
+    if ($corp==1000181) $rower=" style='background-color:$elk'";
+    if ($corp==1000182) $rower=" style='background-color:$elk'";
+    return $rower;
+    }       // specialcor
 
 ?>
