@@ -13,7 +13,7 @@ echo ui_generate_navbar();
 echo "<div style='overflow-x: auto;' class='row flex-row flex-nowrap ml-3 mt-4 pb-4 pt-2'><div>";
 
 $pocket="";
-$usuario=$_SESSION['youremail'];
+$usuario=1 // debugm is the supergroup
 set_time_limit(60);
 echo Showdashboard_skills($pocket);
 
@@ -204,7 +204,7 @@ $sql = "SELECT toon_number,toon_name,skillpoints from PILOTS where supergroup	='
 //$cad .= "$sql";
 if ($result = mysqli_query($link, $sql)) {
   while ($obj = mysqli_fetch_object($result)) {
-    $cad2="update EVE_CHARSKILLS set toon_name='$obj->toon_name',PILOT_SP=$obj->skillpoints,owner_email='$usuario' where toon='$obj->toon_number'";
+    $cad2="update EVE_CHARSKILLS set toon_name='$obj->toon_name',PILOT_SP=$obj->skillpoints,owner_email='not needed' where toon='$obj->toon_number'";
     //$cad .= "<li>$obj->toon_number $obj->toon_name $cad";
     list($dummy)=avalues319b($cad2);
   }
