@@ -13,7 +13,7 @@ echo ui_generate_navbar();
 echo "<div style='overflow-x: auto;' class='row flex-row flex-nowrap ml-3 mt-4 pb-4 pt-2'><div>";
 
 $pocket="";
-$usuario=1 // debugm is the supergroup
+$usuario=1 ; // debugm is the supergroup
 set_time_limit(60);
 echo Showdashboard_skills($pocket);
 
