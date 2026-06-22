@@ -1,6 +1,5 @@
 <?php
-/**
- * File: deepseekcrew2.php
+/** 
  * Date: 2026-06-20
  * Licence : GPL
  * Alfonso Orozco Aguilar - Work in progress
