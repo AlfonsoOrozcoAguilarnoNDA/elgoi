@@ -40,9 +40,10 @@ if (!$result_pilot || mysqli_num_rows($result_pilot) == 0) {
 $pilot = mysqli_fetch_assoc($result_pilot);
 mysqli_free_result($result_pilot);
 
-if ($mode === 'alpha' && $pilot['email_pilot'] != $_SESSION['youremail']) {
+/*if ($mode === 'alpha' && $pilot['email_pilot'] != $_SESSION['youremail']) {
     die("<div class='alert alert-danger'>Error: Este piloto pertenece a otro usuario o usted se ha desconectado</div>");
 }
+*/
 
 $pilot_name  = htmlspecialchars($pilot['toon_name']);
 $page_title  = $mode === 'alpha' ? "Alpha/Omega Check - $pilot_name" : "Inventario - $pilot_name";
