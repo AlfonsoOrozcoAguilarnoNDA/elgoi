@@ -309,5 +309,36 @@ function specialcolorNPC($corp){
     if ($corp==1000182) $rower=" style='background-color:$elk'";
     return $rower;
     }       // specialcor
+function typea($value){
+
+list($pass)=avalues319b("Select Combination from SkillAttributes where TypeId='$value'");
+if ($pass=="") $pass="n/a";
+//$pass=getskillt($value);
+
+$color="";
+if ($pass=="Perception/Willpower") $color=" style='background-color:cyan'";
+if ($pass=="Willpower/Perception") $color=" style='background-color:yellow'";
+if ($pass=="Intelligence/Perception") $color=" style='background-color:lime'";
+if ($pass=="Intelligence/Memory") $color=" style='background-color:cccccc'";
+if ($pass=="Memory/Intelligence") $color=" style='background-color:pink'";
+if ($pass=="Charisma/Intelligence") $color=" style='background-color:cc99cc'";
+if ($pass=="Charisma/Willpower") $color=" style='background-color:dcb59f'";
+if ($pass=="Perception/Willpower") $pass ="Per/Wil";
+if ($pass=="Willpower/Perception") $pass ="Wil/Per";
+if ($pass=="Willpower/Intelligence") $pass ="Wil/Int";
+if ($pass=="Perception/Memory") $pass ="Per/Mem";
+if ($pass=="Memory/Perception") $pass ="Mem/Per";
+if ($pass=="Memory/Charisma") $pass ="Mem/Cha";
+if ($pass=="Charisma/Willpower") $pass ="Cha/Wil";
+if ($pass=="Memory/Intelligence") $pass ="Mem/Int";
+if ($pass=="Intelligence/Memory") $pass ="Int/Mem";
+if ($pass=="Intelligence/Perception") $pass ="Int/Per";
+if ($pass=="Charisma/Intelligence") $pass ="Cha/Int";
+if ($pass=="Willpower/Charisma") $pass ="Wil/Cha";
+if ($pass=="Charisma/Memory") $pass ="Cha/Mem";
+
+$pass= "<td $color>$pass</td>";
+return $pass;
+} // typea
 
 ?>
