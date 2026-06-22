@@ -309,36 +309,45 @@ function specialcolorNPC($corp){
     if ($corp==1000182) $rower=" style='background-color:$elk'";
     return $rower;
     }       // specialcor
-function typea($value){
-
-list($pass)=avalues319b("Select Combination from SkillAttributes where TypeId='$value'");
-if ($pass=="") $pass="n/a";
-//$pass=getskillt($value);
-
-$color="";
-if ($pass=="Perception/Willpower") $color=" style='background-color:cyan'";
-if ($pass=="Willpower/Perception") $color=" style='background-color:yellow'";
-if ($pass=="Intelligence/Perception") $color=" style='background-color:lime'";
-if ($pass=="Intelligence/Memory") $color=" style='background-color:cccccc'";
-if ($pass=="Memory/Intelligence") $color=" style='background-color:pink'";
-if ($pass=="Charisma/Intelligence") $color=" style='background-color:cc99cc'";
-if ($pass=="Charisma/Willpower") $color=" style='background-color:dcb59f'";
-if ($pass=="Perception/Willpower") $pass ="Per/Wil";
-if ($pass=="Willpower/Perception") $pass ="Wil/Per";
-if ($pass=="Willpower/Intelligence") $pass ="Wil/Int";
-if ($pass=="Perception/Memory") $pass ="Per/Mem";
-if ($pass=="Memory/Perception") $pass ="Mem/Per";
-if ($pass=="Memory/Charisma") $pass ="Mem/Cha";
-if ($pass=="Charisma/Willpower") $pass ="Cha/Wil";
-if ($pass=="Memory/Intelligence") $pass ="Mem/Int";
-if ($pass=="Intelligence/Memory") $pass ="Int/Mem";
-if ($pass=="Intelligence/Perception") $pass ="Int/Per";
-if ($pass=="Charisma/Intelligence") $pass ="Cha/Int";
-if ($pass=="Willpower/Charisma") $pass ="Wil/Cha";
-if ($pass=="Charisma/Memory") $pass ="Cha/Mem";
-
-$pass= "<td $color>$pass</td>";
-return $pass;
-} // typea
-
+function typea($value) {
+    // quiza pasar a otro archivo, dsa colores y se usa en dossier alphaaseets y apexroster
+    list($pass) = avalues319b("Select Combination from SkillAttributes where TypeId='$value'");
+    if ($pass == "") $pass = "n/a";
+    
+    // Primero: asignar colores basado en el valor ORIGINAL
+    $color = " style='background-color:white; color:black'";
+    
+    switch ($pass) {
+        case "Perception/Willpower":   $color = " style='background-color:cyan'"; break;
+        case "Willpower/Perception":   $color = " style='background-color:yellow'"; break;
+        case "Intelligence/Perception": $color = " style='background-color:lime'"; break;
+        case "Intelligence/Memory":    $color = " style='background-color:#cccccc'"; break;
+        case "Memory/Intelligence":    $color = " style='background-color:pink'"; break;
+        case "Charisma/Intelligence":  $color = " style='background-color:#cc99cc'"; break;
+        case "Charisma/Willpower":     $color = " style='background-color:#dcb59f'"; break;
+    }
+    
+    // Después: reemplazar texto (ya no importa el orden)
+    $replacements = array(
+        "Perception/Willpower"   => "Per/Wil",
+        "Willpower/Perception"   => "Wil/Per",
+        "Willpower/Intelligence" => "Wil/Int",
+        "Perception/Memory"      => "Per/Mem",
+        "Memory/Perception"      => "Mem/Per",
+        "Memory/Charisma"        => "Mem/Cha",
+        "Charisma/Willpower"     => "Cha/Wil",
+        "Memory/Intelligence"    => "Mem/Int",
+        "Intelligence/Memory"    => "Int/Mem",
+        "Intelligence/Perception"=> "Int/Per",
+        "Charisma/Intelligence"  => "Cha/Int",
+        "Willpower/Charisma"     => "Wil/Cha",
+        "Charisma/Memory"        => "Cha/Mem"
+    );
+    
+    if (isset($replacements[$pass])) {
+        $pass = $replacements[$pass];
+    }
+    
+    return "<td $color>$pass</td>";
+}
 ?>
