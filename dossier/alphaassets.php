@@ -788,6 +788,7 @@ function check_alpha_omega($toon_number, $race) {
 }
 
 function typea($value) {
+    // quiza pasar a otro archivo, dsa colores y se usa en dossier alphaaseets y apexroster
     list($pass) = avalues319b("Select Combination from SkillAttributes where TypeId='$value'");
     if ($pass == "") $pass = "n/a";
     
@@ -826,4 +827,5 @@ function typea($value) {
     }
     
     return "<td $color>$pass</td>";
-}?>
+}
+?>
