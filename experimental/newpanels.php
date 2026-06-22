@@ -2,7 +2,7 @@
 // License GPL
 // Alfonso Orozco Aguilar
 // Control in the database the  accounts of Eve Online. Experimental, can be erased in any moment
-require_once('..//config.php');
+require_once('../config.php');
 check_authorization();
 
 /** --- CONTROLLER --- **/
@@ -73,7 +73,6 @@ $total_wallet_global = 0;
     <title>EVE Logistics v2.5 - Forge Update</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.5/css/dataTables.bootstrap4.min.css">
     <style>
         body { background: #0b0b0b; color: #dcdcdc; font-size: 0.85rem; }
         .card { background: #1a1a1a; border: 1px solid #333; margin-bottom: 20px; }
@@ -133,56 +132,9 @@ $total_wallet_global = 0;
         </div>
     </div>
 
-    <div class="card p-3 shadow">
-        <h6 class="text-uppercase small font-weight-bold mb-3 text-gold">Asset Audit (Real-Time Forge Recalculation)</h6>
-        <table id="tablePilotos" class="table table-striped table-bordered table-dark table-sm w-100">
-            <thead>
-                <tr>
-                    <th>#</th><th>Name</th><th>Pocket</th><th>Items</th><th>Jita V (Forge)</th><th>Wallet (M)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php $j=1; while($p = mysqli_fetch_assoc($res_pilots)): 
-                    $total_jitav_global += $p['real_jitav'];
-                    $total_items_global += $p['numitems'];
-                    $total_wallet_global += $p['wallet'];
-                ?>
-                <tr>
-                    <td><?php echo $j++; ?></td>
-                    <td class="text-info font-weight-bold"><?php echo htmlspecialchars($p['toon_name']); ?></td>
-                    <td><?php echo htmlspecialchars($p['pocket6']); ?></td>
-                    <td class="text-center"><?php echo $p['numitems']; ?></td>
-                    <td class="text-right"><?php echo number_format($p['real_jitav']/1000000, 2); ?></td>
-                    <td class="text-right text-success"><?php echo number_format($p['wallet'] / 1000000, 2); ?>M</td>
-                </tr>
-                <?php endwhile; ?>
-            </tbody>
-            <tfoot class="tfoot-totals">
-                <tr>
-                    <td colspan="3" class="text-right">ACCUMULATED TOTALS:</td>
-                    <td class="text-center"><?php echo number_format($total_items_global); ?></td>
-                    <td class="text-right"><?php echo number_format($total_jitav_global/1000000, 2); ?></td>
-                    <td class="text-right"><?php echo number_format($total_wallet_global / 1000000, 2); ?>M</td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap4.min.js"></script>
-
-<script>
-    $(document).ready(function() {
-        $('#tablePilotos').DataTable({
-            "pageLength": 25,
-            "language": { "url": "//cdn.datatables.net/plug-ins/1.10.25/i18n/English.json" },
-            "order": [[ 4, "desc" ]] // Sort by Jita V (Forge) by default
-        });
-    });
-</script>
 
 </body>
 </html>
