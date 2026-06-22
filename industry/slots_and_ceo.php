@@ -5,7 +5,7 @@
 // Alfonso Orozco Aguilar
 // Contact in EVE: exists as a pilot
 // kimi 2.6 plus chat
-// Date: 2026-05-28
+// Date: 2026-06-22
 // License: GPL
 // ============================================
 
@@ -32,7 +32,7 @@ define('MAX_SLOTS', 11);
  */
 function esi_get(string $endpoint): ?array {
     $url = 'https://esi.evetech.net/latest' . $endpoint;
-    
+
     $ch = curl_init();
     curl_setopt_array($ch, [
         CURLOPT_URL => $url,
@@ -46,16 +46,16 @@ function esi_get(string $endpoint): ?array {
             'Content-Type: application/json'
         ]
     ]);
-    
+
     $response = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    
+
     if ($http_code === 200 && $response !== false) {
         $data = json_decode($response, true);
         return is_array($data) ? $data : null;
     }
-    
+
     return null;
 }
 
@@ -76,38 +76,50 @@ function get_corp_ceo(int $corporation_id): ?int {
 }
 
 /**
+ * Gets corporation details (name + ticker)
+ */
+function get_corp_details(int $corporation_id): ?array {
+    $data = esi_get('/corporations/' . $corporation_id . '/');
+    if ($data === null) return null;
+    return [
+        'name' => $data['corporation_name'] ?? 'Unknown',
+        'ticker' => $data['ticker'] ?? '???'
+    ];
+}
+
+/**
  * Checks if a character is CEO of their corporation
  * Uses session cache to avoid saturating the API
  */
 function is_ceo(int $character_id): bool {
     $cache_key = 'ceo_check_' . $character_id;
-    
+
     // If already in session cache, return
     if (isset($_SESSION[$cache_key])) {
         return $_SESSION[$cache_key];
     }
-    
+
     // Get character's corporation
     $corp_id = get_character_corp($character_id);
     if ($corp_id === null) {
         $_SESSION[$cache_key] = false;
         return false;
     }
-    
+
     // Get corporation's CEO
     $ceo_id = get_corp_ceo($corp_id);
     if ($ceo_id === null) {
         $_SESSION[$cache_key] = false;
         return false;
     }
-    
+
     // Compare
     $is_ceo = ($ceo_id === $character_id);
     $_SESSION[$cache_key] = $is_ceo;
-    
+
     // Small pause to respect rate limits (no token = 20 req/s)
     usleep(100000); // 0.1 seconds = max 10 req/s (conservative)
-    
+
     return $is_ceo;
 }
 
@@ -212,49 +224,61 @@ $ceos_list = []; // Array to store CEOs
 if ($result) {
     mysqli_data_seek($result, 0);
     while ($row = mysqli_fetch_assoc($result)) {
-        
+
         // ============================================
         // FIXED: Slot logic with NULL vs 0 distinction
         // ============================================
         $mass_level = $row['mass_prod_level'];     // NULL = doesn't have, 0-5 = has
         $adv_level = $row['adv_mass_prod_level'];  // NULL = doesn't have, 0-5 = has
-        
+
         // If doesn't have Mass Production (NULL), can't have Advanced
         if ($mass_level === null) {
             $mass_level = null;
             $adv_level = null; // Force NULL even if DB says otherwise (prerequisite not met)
         }
-        
+
         // Calculate slots: base 1 + Mass Production (0-5) + Advanced Mass Production (0-5)
         // Only add if has the skill (not NULL)
         $mass_bonus = ($mass_level !== null) ? (int)$mass_level : 0;
         $adv_bonus = ($adv_level !== null) ? (int)$adv_level : 0;
-        
+
         $slots = 1 + $mass_bonus + $adv_bonus;
         $slots = min($slots, MAX_SLOTS);
-        
+
         // Check if CEO (only if valid toon_number)
         $is_ceo = false;
+        $corp_info = null;
         if (!empty($row['toon_number']) && is_numeric($row['toon_number'])) {
             $is_ceo = is_ceo((int)$row['toon_number']);
+
+            // If CEO, get corporation details
+            if ($is_ceo) {
+                $corp_id = get_character_corp((int)$row['toon_number']);
+                if ($corp_id !== null) {
+                    $corp_info = get_corp_details($corp_id);
+                    usleep(100000); // Rate limit respect
+                }
+            }
         }
-        
+
         $pilot_data = array_merge($row, [
             'slots' => $slots,
             'es_ceo' => $is_ceo,
             'mass_prod_level' => $mass_level,     // Preserve NULL
-            'adv_mass_prod_level' => $adv_level   // Preserve NULL
+            'adv_mass_prod_level' => $adv_level,   // Preserve NULL
+            'corp_name' => $corp_info['name'] ?? 'Unknown Corp',
+            'corp_ticker' => $corp_info['ticker'] ?? '???'
         ]);
-        
+
         $total_pilots++;
         $total_slots += $slots;
-        
+
         if ($slots > $max_slots_pilot) {
             $max_slots_pilot = $slots;
         }
-        
+
         $pilots_with_slots[] = $pilot_data;
-        
+
         // If CEO, add to list
         if ($is_ceo) {
             $ceos_list[] = $pilot_data;
@@ -288,13 +312,13 @@ function getColorPocket($pocket) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EVE Online — Production Slots Dashboard</title>
-    
+
     <!-- Bootstrap 4.6 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-    
+
     <!-- Font Awesome 5.15.4 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
-    
+
     <style>
         body {
             background-color: #1a1d21;
@@ -546,6 +570,19 @@ function getColorPocket($pocket) {
             border-color: #0056b3;
             color: #fff;
         }
+
+        /* ── CORP INFO IN CEO CARDS ── */
+        .corp-info-line {
+            color: #f1c40f;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .corp-info-line .corp-ticker {
+            color: #adb5bd;
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -634,7 +671,7 @@ function getColorPocket($pocket) {
                             <div>
                                 <div class="font-weight-bold text-white">
                                     <?php echo htmlspecialchars($ceo['toon_name']); ?>
-                                    <span class="ceo-badge"><i class="fas fa-crown"></i> CEO</span>
+                                    <!-- CEO badge removed - redundant in this section -->
                                 </div>
                                 <small class="text-muted">
                                     <span class="pocket-badge <?php echo $ceoPocketClass; ?>" style="background-color:<?php echo $ceoPocketColor; ?>;">
@@ -642,6 +679,12 @@ function getColorPocket($pocket) {
                                     </span>
                                     <span class="ml-1"><i class="fas fa-industry mr-1"></i><?php echo $ceo['slots']; ?> slots</span>
                                 </small>
+                                <!-- Corporation name and ticker -->
+                                <div class="corp-info-line">
+                                    <i class="fas fa-building mr-1"></i>
+                                    <?php echo htmlspecialchars($ceo['corp_name']); ?> 
+                                    <span class="corp-ticker">[<?php echo htmlspecialchars($ceo['corp_ticker']); ?>]</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -709,7 +752,7 @@ function getColorPocket($pocket) {
                             <?php 
                             $counter = 1;
                             foreach ($pilots_with_slots as $pilot): 
-                                
+
                                 // Slot badge class
                                 if ($pilot['slots'] >= 11) {
                                     $slot_class = 'badge-slot-max';
@@ -836,7 +879,7 @@ function getColorPocket($pocket) {
                                 </td>
                             </tr>
                             <?php endforeach; ?>
-                            
+
                             <?php if (empty($pilots_with_slots)): ?>
                             <tr>
                                 <td colspan="11" class="text-center py-4">
@@ -865,7 +908,7 @@ function getColorPocket($pocket) {
     <!-- Bootstrap 4.6 JS -->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+
 </body>
 </html>
 <?php
