@@ -778,7 +778,7 @@ $pocket_class = 'badge-secondary';
             $html_tabla .= "
                 <tr>
                     <td>{$renglon_numero}</td>
-                    <td><a target='_blank' href='alphaassets.php?mode=assets&who=$number'>" . htmlspecialchars($fila['toon_name']) . "</a></td>
+                    <td><a target='_blank' href='../dossier/alphaassets.php?mode=assets&who=$number'>" . htmlspecialchars($fila['toon_name']) . "</a></td>
                     <td>{$sp_format} M</td>
                     <td>" . number_format($fila['numitems']) . "</td>                
                     <td><span class='badge $pocket_class '>$pocket_value</span></td>
