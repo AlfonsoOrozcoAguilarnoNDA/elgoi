@@ -2,7 +2,7 @@
 session_start();
 require "../config.php";
 include_once '../ui_functions.php';
-echo ui_header($page_titles[$section] ?? 'Apex Roster');
+echo ui_header('Apex Roster');
 
 // Configurar zona horaria de México
 date_default_timezone_set('America/Mexico_City');
