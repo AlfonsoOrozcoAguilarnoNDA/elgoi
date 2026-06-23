@@ -36,7 +36,7 @@ function safe_input($data) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_row') {
     $id = (int)$_POST['id'];
     $plex = (int)$_POST['plex'];
-    $activar_hoy = ($_POST['activar_hoy'] === 'SI') ? 'SI' : 'NO';
+    $activar_hoy = 'NO';
     $caso_especial = ($_POST['caso_especial'] === 'SI') ? 'SI' : 'NO';
     $activos_redimibles = mysqli_real_escape_string($link, safe_input($_POST['activos_redimibles']));
     $notas_auditoria = mysqli_real_escape_string($link, safe_input($_POST['notas_auditoria']));
@@ -142,12 +142,11 @@ $result = mysqli_query($link, $query);
                 <tr>
                     <th width="5%">ID</th>
                     <th width="5%"># Acct</th>
-                    <th width="12%">Pseudo</th>
-                    <th width="12%">Main Pilot</th>
-                    <th width="8%">PLEX</th>
-                    <th width="10%">Activate Today</th>
-                    <th width="33%">Redeemable Assets</th>
-                    <th width="15%">Action</th>
+                    <th width="15%">Pseudo</th>
+                    <th width="15%">Main Pilot</th>
+                    <th width="10%">PLEX</th>
+                    <th width="40%">Redeemable Assets</th>
+                    <th width="10%">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -165,13 +164,6 @@ $result = mysqli_query($link, $query);
 
                             <td class="align-middle">
                                 <input type="number" name="plex" class="form-control form-control-sm input-inline" value="<?php echo $row['plex']; ?>" required min="0">
-                            </td>
-
-                            <td class="align-middle">
-                                <select name="activar_hoy" class="form-control form-control-sm">
-                                    <option value="NO" <?php echo ($row['activar_hoy'] === 'NO') ? 'selected' : ''; ?>>NO</option>
-                                    <option value="SI" <?php echo ($row['activar_hoy'] === 'SI') ? 'selected' : ''; ?>>YES</option>
-                                </select>
                             </td>
 
                             <td class="align-middle">
