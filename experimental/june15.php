@@ -67,6 +67,10 @@ $result = mysqli_query($link, $query);
         body { background-color: #f8f9fa; font-size: 0.9rem; }
         .table-card { background: #fff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .input-inline { min-width: 70px; }
+        .days-remaining { font-weight: bold; }
+        .days-positive { color: #28a745; }
+        .days-negative { color: #dc3545; }
+        .days-zero { color: #ffc107; }
     </style>
 </head>
 <body>
@@ -109,16 +113,28 @@ $result = mysqli_query($link, $query);
                     <th width="5%">ID</th>
                     <th width="10%">Pseudo</th>
                     <th width="8%">Type</th>
-                    <th width="8%">Pilots</th>
+                    <th width="18%">Names</th>
                     <th width="8%">PLEX</th>
-                    <th width="8%">Refresh</th>
+                    <th width="8%">Days Left</th>
                     <th width="8%">Expiration</th>
-                    <th width="30%">Notes</th>
+                    <th width="20%">Notes</th>
                     <th width="15%">Action</th>
                 </tr>
             </thead>
             <tbody>
-                <?php while ($row = mysqli_fetch_assoc($result)): ?>
+                <?php while ($row = mysqli_fetch_assoc($result)): 
+                    $today = new DateTime();
+                    $expiration = new DateTime($row['manualExpiration']);
+                    $interval = $today->diff($expiration);
+                    $days_left = (int)$interval->format('%r%a');
+                    
+                    $days_class = 'days-positive';
+                    if ($days_left < 0) {
+                        $days_class = 'days-negative';
+                    } elseif ($days_left == 0) {
+                        $days_class = 'days-zero';
+                    }
+                ?>
                     <tr>
                         <form method="POST" action="">
                             <input type="hidden" name="action" value="update_row">
@@ -128,14 +144,16 @@ $result = mysqli_query($link, $query);
                             <td class="align-middle"><strong><?php echo htmlspecialchars($row['pseudo']); ?></strong></td>
                             <td class="align-middle text-center"><?php echo htmlspecialchars($row['panel_type']); ?></td>
                             <td class="align-middle small">
-                                1: <?php echo htmlspecialchars($row['pilot_1']); ?><br>
-                                2: <?php echo htmlspecialchars($row['pilot_2']); ?><br>
-                                3: <?php echo htmlspecialchars($row['pilot_3']); ?>
+                                1: <?php echo htmlspecialchars($row['name_1']); ?><br>
+                                2: <?php echo htmlspecialchars($row['name_2']); ?><br>
+                                3: <?php echo htmlspecialchars($row['name_3']); ?>
                             </td>
                             <td class="align-middle">
                                 <input type="number" name="plex" class="form-control form-control-sm input-inline" value="<?php echo $row['plex']; ?>" required min="0">
                             </td>
-                            <td class="align-middle text-center"><?php echo htmlspecialchars($row['refresh']); ?></td>
+                            <td class="align-middle text-center days-remaining <?php echo $days_class; ?>">
+                                <?php echo $days_left; ?>
+                            </td>
                             <td class="align-middle text-center"><?php echo htmlspecialchars($row['manualExpiration']); ?></td>
                             <td class="align-middle">
                                 <input type="text" name="notes" class="form-control form-control-sm" value="<?php echo htmlspecialchars($row['notes']); ?>">
