@@ -56,14 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 }
 
 // 3. Filter Persistence in Query
-$filter_activar  = isset($_GET['f_activar']) ? $_GET['f_activar'] : '';
 $filter_plex     = isset($_GET['f_plex']) ? $_GET['f_plex'] : '';
 $filter_redimibles = isset($_GET['f_redimibles']) ? $_GET['f_redimibles'] : '';
 
 $where_clauses = [];
-if ($filter_activar !== '') {
-    $where_clauses[] = "`activar_hoy` = '" . mysqli_real_escape_string($link, $filter_activar) . "'";
-}
 if ($filter_plex === 'mayor_cero') {
     $where_clauses[] = "`plex` > 0";
 }
@@ -109,13 +105,6 @@ $result = mysqli_query($link, $query);
     <div class="card mb-4 table-card">
         <div class="card-body py-3">
             <form method="GET" action="" class="form-inline">
-                <label class="mr-2 font-weight-bold" for="f_activar">Activate Today:</label>
-                <select name="f_activar" id="f_activar" class="form-control form-control-sm mr-4" onchange="this.form.submit()">
-                    <option value="">-- All --</option>
-                    <option value="SI" <?php echo ($filter_activar === 'SI') ? 'selected' : ''; ?>>YES</option>
-                    <option value="NO" <?php echo ($filter_activar === 'NO') ? 'selected' : ''; ?>>NO</option>
-                </select>
-
                 <label class="mr-2 font-weight-bold" for="f_plex">Filter PLEX:</label>
                 <select name="f_plex" id="f_plex" class="form-control form-control-sm mr-4" onchange="this.form.submit()">
                     <option value="">-- All --</option>
@@ -129,7 +118,7 @@ $result = mysqli_query($link, $query);
                     <option value="sin_comentario" <?php echo ($filter_redimibles === 'sin_comentario') ? 'selected' : ''; ?>>Without comment</option>
                 </select>
 
-                <?php if ($filter_activar !== '' || $filter_plex !== '' || $filter_redimibles !== ''): ?>
+                <?php if ($filter_plex !== '' || $filter_redimibles !== ''): ?>
                     <a href="<?php echo $_SERVER['PHP_SELF']; ?>" class="btn btn-sm btn-outline-danger">Clear Filters</a>
                 <?php endif; ?>
             </form>
