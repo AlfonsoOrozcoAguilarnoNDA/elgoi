@@ -22,7 +22,7 @@ $sql = "SELECT
             P.gf,
             P.acctype,
             SUM(A.quantity) as total_qty
-        FROM invTypes2 T
+        FROM invTypes T
         INNER JOIN EVE_ASSETS A ON T.typeID = A.type_id
         INNER JOIN PILOTS P ON A.toon_number = P.toon_number
         WHERE T.groupID IN (1042, 1034, 1040, 1041)
