@@ -6,23 +6,6 @@ GPL License
 Joint experiment Gemini, corrected by kimi afterwards
 
 https://vibecodingmexico.com/gemini-como-wikipedia/
-
-Data Table:
-
-CREATE TABLE IF NOT EXISTS `sucursales_flota` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
-  `numero_cuenta` INT(3) NOT NULL,
-  `pseudo` VARCHAR(50) NOT NULL,
-  `piloto_principal` VARCHAR(100) NOT NULL,
-  `plex` INT(11) NOT NULL DEFAULT 0,
-  `activar_hoy` ENUM('SI', 'NO') NOT NULL DEFAULT 'NO',
-  `activos_redimibles` VARCHAR(255) DEFAULT 'Ninguno',
-  `caso_especial` ENUM('SI', 'NO') NOT NULL DEFAULT 'NO',
-  `notas_auditoria` TEXT DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_numero_cuenta` (`numero_cuenta`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 */
 // 1. Connection and Data Control
 require "../config.php";
@@ -36,18 +19,12 @@ function safe_input($data) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'update_row') {
     $id = (int)$_POST['id'];
     $plex = (int)$_POST['plex'];
-    $activar_hoy = 'NO';
-    $caso_especial = ($_POST['caso_especial'] === 'SI') ? 'SI' : 'NO';
-    $activos_redimibles = mysqli_real_escape_string($link, safe_input($_POST['activos_redimibles']));
-    $notas_auditoria = mysqli_real_escape_string($link, safe_input($_POST['notas_auditoria']));
+    $notes = mysqli_real_escape_string($link, safe_input($_POST['notes']));
 
-    $update_query = "UPDATE `sucursales_flota` SET 
+    $update_query = "UPDATE `PANELS` SET 
                         `plex` = $plex, 
-                        `activar_hoy` = '$activar_hoy', 
-                        `caso_especial` = '$caso_especial', 
-                        `activos_redimibles` = '$activos_redimibles', 
-                        `notas_auditoria` = '$notas_auditoria' 
-                    WHERE `id` = $id";
+                        `notes` = '$notes' 
+                    WHERE `idpanel` = $id";
 
     if (mysqli_query($link, $update_query)) {
         header("Location: " . $_SERVER['PHP_SELF'] . "?msg=success");
@@ -64,9 +41,9 @@ if ($filter_plex === 'mayor_cero') {
     $where_clauses[] = "`plex` > 0";
 }
 if ($filter_redimibles === 'con_comentario') {
-    $where_clauses[] = "(`activos_redimibles` IS NOT NULL AND `activos_redimibles` != '' AND `activos_redimibles` != 'Ninguno')";
+    $where_clauses[] = "(`notes` IS NOT NULL AND `notes` != '')";
 } elseif ($filter_redimibles === 'sin_comentario') {
-    $where_clauses[] = "(`activos_redimibles` IS NULL OR `activos_redimibles` = '' OR `activos_redimibles` = 'Ninguno')";
+    $where_clauses[] = "(`notes` IS NULL OR `notes` = '')";
 }
 
 $where_sql = "";
@@ -75,7 +52,7 @@ if (count($where_clauses) > 0) {
 }
 
 // Data query sorted by stepped ID
-$query = "SELECT * FROM `sucursales_flota` $where_sql ORDER BY `id` ASC";
+$query = "SELECT * FROM `PANELS` $where_sql ORDER BY `idpanel` ASC";
 $result = mysqli_query($link, $query);
 ?>
 <!DOCTYPE html>
@@ -83,7 +60,7 @@ $result = mysqli_query($link, $query);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fleet Audit - Internal Control</title>
+    <title>Panels Audit - Internal Control</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-bs4@1.13.7/css/dataTables.bootstrap4.min.css">
     <style>
@@ -96,7 +73,7 @@ $result = mysqli_query($link, $query);
 
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h4 text-secondary font-weight-bold">⚡ Fleet Control System (Continuous Audit)</h2>
+        <h2 class="h4 text-secondary font-weight-bold">⚡ Panels Control System (Continuous Audit)</h2>
         <?php if (isset($_GET['msg']) && $_GET['msg'] === 'success'): ?>
             <div class="alert alert-success py-1 px-3 mb-0" id="alert-msg">Record updated successfully.</div>
         <?php endif; ?>
@@ -111,7 +88,7 @@ $result = mysqli_query($link, $query);
                     <option value="mayor_cero" <?php echo ($filter_plex === 'mayor_cero') ? 'selected' : ''; ?>>Greater than 0</option>
                 </select>
 
-                <label class="mr-2 font-weight-bold" for="f_redimibles">Redeemable Assets:</label>
+                <label class="mr-2 font-weight-bold" for="f_redimibles">Notes:</label>
                 <select name="f_redimibles" id="f_redimibles" class="form-control form-control-sm mr-4" onchange="this.form.submit()">
                     <option value="">-- All --</option>
                     <option value="con_comentario" <?php echo ($filter_redimibles === 'con_comentario') ? 'selected' : ''; ?>>With comment</option>
@@ -130,12 +107,14 @@ $result = mysqli_query($link, $query);
             <thead class="thead-dark">
                 <tr>
                     <th width="5%">ID</th>
-                    <th width="5%"># Acct</th>
-                    <th width="15%">Pseudo</th>
-                    <th width="15%">Main Pilot</th>
-                    <th width="10%">PLEX</th>
-                    <th width="40%">Redeemable Assets</th>
-                    <th width="10%">Action</th>
+                    <th width="10%">Pseudo</th>
+                    <th width="8%">Type</th>
+                    <th width="8%">Pilots</th>
+                    <th width="8%">PLEX</th>
+                    <th width="8%">Refresh</th>
+                    <th width="8%">Expiration</th>
+                    <th width="30%">Notes</th>
+                    <th width="15%">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -143,20 +122,23 @@ $result = mysqli_query($link, $query);
                     <tr>
                         <form method="POST" action="">
                             <input type="hidden" name="action" value="update_row">
-                            <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
-                            <input type="hidden" name="caso_especial" value="<?php echo $row['caso_especial']; ?>">
+                            <input type="hidden" name="id" value="<?php echo $row['idpanel']; ?>">
 
-                            <td class="align-middle text-center font-weight-bold text-muted"><?php echo $row['id']; ?></td>
-                            <td class="align-middle text-center"><?php echo $row['numero_cuenta']; ?></td>
+                            <td class="align-middle text-center font-weight-bold text-muted"><?php echo $row['idpanel']; ?></td>
                             <td class="align-middle"><strong><?php echo htmlspecialchars($row['pseudo']); ?></strong></td>
-                            <td class="align-middle"><?php echo htmlspecialchars($row['piloto_principal']); ?></td>
-
+                            <td class="align-middle text-center"><?php echo htmlspecialchars($row['panel_type']); ?></td>
+                            <td class="align-middle small">
+                                1: <?php echo htmlspecialchars($row['pilot_1']); ?><br>
+                                2: <?php echo htmlspecialchars($row['pilot_2']); ?><br>
+                                3: <?php echo htmlspecialchars($row['pilot_3']); ?>
+                            </td>
                             <td class="align-middle">
                                 <input type="number" name="plex" class="form-control form-control-sm input-inline" value="<?php echo $row['plex']; ?>" required min="0">
                             </td>
-
+                            <td class="align-middle text-center"><?php echo htmlspecialchars($row['refresh']); ?></td>
+                            <td class="align-middle text-center"><?php echo htmlspecialchars($row['manualExpiration']); ?></td>
                             <td class="align-middle">
-                                <input type="text" name="activos_redimibles" class="form-control form-control-sm" value="<?php echo htmlspecialchars($row['activos_redimibles']); ?>">
+                                <input type="text" name="notes" class="form-control form-control-sm" value="<?php echo htmlspecialchars($row['notes']); ?>">
                             </td>
 
                             <td class="align-middle text-center">
