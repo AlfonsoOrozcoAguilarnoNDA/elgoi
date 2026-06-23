@@ -5,7 +5,8 @@
  * Fleet Commander - Mosaic Dashboard
  * Date: 2026-03-31 00:22
  * 
- * This checks if the pilot has enough P1 to do some things. For now, it uses my pilots; change to use yours.
+ * This checks if the pilot has enough P1 to do some things.
+ * Automatically detects which pilots have the searched P1 items.
  */
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
@@ -24,9 +25,6 @@ $timestamp_calculo = date('Y-m-d H:i:s');
 // CONFIGURATION
 // ============================================================================
 
-// Character string (editable) - names as they appear in PILOTS.toon_name
-$characters_string = "Hypervisor,Khadima,Sue Rtuda";
-
 // P1 items to search (editable) - exact names from EVE_ASSETS.type_description
 $items_string = "Biofuels,Water,Toxic Metals,Reactive Metals,Plasmoids,Bacteria,Electrolytes,Precious Metals,Chiral Structures,Silicon,Oxygen,Industrial Fibers,Oxidizing Compound,Biomass";
 
@@ -35,7 +33,11 @@ $pilot_colors = [
     1 => '#FFE5E5', // Pastel pink
     2 => '#E5F5FF', // Pastel blue
     3 => '#E5FFE5', // Pastel green
-    4 => '#FFF5E5'  // Pastel orange
+    4 => '#FFF5E5', // Pastel orange
+    5 => '#F3E5F5', // Pastel purple
+    6 => '#FFF9C4', // Pastel yellow
+    7 => '#E0F7FA', // Pastel cyan
+    8 => '#FBE9E7'  // Pastel peach
 ];
 
 // Constants
@@ -92,21 +94,15 @@ function aValues319($Qx){
 }
 
 /**
- * Gets P1 data for the specified characters.
+ * Gets P1 data automatically detecting which pilots have the items.
  * Uses EVE_ASSETS.type_description directly (no invTypes join).
- * Uses EVE_ASSETS.toon_number joined with PILOTS.toon_number to get names.
+ * Detects pilots dynamically from the database.
  */
-function obtenerDatosP1($characters_string, $items_string) {
+function obtenerDatosP1($items_string) {
     global $link;
 
-    // Process strings
-    $characters = array_map('trim', explode(',', $characters_string));
+    // Process items string
     $items = array_map('trim', explode(',', $items_string));
-
-    // Create character name list for query (filtering via PILOTS.toon_name)
-    $char_list = "'" . implode("','", array_map(function($c) use ($link) {
-        return mysqli_real_escape_string($link, $c);
-    }, $characters)) . "'";
 
     // Create item list for IN() - using type_description directly
     $item_list = "'" . implode("','", array_map(function($i) use ($link) {
@@ -114,7 +110,7 @@ function obtenerDatosP1($characters_string, $items_string) {
     }, $items)) . "'";
 
     // Main query: JOIN EVE_ASSETS with PILOTS to get toon_name
-    // Filter by PILOTS.toon_name and EVE_ASSETS.type_description
+    // Automatically detects which pilots have these items
     $query = "
         SELECT 
             p.toon_number,
@@ -124,8 +120,7 @@ function obtenerDatosP1($characters_string, $items_string) {
             SUM(ea.quantity) as total_quantity
         FROM EVE_ASSETS ea
         INNER JOIN PILOTS p ON ea.toon_number = p.toon_number
-        WHERE p.toon_name IN ($char_list)
-        AND ea.type_description IN ($item_list)
+        WHERE ea.type_description IN ($item_list)
         GROUP BY p.toon_number, p.toon_name, ea.type_id, ea.type_description
         ORDER BY ea.type_id, p.toon_name
     ";
@@ -163,35 +158,29 @@ function obtenerDatosP1($characters_string, $items_string) {
         $all_chars[$char_name] = true;
     }
 
+    // Sort pilots alphabetically for consistent display
+    $detected_pilots = array_keys($all_chars);
+    sort($detected_pilots);
+
     return [
         'data' => $organized,
-        'characters' => array_keys($all_chars),
-        'requested_order' => $characters
+        'characters' => $detected_pilots,
+        'requested_order' => $detected_pilots
     ];
 }
 
 /**
- * Builds a string of which pilots actually have assets in the results.
+ * Builds a comma-separated string of detected pilot names.
  */
 function construirCadenaPilotosDetectados($p1_data) {
-    $detected = [];
-    foreach ($p1_data['requested_order'] as $char) {
-        // Check if this pilot appears in any item data
-        foreach ($p1_data['data'] as $item_data) {
-            if (isset($item_data['characters'][$char]) && $item_data['characters'][$char] > 0) {
-                $detected[] = $char;
-                break;
-            }
-        }
-    }
-    return implode(', ', $detected);
+    return implode(', ', $p1_data['characters']);
 }
 
 /**
  * Calculates surplus per pilot according to rules
  */
 function calcularSobrantes($p1_data, $reglas_sobrantes) {
-    $characters = $p1_data['requested_order'];
+    $characters = $p1_data['characters'];
     $data = $p1_data['data'];
 
     // Prepare quantity structure per pilot
@@ -255,11 +244,11 @@ function calcularSobrantes($p1_data, $reglas_sobrantes) {
  */
 function renderizarTablaP1($p1_data, $pilot_colors) {
     $data = $p1_data['data'];
-    $characters = $p1_data['requested_order'];
+    $characters = $p1_data['characters'];
 
     if (count($data) == 0) {
         return '<tr><td colspan="' . (count($characters) + 3) . '" class="text-center text-muted">
-                    <i class="fas fa-info-circle"></i> No P1 items found for the specified characters
+                    <i class="fas fa-info-circle"></i> No P1 items found in database
                 </td></tr>';
     }
 
@@ -406,7 +395,7 @@ function renderizarTablaSobrantes($sobrantes_por_piloto, $characters, $pilot_col
 // PROCESSING
 // ============================================================================
 
-$p1_data = obtenerDatosP1($characters_string, $items_string);
+$p1_data = obtenerDatosP1($items_string);
 $sobrantes_por_piloto = calcularSobrantes($p1_data, $reglas_sobrantes);
 $cadena_pilotos_detectados = construirCadenaPilotosDetectados($p1_data);
 
@@ -494,11 +483,7 @@ echo crew_navbar(); echo "<br /><br />";
     <!-- VISIBLE CONFIGURATION -->
     <div class="config-box">
         <div class="row">
-            <div class="col-md-6">
-                <div class="config-label"><i class="fas fa-users"></i> Configured Characters:</div>
-                <code><?php echo htmlspecialchars($characters_string); ?></code>
-            </div>
-            <div class="col-md-6">
+            <div class="col-md-12">
                 <div class="config-label"><i class="fas fa-cubes"></i> P1 Items Searched:</div>
                 <code><?php echo htmlspecialchars($items_string); ?></code>
             </div>
@@ -507,7 +492,7 @@ echo crew_navbar(); echo "<br /><br />";
 
     <!-- DETECTED PILOTS -->
     <div class="detected-box">
-        <div class="config-label"><i class="fas fa-check-circle"></i> Detected Pilots with Assets:</div>
+        <div class="config-label"><i class="fas fa-check-circle"></i> Detected Pilots with Assets (<?php echo count($p1_data['characters']); ?> found):</div>
         <code><?php echo htmlspecialchars($cadena_pilotos_detectados); ?></code>
         <?php if (empty($cadena_pilotos_detectados)): ?>
             <span class="text-muted">(None detected)</span>
@@ -530,7 +515,7 @@ echo crew_navbar(); echo "<br /><br />";
                             <th><i class="fas fa-cube"></i> Item Name / Type ID</th>
                             <?php 
                             $pilot_index = 1;
-                            foreach ($p1_data['requested_order'] as $char_name): 
+                            foreach ($p1_data['characters'] as $char_name): 
                             ?>
                                 <th class="pilot-header">
                                     <i class="fas fa-user"></i> <?php echo htmlspecialchars($char_name); ?>
@@ -584,7 +569,7 @@ echo crew_navbar(); echo "<br /><br />";
                         </tr>
                     </thead>
                     <tbody>
-                        <?php echo renderizarTablaSobrantes($sobrantes_por_piloto, $p1_data['requested_order'], $pilot_colors); ?>
+                        <?php echo renderizarTablaSobrantes($sobrantes_por_piloto, $p1_data['characters'], $pilot_colors); ?>
                     </tbody>
                 </table>
             </div>
@@ -613,7 +598,7 @@ echo crew_navbar(); echo "<br /><br />";
             <div class="row">
                 <?php 
                 $pilot_index = 1;
-                foreach ($p1_data['requested_order'] as $char_name): 
+                foreach ($p1_data['characters'] as $char_name): 
                     $bg_color = isset($pilot_colors[$pilot_index]) ? $pilot_colors[$pilot_index] : '#F5F5F5';
                 ?>
                     <div class="col-md-3 mb-2">
