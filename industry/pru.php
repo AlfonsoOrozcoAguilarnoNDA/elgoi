@@ -8,6 +8,5 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 //require_once "index.php";
-require_once "calc_p1.php";
-
+require_once "nventory_pi.php";
 ?>
