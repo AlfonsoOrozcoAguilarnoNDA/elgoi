@@ -17,6 +17,7 @@ if (!file_exists('../config.php')) {
     die('<div class="alert alert-danger m-4">Error: config.php not found. Please create it with your database credentials.</div>');
 }
 include '../config.php';
+check_authorization();
 
 // Verify $link exists and is valid
 if (!isset($link) || !($link instanceof mysqli)) {
@@ -101,11 +102,27 @@ function getFactionName($faction_id, $default = null) {
 }
 
 // ============================================================================
+// EVEWHO LINK BUILDER
+// ============================================================================
+function evewhoLink($id, $type, $label = null) {
+    $id = intval($id);
+    $type = strtolower($type);
+    $valid_types = ['character', 'corporation', 'alliance'];
+
+    if (!in_array($type, $valid_types)) {
+        return htmlspecialchars($label ?? $id);
+    }
+
+    $display = htmlspecialchars($label ?? $id);
+    return '<a href="https://evewho.com/' . $type . '/' . $id . '" target="_blank" rel="noopener noreferrer" class="evewho-link">' . $display . ' <i class="fas fa-external-link-alt fa-xs"></i></a>';
+}
+
+// ============================================================================
 // FETCH ALL PILOTS FROM DATABASE (ordered by DOB)
 // ============================================================================
 function fetchAllPilots($link) {
     $sql = "SELECT toon_number, toon_name, parent_toon_number, corporation_name, 
-                   tradefield, pocket6, gf, DOB, contacts, standings 
+                   tradefield, pocket6, gf, DOB, contacts, standings, corpID, allianceID
             FROM PILOTS 
             ORDER BY DOB ASC";
 
@@ -132,7 +149,7 @@ function fetchPilotsByNames($link, $pilot_names) {
     $types = str_repeat('s', count($pilot_names));
 
     $sql = "SELECT toon_number, toon_name, parent_toon_number, corporation_name, 
-                   tradefield, pocket6, gf, DOB, contacts, standings 
+                   tradefield, pocket6, gf, DOB, contacts, standings, corpID, allianceID
             FROM PILOTS 
             WHERE toon_name IN ($placeholders) 
             ORDER BY DOB ASC";
@@ -215,29 +232,28 @@ function renderPilotHeader($pilot) {
     $pocket = htmlspecialchars($pilot['pocket6'] ?? 'CLEAN');
     $trade = htmlspecialchars($pilot['tradefield'] ?? 'n/a');
     $gf = intval($pilot['gf'] ?? 0);
-    $dob = $pilot['DOB'] ? date('Y-m-d', strtotime($pilot['DOB'])) : 'Unknown';
-    $parent = intval($pilot['parent_toon_number'] ?? 0);
+    $corpID = intval($pilot['corpID'] ?? 0);
+    $allianceID = intval($pilot['allianceID'] ?? 0);
 
-    $gf_badge = $gf > 0 
-        ? '<span class="badge bg-danger ms-1" title="GF Flag"><i class="fas fa-flag"></i> ' . $gf . '</span>' 
-        : '';
+    // GF flag: red if 1, gray if 0
+    if ($gf === 1) {
+        $gf_display = '<span class="badge bg-danger gf-flag" title="GF Flag Active"><i class="fas fa-flag"></i></span>';
+    } else {
+        $gf_display = '<span class="badge bg-secondary gf-flag" title="GF Flag Inactive"><i class="fas fa-flag"></i></span>';
+    }
 
-    $pocket_badge = $pocket !== 'CLEAN' 
-        ? '<span class="badge bg-warning text-dark ms-1">' . $pocket . '</span>' 
-        : '';
-
-    $parent_note = $parent > 0 
-        ? '<div class="small text-info"><i class="fas fa-link fa-xs"></i> Alt of ' . $parent . '</div>' 
-        : '';
+    // Build corp/alliance links
+    $corp_link = $corpID > 0 ? evewhoLink($corpID, 'corporation', $corp) : htmlspecialchars($corp);
+    $alliance_link = $allianceID > 0 ? evewhoLink($allianceID, 'alliance', 'Alliance') : '';
 
     return '
         <div class="text-center">
-            <img src="' . $portrait . '" alt="' . $name . '" class="rounded mb-2" style="width:128px;height:128px;object-fit:cover;" loading="lazy">
-            <h5 class="mb-1">' . $name . $gf_badge . '</h5>
-            <div class="small text-muted">' . $corp . '</div>
-            <div class="small">' . $trade . $pocket_badge . '</div>
-            <div class="small text-secondary">DOB: ' . $dob . '</div>
-            ' . $parent_note . '
+            <img src="' . $portrait . '" alt="' . $name . '" class="rounded mb-2 pilot-header-img" style="width:128px;height:128px;object-fit:cover;" loading="lazy">
+            <h5 class="mb-1">' . $name . ' ' . $gf_display . '</h5>
+            <div class="small corp-name">' . $corp_link . '</div>
+            ' . ($alliance_link ? '<div class="small alliance-name">' . $alliance_link . '</div>' : '') . '
+            <div class="small trade-field">' . $trade . '</div>
+            <div class="small pocket-badge">' . $pocket . '</div>
         </div>';
 }
 
@@ -263,10 +279,14 @@ function renderContactsTable($contacts) {
         $standing = floatval($c['standing']);
         $standing_class = $standing > 0 ? 'text-success' : 'text-danger';
         $standing_icon = $standing > 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+        $contact_id = intval($c['contact_id'] ?? 0);
+        $contact_type = $c['contact_type'] ?? 'character';
+
+        $id_link = evewhoLink($contact_id, $contact_type, $contact_id);
 
         $html .= '<tr>
-            <td>' . htmlspecialchars($c['contact_id'] ?? 'N/A') . '</td>
-            <td>' . htmlspecialchars($c['contact_type'] ?? 'N/A') . '</td>
+            <td>' . $id_link . '</td>
+            <td>' . htmlspecialchars($contact_type) . '</td>
             <td class="' . $standing_class . '"><i class="fas ' . $standing_icon . ' fa-xs"></i> ' . number_format($standing, 2) . '</td>
         </tr>';
     }
@@ -296,7 +316,8 @@ function renderFactionStandingsTable($standings) {
         $standing = floatval($s['standing']);
         $standing_class = $standing > 0 ? 'text-success' : ($standing < 0 ? 'text-danger' : 'text-muted');
         $standing_icon = $standing > 0 ? 'fa-arrow-up' : ($standing < 0 ? 'fa-arrow-down' : 'fa-minus');
-        $faction_name = getFactionName($s['from_id'] ?? 0);
+        $faction_id = intval($s['from_id'] ?? 0);
+        $faction_name = getFactionName($faction_id);
 
         $html .= '<tr>
             <td>' . htmlspecialchars($faction_name) . '</td>
@@ -372,6 +393,7 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
             --eve-accent: #58a6ff;
             --eve-success: #3fb950;
             --eve-danger: #f85149;
+            --eve-link: #79c0ff;
         }
         body { 
             background-color: var(--eve-dark); 
@@ -490,6 +512,50 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
         }
         .text-success { color: var(--eve-success) !important; }
         .text-danger { color: var(--eve-danger) !important; }
+
+        /* EVEWHO Links */
+        .evewho-link {
+            color: var(--eve-link);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .evewho-link:hover {
+            color: var(--eve-accent);
+            text-decoration: underline;
+        }
+        .evewho-link i {
+            font-size: 0.6rem;
+            opacity: 0.7;
+        }
+
+        /* Pilot header styling */
+        .gf-flag {
+            font-size: 0.65rem;
+            padding: 0.25rem 0.4rem;
+            vertical-align: middle;
+        }
+        .corp-name {
+            color: var(--eve-text-muted);
+            margin-bottom: 0.2rem;
+        }
+        .alliance-name {
+            color: #a371f7;
+            margin-bottom: 0.2rem;
+        }
+        .trade-field {
+            color: var(--eve-text-muted);
+            font-style: italic;
+            margin-bottom: 0.2rem;
+        }
+        .pocket-badge {
+            color: #d29922;
+            font-weight: 600;
+            padding: 0.15rem 0.5rem;
+            background: rgba(210, 153, 34, 0.1);
+            border-radius: 0.25rem;
+            display: inline-block;
+            font-size: 0.8rem;
+        }
 
         /* Responsive */
         @media (max-width: 768px) {
