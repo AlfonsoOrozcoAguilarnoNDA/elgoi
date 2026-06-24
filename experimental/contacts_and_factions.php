@@ -13,7 +13,7 @@
 define('APP_RUNNING', true);
 
 // Include database configuration
-if (!file_exists('config.php')) {
+if (!file_exists('../config.php')) {
     die('<div class="alert alert-danger m-4">Error: config.php not found. Please create it with your database credentials.</div>');
 }
 include '../config.php';
