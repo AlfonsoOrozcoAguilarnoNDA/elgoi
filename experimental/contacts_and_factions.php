@@ -507,6 +507,24 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
             background-color: #1f6feb;
         }
 
+        /* Hide column button */
+        .hide-col-btn {
+            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border: 1px solid var(--eve-border);
+            background: transparent;
+            color: var(--eve-text-muted);
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .hide-col-btn:hover {
+            background-color: var(--eve-danger);
+            color: #fff;
+            border-color: var(--eve-danger);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .pilot-col { 
@@ -601,26 +619,35 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
                     <table class="table table-bordered" id="standingsTable">
                         <thead>
                             <tr>
+                                <?php $colIndex = 0; ?>
                                 <?php foreach ($standings_pilots as $pilot): ?>
-                                    <th class="pilot-col">
+                                    <th class="pilot-col standings-col" data-col-index="<?php echo $colIndex; ?>">
                                         <?php echo renderPilotHeader($pilot); ?>
                                         <div class="text-center mt-2">
                                             <span class="badge badge-info count-badge">
                                                 <i class="fas fa-flag mr-1"></i><?php echo $pilot['_count']; ?> factions
                                             </span>
                                         </div>
+                                        <div class="text-center">
+                                            <button class="hide-col-btn" onclick="hideStandingsColumn(<?php echo $colIndex; ?>)" title="Hide this column">
+                                                <i class="fas fa-eye-slash mr-1"></i>Hide
+                                            </button>
+                                        </div>
                                     </th>
+                                    <?php $colIndex++; ?>
                                 <?php endforeach; ?>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
+                                <?php $colIndex = 0; ?>
                                 <?php foreach ($standings_pilots as $pilot): ?>
-                                    <td class="pilot-col">
+                                    <td class="pilot-col standings-col" data-col-index="<?php echo $colIndex; ?>">
                                         <div class="nested-table-container">
                                             <?php echo renderFactionStandingsTable($pilot['_parsed']); ?>
                                         </div>
                                     </td>
+                                    <?php $colIndex++; ?>
                                 <?php endforeach; ?>
                             </tr>
                         </tbody>
@@ -643,6 +670,19 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
 
 <!-- Bootstrap 4.6.x JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+
+<script>
+    /**
+     * Hide a column in the Faction Standings table by index
+     * Hides both the header (th) and data cell (td) with matching data-col-index
+     */
+    function hideStandingsColumn(colIndex) {
+        var cells = document.querySelectorAll('#standingsTable .standings-col[data-col-index="' + colIndex + '"]');
+        cells.forEach(function(cell) {
+            cell.style.display = 'none';
+        });
+    }
+</script>
 
 </body>
 </html>
