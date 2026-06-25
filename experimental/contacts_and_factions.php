@@ -2,12 +2,11 @@
 /**
  * EVE Online Pilot Contacts & Faction Standings Dashboard
  * 
- * PHP Procedural | Bootstrap 6.4.x | Font Awesome 5.15.4 (jsDelivr)
+ * PHP Procedural | Bootstrap 4.6.x | Font Awesome 5.15.4 (jsDelivr)
  * License: GPL
  * 
  * Reads ALL pilots from the PILOTS table automatically.
  * Requires: config.php with $link (mysqli connection)
- * I detect some probems in the contacts, not for release now.
  */
 
 // Prevent direct access if config is missing
@@ -72,21 +71,6 @@ $FACTION_NAMES = [
 ];
 
 // ============================================================================
-// CONFIGURABLE PILOT GROUPS (Modify these as needed - use toon_name strings)
-// ============================================================================
-$GROUP_1_PILOTS = [
-    // Add pilot names here as strings, e.g.:
-    // 'Lady Experiment',
-    // 'Aridam',
-];
-
-$GROUP_2_PILOTS = [
-    // Add pilot names here as strings, e.g.:
-    // 'Pilot Alpha',
-    // 'Pilot Beta',
-];
-
-// ============================================================================
 // EVE IMAGE URL BUILDER
 // ============================================================================
 function getPilotPortraitUrl($toon_number, $size = 128) {
@@ -137,39 +121,6 @@ function fetchAllPilots($link) {
     while ($row = $result->fetch_assoc()) {
         $pilots[] = $row;
     }
-    return $pilots;
-}
-
-// ============================================================================
-// FETCH PILOTS BY NAMES (for custom groups)
-// ============================================================================
-function fetchPilotsByNames($link, $pilot_names) {
-    if (empty($pilot_names)) return [];
-
-    $placeholders = implode(',', array_fill(0, count($pilot_names), '?'));
-    $types = str_repeat('s', count($pilot_names));
-
-    $sql = "SELECT toon_number, toon_name, parent_toon_number, corporation_name, 
-                   tradefield, pocket6, gf, DOB, contacts, standings, corpID, allianceID
-            FROM PILOTS 
-            WHERE toon_name IN ($placeholders) 
-            ORDER BY DOB ASC";
-
-    $stmt = $link->prepare($sql);
-    if (!$stmt) {
-        error_log("Prepare failed: " . $link->error);
-        return [];
-    }
-
-    $stmt->bind_param($types, ...$pilot_names);
-    $stmt->execute();
-    $result = $stmt->get_result();
-
-    $pilots = [];
-    while ($row = $result->fetch_assoc()) {
-        $pilots[] = $row;
-    }
-    $stmt->close();
     return $pilots;
 }
 
@@ -238,23 +189,23 @@ function renderPilotHeader($pilot) {
 
     // GF flag: red if 1, gray if 0
     if ($gf === 1) {
-        $gf_display = '<span class="badge bg-danger gf-flag" title="GF Flag Active"><i class="fas fa-flag"></i></span>';
+        $gf_display = '<span class="badge badge-danger gf-flag" title="GF Flag Active"><i class="fas fa-flag"></i></span>';
     } else {
-        $gf_display = '<span class="badge bg-secondary gf-flag" title="GF Flag Inactive"><i class="fas fa-flag"></i></span>';
+        $gf_display = '<span class="badge badge-secondary gf-flag" title="GF Flag Inactive"><i class="fas fa-flag"></i></span>';
     }
 
-    // Build corp/alliance links
-    $corp_link = $corpID > 0 ? evewhoLink($corpID, 'corporation', $corp) : htmlspecialchars($corp);
-    $alliance_link = $allianceID > 0 ? evewhoLink($allianceID, 'alliance', 'Alliance') : '';
+    // Build corp/alliance text (NO evewho links in header)
+    $corp_display = $corp;
+    $alliance_display = $allianceID > 0 ? 'Alliance: ' . $allianceID : '';
 
     return '
         <div class="text-center">
             <img src="' . $portrait . '" alt="' . $name . '" class="rounded mb-2 pilot-header-img" style="width:128px;height:128px;object-fit:cover;" loading="lazy">
             <h5 class="mb-1">' . $name . ' ' . $gf_display . '</h5>
-            <div class="small corp-name">' . $corp_link . '</div>
-            ' . ($alliance_link ? '<div class="small alliance-name">' . $alliance_link . '</div>' : '') . '
-            <div class="small trade-field">' . $trade . '</div>
-            <div class="small pocket-badge">' . $pocket . '</div>
+            <div class="small corp-name">' . htmlspecialchars($corp_display) . '</div>
+            ' . ($alliance_display ? '<div class="small alliance-name">' . htmlspecialchars($alliance_display) . '</div>' : '') . '
+            <div class="small trade-field">' . htmlspecialchars($trade) . '</div>
+            <div class="small pocket-badge">' . htmlspecialchars($pocket) . '</div>
         </div>';
 }
 
@@ -263,11 +214,11 @@ function renderPilotHeader($pilot) {
 // ============================================================================
 function renderContactsTable($contacts) {
     if (empty($contacts)) {
-        return '<div class="text-muted small fst-italic p-2">No contacts with non-zero standing</div>';
+        return '<div class="text-muted small font-italic p-2">No contacts with non-zero standing</div>';
     }
 
     $html = '<table class="table table-sm table-bordered table-striped mb-0" style="font-size:0.78rem;">
-        <thead class="table-dark">
+        <thead class="thead-dark">
             <tr>
                 <th>ID</th>
                 <th>Type</th>
@@ -301,11 +252,11 @@ function renderContactsTable($contacts) {
 // ============================================================================
 function renderFactionStandingsTable($standings) {
     if (empty($standings)) {
-        return '<div class="text-muted small fst-italic p-2">No faction standings</div>';
+        return '<div class="text-muted small font-italic p-2">No faction standings</div>';
     }
 
     $html = '<table class="table table-sm table-bordered table-striped mb-0" style="font-size:0.78rem;">
-        <thead class="table-dark">
+        <thead class="thead-dark">
             <tr>
                 <th>Faction</th>
                 <th>Standing</th>
@@ -375,13 +326,12 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EVE Pilot Contacts & Standings Dashboard</title>
 
-    <!-- Bootstrap 6.4.x CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@6.4.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap 4.6.x CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
 
     <!-- Font Awesome 5.15.4 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
 
-    
     <style>
         :root {
             --eve-dark: #0d1117;
@@ -438,10 +388,10 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
             border-color: var(--eve-border); 
             padding: 0.5rem;
         }
-        .table-striped > tbody > tr:nth-of-type(odd) > * { 
+        .table-striped tbody tr:nth-of-type(odd) { 
             background-color: rgba(48, 54, 61, 0.3); 
         }
-        .table-hover > tbody > tr:hover > * { 
+        .table-hover tbody tr:hover { 
             background-color: rgba(48, 54, 61, 0.5); 
         }
         .pilot-col { 
@@ -467,24 +417,6 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
         .badge { 
             font-size: 0.7rem; 
             font-weight: 600;
-        }
-        .dt-info, .dt-length, .dt-paging { 
-            color: var(--eve-text-muted) !important; 
-        }
-        .dt-input { 
-            background-color: #21262d !important; 
-            color: var(--eve-text) !important; 
-            border-color: var(--eve-border) !important; 
-        }
-        .dt-paging .dt-paging-button { 
-            color: var(--eve-text) !important; 
-        }
-        .dt-paging .dt-paging-button.current { 
-            background-color: #21262d !important; 
-            border-color: var(--eve-border) !important; 
-        }
-        .dt-paging .dt-paging-button:hover { 
-            background-color: var(--eve-border) !important; 
         }
         h2.section-note { 
             color: var(--eve-accent); 
@@ -556,6 +488,25 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
             font-size: 0.8rem;
         }
 
+        /* Bootstrap 4 overrides for dark theme */
+        .alert-warning {
+            background-color: rgba(210, 153, 34, 0.1);
+            border-color: #d29922;
+            color: #d29922;
+        }
+        .badge-danger {
+            background-color: var(--eve-danger);
+        }
+        .badge-secondary {
+            background-color: #6e7681;
+        }
+        .badge-info {
+            background-color: var(--eve-accent);
+        }
+        .badge-primary {
+            background-color: #1f6feb;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .pilot-col { 
@@ -569,23 +520,23 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
 
 <div class="container-fluid py-4">
     <h1 class="mb-4 text-center">
-        <i class="fas fa-space-shuttle me-2"></i>EVE Pilot Dashboard
+        <i class="fas fa-space-shuttle mr-2"></i>EVE Pilot Dashboard
         <div class="small text-muted mt-2">Contacts & Faction Standings Overview</div>
     </h1>
 
     <!-- Tabs Navigation -->
     <ul class="nav nav-tabs mb-3" id="pilotTabs" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="contacts-tab" data-bs-toggle="tab" data-bs-target="#contacts-pane" type="button" role="tab">
-                <i class="fas fa-address-book me-1"></i> Contacts 
-                <span class="badge bg-primary ms-1"><?php echo count($contacts_pilots); ?></span>
-            </button>
+            <a class="nav-link active" id="contacts-tab" data-toggle="tab" href="#contacts-pane" role="tab">
+                <i class="fas fa-address-book mr-1"></i> Contacts 
+                <span class="badge badge-primary ml-1"><?php echo count($contacts_pilots); ?></span>
+            </a>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link" id="standings-tab" data-bs-toggle="tab" data-bs-target="#standings-pane" type="button" role="tab">
-                <i class="fas fa-flag me-1"></i> Faction Standings 
-                <span class="badge bg-primary ms-1"><?php echo count($standings_pilots); ?></span>
-            </button>
+            <a class="nav-link" id="standings-tab" data-toggle="tab" href="#standings-pane" role="tab">
+                <i class="fas fa-flag mr-1"></i> Faction Standings 
+                <span class="badge badge-primary ml-1"><?php echo count($standings_pilots); ?></span>
+            </a>
         </li>
     </ul>
 
@@ -595,12 +546,12 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
         <!-- ==================== TAB 1: CONTACTS ==================== -->
         <div class="tab-pane fade show active" id="contacts-pane" role="tabpanel">
             <h2 class="section-note">
-                <i class="fas fa-users me-2"></i>Contacts Breakdown — All Pilots with Non-Zero Standings (sorted by DOB)
+                <i class="fas fa-users mr-2"></i>Contacts Breakdown — All Pilots with Non-Zero Standings (sorted by DOB)
             </h2>
 
             <?php if (empty($contacts_pilots)): ?>
                 <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>No pilots with contacts found in the database.
+                    <i class="fas fa-exclamation-triangle mr-2"></i>No pilots with contacts found in the database.
                 </div>
             <?php else: ?>
                 <div class="table-responsive">
@@ -611,8 +562,8 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
                                     <th class="pilot-col">
                                         <?php echo renderPilotHeader($pilot); ?>
                                         <div class="text-center mt-2">
-                                            <span class="badge bg-info count-badge">
-                                                <i class="fas fa-address-book me-1"></i><?php echo $pilot['_count']; ?> contacts
+                                            <span class="badge badge-info count-badge">
+                                                <i class="fas fa-address-book mr-1"></i><?php echo $pilot['_count']; ?> contacts
                                             </span>
                                         </div>
                                     </th>
@@ -638,12 +589,12 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
         <!-- ==================== TAB 2: FACTION STANDINGS ==================== -->
         <div class="tab-pane fade" id="standings-pane" role="tabpanel">
             <h2 class="section-note">
-                <i class="fas fa-flag me-2"></i>Faction Standings Distribution Comparison — All Pilots (sorted by DOB)
+                <i class="fas fa-flag mr-2"></i>Faction Standings Distribution Comparison — All Pilots (sorted by DOB)
             </h2>
 
             <?php if (empty($standings_pilots)): ?>
                 <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle me-2"></i>No pilots with faction standings found in the database.
+                    <i class="fas fa-exclamation-triangle mr-2"></i>No pilots with faction standings found in the database.
                 </div>
             <?php else: ?>
                 <div class="table-responsive">
@@ -654,8 +605,8 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
                                     <th class="pilot-col">
                                         <?php echo renderPilotHeader($pilot); ?>
                                         <div class="text-center mt-2">
-                                            <span class="badge bg-info count-badge">
-                                                <i class="fas fa-flag me-1"></i><?php echo $pilot['_count']; ?> factions
+                                            <span class="badge badge-info count-badge">
+                                                <i class="fas fa-flag mr-1"></i><?php echo $pilot['_count']; ?> factions
                                             </span>
                                         </div>
                                     </th>
@@ -682,16 +633,16 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
 
     <!-- Footer -->
     <footer class="mt-5 text-center text-muted small">
-        <p><i class="fas fa-code me-1"></i> EVE Pilot Dashboard &mdash; Licensed under GPL</p>
+        <p><i class="fas fa-code mr-1"></i> EVE Pilot Dashboard &mdash; Licensed under GPL</p>
         <p class="text-secondary" style="font-size:0.75rem;">Auto-loaded <?php echo count($all_pilots); ?> pilots from database</p>
     </footer>
 </div>
 
-<!-- Bootstrap 6.4.x JS Bundle -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@6.4.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- jQuery (required for Bootstrap 4) -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
 
-
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- Bootstrap 4.6.x JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
 
 </body>
 </html>
