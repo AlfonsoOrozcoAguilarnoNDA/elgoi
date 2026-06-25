@@ -3,10 +3,11 @@
  * EVE Online Pilot Contacts & Faction Standings Dashboard
  * 
  * PHP Procedural | Bootstrap 6.4.x | Font Awesome 5.15.4 (jsDelivr)
- * DataTables | License: GPL
+ * License: GPL
  * 
  * Reads ALL pilots from the PILOTS table automatically.
  * Requires: config.php with $link (mysqli connection)
+ * I detect some probems in the contacts, not for release now.
  */
 
 // Prevent direct access if config is missing
@@ -380,9 +381,7 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
     <!-- Font Awesome 5.15.4 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
 
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-
+    
     <style>
         :root {
             --eve-dark: #0d1117;
@@ -691,52 +690,8 @@ $standings_pilots = buildPilotData($all_pilots, 'standings');
 <!-- Bootstrap 6.4.x JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@6.4.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- jQuery (required for DataTables) -->
+
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-<!-- DataTables JS -->
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-
-<script>
-$(document).ready(function() {
-    // Initialize DataTables for Contacts
-    if ($('#contactsTable').length && $('#contactsTable th').length > 0) {
-        $('#contactsTable').DataTable({
-            paging: false,
-            searching: true,
-            info: true,
-            ordering: false,
-            scrollX: true,
-            autoWidth: false,
-            language: {
-                emptyTable: "No contact data available",
-                info: "Showing _TOTAL_ pilots",
-                infoEmpty: "No pilots to show",
-                search: "<i class='fas fa-search'></i> Search:"
-            }
-        });
-    }
-
-    // Initialize DataTables for Standings
-    if ($('#standingsTable').length && $('#standingsTable th').length > 0) {
-        $('#standingsTable').DataTable({
-            paging: false,
-            searching: true,
-            info: true,
-            ordering: false,
-            scrollX: true,
-            autoWidth: false,
-            language: {
-                emptyTable: "No standings data available",
-                info: "Showing _TOTAL_ pilots",
-                infoEmpty: "No pilots to show",
-                search: "<i class='fas fa-search'></i> Search:"
-            }
-        });
-    }
-});
-</script>
 
 </body>
 </html>
