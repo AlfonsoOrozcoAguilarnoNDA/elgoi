@@ -26,6 +26,7 @@ if (!isset($link) || !($link instanceof mysqli)) {
 
 // ============================================================================
 // EVE FACTION NAMES MAP (for display instead of raw IDs)
+// https://evemissioneer.com/factions# can check them
 // ============================================================================
 $FACTION_NAMES = [
     500001 => 'Caldari State',
