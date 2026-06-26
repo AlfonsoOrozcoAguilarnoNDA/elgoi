@@ -13,7 +13,7 @@ This file sum a many important fileds of the crew.
 require_once '../config.php';
 
 function renewskills($who){
-    list($name,$pilot,$data)=avalues319("select toon_name,email_pilot,skills from PILOTS where toon_number='$who'");
+    list($name,$pilot,$data)=avalues319b("select toon_name,email_pilot,skills from PILOTS where toon_number='$who'");
     if ($name=="") die("The pilot $who ".PilotfromInternet($who)." is not in the database (4)");
     $name=addslashes($name);
     if ($data=='[]') die("no data(1) for $name");
@@ -48,12 +48,12 @@ function renewskills($who){
         $dif = abs($item['trained_skill_level'] - $item['active_skill_level']);    
         
         if ($dif>0) $acctype='Alpha';            
-        list($maxalpha)=avalues319("select EXPANDED from ALPHA_CLONES where numberskill='$what'");
+        list($maxalpha)=avalues319b("select EXPANDED from ALPHA_CLONES where numberskill='$what'");
         if ($active > $maxalpha and $active>0) $acctype="Omega";
         
-        list($thegroup)=avalues319("select groupid from invTypes where typeid='$what'");
-		if($thegroup=="") die("The group of skill $thegroup cant be retrieved. Check invtypes table in row $what");
-        list($group_name)=avalues319("select groupName from invGroups where groupid=$thegroup");
+        list($thegroup)=avalues319b("select groupid from invTypes where typeid='$what'");
+		if($thegroup=="") die("The group of skill $thegroup cant be retrieved. Check invtypes table in row $what. Many times f5 resolve the issue");
+        list($group_name)=avalues319b("select groupName from invGroups where groupid=$thegroup");
         
         $sql="insert into EVE_CHARSKILLS (toon,toon_name,typeID,skillpoints,rank,description,group_name) values 
            ('$who','$name',$what,{$item['skillpoints_in_skill']},{$item['trained_skill_level']},'$description','$group_name')";        
@@ -70,7 +70,7 @@ function renewskills($who){
 function description($value){
 //http://eve-files.com/chribba/typeid.txt
 $sql="select typeName as description from invTypes where typeID='$value'";
-     list($pass)=avalues319($sql);
+     list($pass)=avalues319b($sql);
 /*     
     if ($value==54818) $pass="Capsuleer Day XVII Cap and T-Shirt Crate";
         
@@ -100,27 +100,6 @@ global $link;
 $error=mysqli_error($link);
 if ($error=='') return; 
 die ("$message<hr>$error");
-}
-function aValues319($Qx){
-global $link;    
-    $rsX = mysqli_query($link,$Qx) or die("<hr>Avalues 319<hr>$Qx");
-	// sqlerror("error checking avalues<hr>$Qx"); 
-    $Qx2=strtolower($Qx);
-    if (left($Qx2,6)<>'select') return "";    
-    $aDataX = array();
-    $rows=mysqli_num_rows($rsX);
-    if ($rows==0) return array("",""); 
-        
-        $Campos = mysqli_num_fields($rsX);
-        while ($regX = mysqli_fetch_array($rsX)) {
-            for($iX=0; $iX<$Campos; $iX++){
-               $finfo=mysqli_fetch_field_direct($rsX,$iX);
-               $name=$finfo->name;
-                $aDataX[] = $regX[ $name ];
-            }
-        }
-      // echo ($Qx ."/". $aDataX[0]);
-    return $aDataX;
 }
 function updatecorpnames(){
 global $link;
