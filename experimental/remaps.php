@@ -9,7 +9,7 @@
  */
 
 require_once '../config.php';
-
+check_authorization();
 // --- Database Query ---
 $sql = "SELECT `toon_number`, `toon_name`, `DOB`, `pocket6`, `attrib`, `remaps`
         FROM `PILOTS`
