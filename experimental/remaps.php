@@ -347,7 +347,7 @@ mysqli_free_result($result);
 <script>
 $(document).ready(function() {
     $('#pilotsTable').DataTable({
-        pageLength: 25,
+        pageLength: 100,
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
         order: [[3, 'asc']], // Sort by DOB column by default
         columnDefs: [
