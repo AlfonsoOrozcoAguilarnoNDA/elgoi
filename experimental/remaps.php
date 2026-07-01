@@ -11,7 +11,7 @@
 require_once '../config.php';
 check_authorization();
 // --- Database Query ---
-$sql = "SELECT `toon_number`, `toon_name`, `DOB`, `pocket6`, `attrib`, `remaps`
+$sql = "SELECT `toon_name`, `DOB`, `pocket6`, `attrib`, `remaps`
         FROM `PILOTS`
         WHERE `toon_name` NOT LIKE '%catalog%'
         ORDER BY `DOB` ASC";
@@ -27,7 +27,6 @@ $now = new DateTime('now', new DateTimeZone('UTC'));
 
 while ($row = mysqli_fetch_assoc($result)) {
     $pilot = [
-        'toon_number' => (int)$row['toon_number'],
         'toon_name'   => htmlspecialchars($row['toon_name'], ENT_QUOTES, 'UTF-8'),
         'DOB'         => $row['DOB'],
         'pocket6'     => htmlspecialchars($row['pocket6'] ?? 'CLEAN', ENT_QUOTES, 'UTF-8'),
@@ -42,7 +41,7 @@ while ($row = mysqli_fetch_assoc($result)) {
     if (!empty($row['attrib'])) {
         $clean_json = stripslashes($row['attrib']);
         $attrs = json_decode($clean_json, true);
-        
+
         if (json_last_error() === JSON_ERROR_NONE && is_array($attrs)) {
             $pilot['attributes'] = [
                 'intelligence' => (int)($attrs['intelligence'] ?? 0),
@@ -51,15 +50,15 @@ while ($row = mysqli_fetch_assoc($result)) {
                 'willpower'    => (int)($attrs['willpower'] ?? 0),
                 'charisma'     => (int)($attrs['charisma'] ?? 0),
             ];
-            
+
             if (!empty($attrs['accrued_remap_cooldown_date'])) {
                 try {
                     $cooldown = new DateTime($attrs['accrued_remap_cooldown_date'], new DateTimeZone('UTC'));
                     $pilot['cooldown_date'] = $cooldown->format('Y-m-d H:i');
-                    
+
                     $interval = $now->diff($cooldown);
                     $pilot['days_diff'] = (int)$interval->format('%r%a');
-                    
+
                     if ($pilot['days_diff'] < 0) {
                         $pilot['status'] = 'ready';      // Cooldown expired
                     } elseif ($pilot['days_diff'] === 0) {
@@ -73,7 +72,7 @@ while ($row = mysqli_fetch_assoc($result)) {
             }
         }
     }
-    
+
     $pilots[] = $pilot;
 }
 
@@ -85,16 +84,16 @@ mysqli_free_result($result);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EVE Online - Pilot Remap Dashboard</title>
-    
+
     <!-- Bootstrap 4.6.x CSS (jsDelivr) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-    
+
     <!-- Font Awesome 5.15.4 (jsDelivr) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
-    
+
     <!-- DataTables Bootstrap 4 CSS (jsDelivr) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/datatables.net-bs4@1.13.8/css/dataTables.bootstrap4.min.css">
-    
+
     <style>
         body {
             background-color: #1a1a2e;
@@ -145,9 +144,10 @@ mysqli_free_result($result);
             border-color: #2a3f5f;
         }
         .badge-remap {
-            font-size: 0.85rem;
-            padding: 5px 10px;
+            font-size: 0.75rem;
+            padding: 3px 8px;
             border-radius: 4px;
+            cursor: default;
         }
         .status-ready {
             color: #28a745;
@@ -211,12 +211,20 @@ mysqli_free_result($result);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+        .row-num {
+            color: #888;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        .pilot-name-cell {
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
 
 <div class="container-fluid">
-    
+
     <!-- Page Header -->
     <div class="page-header">
         <h1><i class="fas fa-dna"></i> Pilot Remap Dashboard</h1>
@@ -234,7 +242,7 @@ mysqli_free_result($result);
                 <table id="pilotsTable" class="table table-hover table-striped mb-0">
                     <thead>
                         <tr>
-                            <th><i class="fas fa-hashtag"></i> ID</th>
+                            <th>#</th>
                             <th><i class="fas fa-user-astronaut"></i> Pilot Name</th>
                             <th><i class="fas fa-shield-alt"></i> Pocket6</th>
                             <th><i class="fas fa-birthday-cake"></i> DOB</th>
@@ -243,17 +251,25 @@ mysqli_free_result($result);
                             <th><i class="fas fa-eye"></i> PER</th>
                             <th><i class="fas fa-fist-raised"></i> WIL</th>
                             <th><i class="fas fa-comments"></i> CHA</th>
-                            <th><i class="fas fa-sync-alt"></i> Remaps</th>
                             <th><i class="fas fa-clock"></i> Cooldown Date</th>
                             <th><i class="fas fa-hourglass-half"></i> Days</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($pilots as $p): ?>
+                        <?php $rowNum = 1; foreach ($pilots as $p): ?>
                         <tr>
-                            <td><?php echo $p['toon_number']; ?></td>
-                            <td>
-                                <strong><?php echo $p['toon_name']; ?></strong>
+                            <td class="row-num"><?php echo $rowNum++; ?></td>
+                            <td class="pilot-name-cell">
+                                <strong><?php echo $p['toon_name']; ?></strong><br>
+                                <?php if ($p['remaps'] > 0): ?>
+                                    <span class="badge badge-success badge-remap" title="Remaps">
+                                        <i class="fas fa-check"></i> <?php echo $p['remaps']; ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge badge-danger badge-remap" title="Remaps">
+                                        <i class="fas fa-times"></i> 0
+                                    </span>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <span class="badge badge-secondary pocket-badge">
@@ -261,27 +277,14 @@ mysqli_free_result($result);
                                 </span>
                             </td>
                             <td class="dob-cell"><?php echo ($p['DOB'] ? date('Y-m-d', strtotime($p['DOB'])) : 'N/A'); ?></td>
-                            
+
                             <!-- Attributes -->
                             <td class="attr-value attr-intel"><?php echo $p['attributes']['intelligence'] ?? '-'; ?></td>
                             <td class="attr-value attr-mem"><?php echo $p['attributes']['memory'] ?? '-'; ?></td>
                             <td class="attr-value attr-per"><?php echo $p['attributes']['perception'] ?? '-'; ?></td>
                             <td class="attr-value attr-will"><?php echo $p['attributes']['willpower'] ?? '-'; ?></td>
                             <td class="attr-value attr-cha"><?php echo $p['attributes']['charisma'] ?? '-'; ?></td>
-                            
-                            <!-- Remaps -->
-                            <td>
-                                <?php if ($p['remaps'] > 0): ?>
-                                    <span class="badge badge-success badge-remap">
-                                        <i class="fas fa-check"></i> <?php echo $p['remaps']; ?>
-                                    </span>
-                                <?php else: ?>
-                                    <span class="badge badge-danger badge-remap">
-                                        <i class="fas fa-times"></i> 0
-                                    </span>
-                                <?php endif; ?>
-                            </td>
-                            
+
                             <!-- Cooldown Date -->
                             <td>
                                 <?php if ($p['cooldown_date']): ?>
@@ -290,7 +293,7 @@ mysqli_free_result($result);
                                     <span class="text-muted">No data</span>
                                 <?php endif; ?>
                             </td>
-                            
+
                             <!-- Days Difference -->
                             <td>
                                 <?php if ($p['cooldown_date'] && $p['days_diff'] !== null): ?>
@@ -351,7 +354,7 @@ $(document).ready(function() {
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
         order: [[3, 'asc']], // Sort by DOB column by default
         columnDefs: [
-            { orderable: false, targets: [] }
+            { orderable: false, targets: [0] }
         ],
         language: {
             search: "<i class='fas fa-search'></i> Search:",
