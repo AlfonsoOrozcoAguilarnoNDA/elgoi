@@ -48,7 +48,7 @@ they don't control.
 It runs on shared hosting or, preferably, a **Vultr VPS at $5/month**.
 No Composer. No dependency hell. Just PHP doing what PHP does best: running on anything.
 
-The next phase will use a separate domain (elgoi.com) to serve live dashboards
+The next phase will use a separate domain  to serve live dashboards
 and explore what Go can do in a real, adversarial-audience environment.
 
 The project is alive but a little stalled. Mainly for the linux dirty frag and similar 
@@ -73,7 +73,7 @@ If a GO dashboard survives EVE Online's community, it'll survive any corporate c
 
 ### Sprint 2 — Go *(planned, no fixed date)*
 - Go 3.x rewrite
-- Live dashboards served from [elgoi.com](https://elgoi.com)
+- Live dashboards served from new domain
 - Deeper ESI API integration
 - Real-world test of DeepSeek's Go capabilities
 
@@ -227,7 +227,7 @@ The ecosystem is designed as a modular suite of tools for the independent EVE On
 
 ## 🌐 Live Project
 
-**Domain:** [elgoi.com](https://elgoi.com) *(Python dashboards — coming in Sprint 2)*  
+**Domain:** to be defined
 **Repository:** [github.com/AlfonsoOrozcoAguilarnoNDA/elgoi](https://github.com/AlfonsoOrozcoAguilarnoNDA/elgoi)  
 **Author:** Alfonso Orozco Aguilar — [vibecodingmexico.com](https://vibecodingmexico.com)
 
