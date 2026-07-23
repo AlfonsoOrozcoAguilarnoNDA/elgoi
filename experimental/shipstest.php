@@ -169,13 +169,13 @@ $hangar_count  = count($hangar_ships);
     <title>EVE Online - Ship Readiness Dashboard</title>
 
     <!-- Bootstrap 6.4.x -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@6.4.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Font Awesome 5.15.4 -->
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
 
     <!-- DataTables 2.x Bootstrap 5 -->
-    <link href="https://cdn.datatables.net/2.2.0/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/2.2.0/css/dataTables.bootstrap4.min.css" rel="stylesheet">
 
     <style>
         :root {
@@ -573,10 +573,10 @@ $hangar_count  = count($hangar_ships);
 </div>
 
 <!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@6.4.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/2.2.0/js/dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/2.2.0/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/2.2.0/js/dataTables.bootstrap4.min.js"></script>
 
 <script>
 let tableReady, tableHangar;
