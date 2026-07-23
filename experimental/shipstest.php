@@ -1,7 +1,7 @@
 <?php
 /**
  * EVE Online - Ship Readiness Dashboard
- * PHP 8.4 Procedural | Bootstrap 6.4.x | DataTables 2.x | Font Awesome 5.15.4
+ * PHP 8.4 Procedural | Bootstrap 5.3.3 | DataTables 2.x (BS5) | Font Awesome 5.15.4
  * 
  * Requiere: include "config.php" con $link (mysqli)
  * 
@@ -67,8 +67,7 @@ function fetch_ready_ships($link) {
             a.location_id,
             a.description AS location_desc,
             a.quantity,
-            a.eveunique,
-            a.forge_value
+            a.eveunique
         FROM EVE_ASSETS a
         INNER JOIN EVE_SHIPS s ON a.type_description = s.ShipName
         INNER JOIN PILOTS p ON a.toon_number = p.toon_number
@@ -106,7 +105,6 @@ function fetch_hangar_ships($link) {
             a.description AS location_desc,
             a.quantity,
             a.eveunique,
-            a.forge_value,
             CASE 
                 WHEN a.quantity > 1 THEN 'stack'
                 ELSE 'empty'
@@ -168,8 +166,8 @@ $hangar_count  = count($hangar_ships);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EVE Online - Ship Readiness Dashboard</title>
 
-    <!-- Bootstrap 6.4.x -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@6.4.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap 5.3.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Font Awesome 5.15.4 -->
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
@@ -215,13 +213,13 @@ $hangar_count  = count($hangar_ships);
 
         .table-dark-custom {
             --bs-table-bg: transparent;
-            --bs-table-color: var(--eve-text);
+            --bs-table-color: #d1d5db;
             --bs-table-border-color: var(--eve-border);
         }
 
         .table-dark-custom thead th {
             background-color: #1f2937;
-            color: var(--eve-accent);
+            color: #fbbf24;
             font-weight: 600;
             text-transform: uppercase;
             font-size: 0.75rem;
@@ -229,23 +227,46 @@ $hangar_count  = count($hangar_ships);
             border-bottom: 2px solid var(--eve-border);
         }
 
+        .table-dark-custom tbody td {
+            color: #d1d5db;
+            vertical-align: middle;
+        }
+
         .table-dark-custom tbody tr {
             border-bottom: 1px solid var(--eve-border);
         }
 
         .table-dark-custom tbody tr:hover {
-            background-color: rgba(245, 158, 11, 0.05);
+            background-color: rgba(245, 158, 11, 0.08);
         }
 
+        .table-dark-custom tbody tr:hover td {
+            color: #f3f4f6;
+        }
+
+        /* DataTables overrides for dark theme */
         .dt-search input, .dt-length select {
             background-color: #1f2937 !important;
-            color: var(--eve-text) !important;
+            color: #e5e7eb !important;
             border: 1px solid var(--eve-border) !important;
+        }
+
+        .dt-search input::placeholder {
+            color: #6b7280;
+        }
+
+        .dt-length select option {
+            background-color: #1f2937;
+            color: #e5e7eb;
+        }
+
+        .dt-info, .dt-length label {
+            color: #9ca3af !important;
         }
 
         .dt-paging .page-link {
             background-color: #1f2937;
-            color: var(--eve-text);
+            color: #e5e7eb;
             border-color: var(--eve-border);
         }
 
@@ -253,6 +274,16 @@ $hangar_count  = count($hangar_ships);
             background-color: var(--eve-accent);
             border-color: var(--eve-accent);
             color: #000;
+        }
+
+        .dt-paging .page-item.disabled .page-link {
+            background-color: #1f2937;
+            color: #4b5563;
+            border-color: var(--eve-border);
+        }
+
+        .dt-column-order {
+            color: #fbbf24 !important;
         }
 
         .nav-pills .nav-link {
@@ -310,15 +341,18 @@ $hangar_count  = count($hangar_ships);
         }
 
         .location-cell {
-            max-width: 250px;
+            max-width: 280px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        /* Fix DataTables 2.x with hidden columns */
-        .dt-column-order {
-            color: var(--eve-accent);
+        h1 {
+            color: #f3f4f6;
+        }
+
+        .text-muted {
+            color: #9ca3af !important;
         }
     </style>
 </head>
@@ -453,7 +487,6 @@ $hangar_count  = count($hangar_ships);
                                         <th>Raza</th>
                                         <th>Rol</th>
                                         <th>Ubicación</th>
-                                        <th>Valor (ISK)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -487,9 +520,6 @@ $hangar_count  = count($hangar_ships);
                                         <td class="location-cell" title="<?= htmlspecialchars($ship['location_desc'] ?? '') ?>">
                                             <?= htmlspecialchars($ship['location_desc'] ?? '—') ?>
                                         </td>
-                                        <td class="text-end font-monospace">
-                                            <?= number_format((float)($ship['forge_value'] ?? 0), 2) ?>
-                                        </td>
                                     </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -519,7 +549,6 @@ $hangar_count  = count($hangar_ships);
                                         <th>Sub-Estado</th>
                                         <th>Cantidad</th>
                                         <th>Ubicación</th>
-                                        <th>Valor (ISK)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -557,9 +586,6 @@ $hangar_count  = count($hangar_ships);
                                         <td class="location-cell" title="<?= htmlspecialchars($ship['location_desc'] ?? '') ?>">
                                             <?= htmlspecialchars($ship['location_desc'] ?? '—') ?>
                                         </td>
-                                        <td class="text-end font-monospace">
-                                            <?= number_format((float)($ship['forge_value'] ?? 0), 2) ?>
-                                        </td>
                                     </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -573,7 +599,7 @@ $hangar_count  = count($hangar_ships);
 </div>
 
 <!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@6.4.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/2.2.0/js/dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/2.2.0/js/dataTables.bootstrap5.min.js"></script>
@@ -582,21 +608,22 @@ $hangar_count  = count($hangar_ships);
 let tableReady, tableHangar;
 
 $(document).ready(function() {
-    // Initialize DataTables 2.x - NO columnDefs con orderable en indices inexistentes
+    // Initialize DataTables 2.x with Bootstrap 5
     tableReady = $('#table-ready').DataTable({
-        pageLength: 25,
+        pageLength: 100,
+        lengthMenu: [[25, 50, 100, 200, -1], [25, 50, 100, 200, 'Todos']],
         language: {
             url: '//cdn.datatables.net/plug-ins/2.2.0/i18n/es-ES.json'
         },
         order: [[0, 'asc']],
-        // No usar columnDefs con targets que no existan
         initComplete: function() {
             applyFilters();
         }
     });
 
     tableHangar = $('#table-hangar').DataTable({
-        pageLength: 25,
+        pageLength: 100,
+        lengthMenu: [[25, 50, 100, 200, -1], [25, 50, 100, 200, 'Todos']],
         language: {
             url: '//cdn.datatables.net/plug-ins/2.2.0/i18n/es-ES.json'
         },
@@ -618,11 +645,9 @@ function applyFilters() {
     const classFilter = document.getElementById('filter-class').value.toLowerCase();
     const roleFilter = document.getElementById('filter-role').value.toLowerCase();
 
-    // Custom search function for each table
+    // Custom search function
     const customSearch = function(settings, data, dataIndex) {
-        const tableId = settings.nTable.id;
         const row = settings.aoData[dataIndex].nTr;
-
         if (!row) return true;
 
         const pocket6 = (row.getAttribute('data-pocket6') || '').toUpperCase();
@@ -630,44 +655,28 @@ function applyFilters() {
         const cls = (row.getAttribute('data-class') || '').toLowerCase();
         const role = (row.getAttribute('data-role') || '').toLowerCase();
 
-        // Pocket6 filter
         if (selectedP6.length > 0 && !selectedP6.includes(pocket6)) {
             return false;
         }
-
-        // Ship name filter
         if (shipFilter && !ship.includes(shipFilter)) {
             return false;
         }
-
-        // Class filter
         if (classFilter && !cls.includes(classFilter)) {
             return false;
         }
-
-        // Role filter
         if (roleFilter && !role.includes(roleFilter)) {
             return false;
         }
-
         return true;
     };
 
-    // Apply custom search and redraw
-    if (tableReady) {
-        tableReady.search('').draw(); // Clear text search first
-        $.fn.dataTable.ext.search = [customSearch];
-        tableReady.draw();
-    }
+    $.fn.dataTable.ext.search = [customSearch];
 
+    if (tableReady) {
+        tableReady.search('').draw();
+    }
     if (tableHangar) {
         tableHangar.search('').draw();
-        // Need to set search array for hangar too - but ext.search is global
-        // So we handle both tables in one function
-        $.fn.dataTable.ext.search = [function(settings, data, dataIndex) {
-            return customSearch(settings, data, dataIndex);
-        }];
-        tableHangar.draw();
     }
 }
 
@@ -676,13 +685,11 @@ function resetFilters() {
     document.getElementById('filter-class').value = '';
     document.getElementById('filter-role').value = '';
 
-    // Reset pocket6 to defaults
     document.querySelectorAll('.pocket6-check').forEach(cb => {
         const val = cb.value.toUpperCase();
         cb.checked = ['CLEAN','EXPER','NOKIA','SANGO'].includes(val);
     });
 
-    // Clear custom search
     $.fn.dataTable.ext.search = [];
 
     if (tableReady) {
