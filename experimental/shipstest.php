@@ -1,7 +1,7 @@
 <?php
 /**
  * EVE Online - Ship Readiness Dashboard
- * PHP 8.4 Procedural | Bootstrap 4.6.x | DataTables 2.x | Font Awesome 5.15.4
+ * PHP 8.4 Procedural | Bootstrap 4.6.2 | DataTables 2.x | Font Awesome 5.15.4
  * 
  * Requiere: include "config.php" con $link (mysqli)
  * 
@@ -28,13 +28,13 @@ function get_pocket6_badge(string $pocket6): string {
     if (isset($map[$pocket6])) {
         $m = $map[$pocket6];
         return sprintf(
-            '<span class="badge text-bg-%s"><i class="fas %s me-1"></i>%s</span>',
+            '<span class="badge badge-%s"><i class="fas %s mr-1"></i>%s</span>',
             $m['class'], $m['icon'], htmlspecialchars($pocket6)
         );
     }
 
     return sprintf(
-        '<span class="badge text-bg-secondary"><i class="fas fa-question-circle me-1"></i>%s</span>',
+        '<span class="badge badge-secondary"><i class="fas fa-question-circle mr-1"></i>%s</span>',
         htmlspecialchars($pocket6 ?: 'UNKNOWN')
     );
 }
@@ -46,7 +46,7 @@ function get_substate_badge(string $substate): string {
     ];
     $m = $map[$substate] ?? ['class' => 'secondary', 'label' => $substate, 'icon' => 'fa-question'];
     return sprintf(
-        '<span class="badge text-bg-%s"><i class="fas %s me-1"></i>%s</span>',
+        '<span class="badge badge-%s"><i class="fas %s mr-1"></i>%s</span>',
         $m['class'], $m['icon'], $m['label']
     );
 }
@@ -168,14 +168,14 @@ $hangar_count  = count($hangar_ships);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EVE Online - Ship Readiness Dashboard</title>
 
-    <!-- Bootstrap 6.4.x -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap 4.6.2 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Font Awesome 5.15.4 -->
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
 
-    <!-- DataTables 2.x Bootstrap 5 -->
-    <link href="https://cdn.datatables.net/2.2.0/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <!-- DataTables 2.x Bootstrap 4 -->
+    <link href="https://cdn.datatables.net/2.2.0/css/dataTables.bootstrap4.min.css" rel="stylesheet">
 
     <style>
         :root {
@@ -214,9 +214,13 @@ $hangar_count  = count($hangar_ships);
         }
 
         .table-dark-custom {
-            --bs-table-bg: transparent;
-            --bs-table-color: var(--eve-text);
-            --bs-table-border-color: var(--eve-border);
+            background-color: transparent;
+            color: var(--eve-text);
+        }
+
+        .table-dark-custom th,
+        .table-dark-custom td {
+            border-color: var(--eve-border) !important;
         }
 
         .table-dark-custom thead th {
@@ -229,27 +233,31 @@ $hangar_count  = count($hangar_ships);
             border-bottom: 2px solid var(--eve-border);
         }
 
-        .table-dark-custom tbody tr {
-            border-bottom: 1px solid var(--eve-border);
-        }
-
         .table-dark-custom tbody tr:hover {
             background-color: rgba(245, 158, 11, 0.05);
         }
 
-        .dt-search input, .dt-length select {
+        .dataTables_wrapper .dataTables_filter input,
+        .dataTables_wrapper .dataTables_length select {
             background-color: #1f2937 !important;
             color: var(--eve-text) !important;
             border: 1px solid var(--eve-border) !important;
         }
 
-        .dt-paging .page-link {
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_paginate {
+            color: var(--eve-text) !important;
+        }
+
+        .page-link {
             background-color: #1f2937;
             color: var(--eve-text);
             border-color: var(--eve-border);
         }
 
-        .dt-paging .page-item.active .page-link {
+        .page-item.active .page-link {
             background-color: var(--eve-accent);
             border-color: var(--eve-accent);
             color: #000;
@@ -280,11 +288,6 @@ $hangar_count  = count($hangar_ships);
             cursor: pointer;
         }
 
-        .pocket6-filter .form-check-input:checked {
-            background-color: var(--eve-accent);
-            border-color: var(--eve-accent);
-        }
-
         .ship-icon {
             width: 32px;
             height: 32px;
@@ -299,9 +302,9 @@ $hangar_count  = count($hangar_ships);
             margin-right: 0.5rem;
         }
 
-        .tech-badge-t1 { background-color: #6b7280; }
-        .tech-badge-t2 { background-color: #3b82f6; }
-        .tech-badge-t3 { background-color: #8b5cf6; }
+        .tech-badge-t1 { background-color: #6b7280; color: #fff; }
+        .tech-badge-t2 { background-color: #3b82f6; color: #fff; }
+        .tech-badge-t3 { background-color: #8b5cf6; color: #fff; }
 
         .tab-badge {
             font-size: 0.75rem;
@@ -315,11 +318,6 @@ $hangar_count  = count($hangar_ships);
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-
-        /* Fix DataTables 2.x with hidden columns */
-        .dt-column-order {
-            color: var(--eve-accent);
-        }
     </style>
 </head>
 <body>
@@ -331,15 +329,15 @@ $hangar_count  = count($hangar_ships);
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h1 class="mb-0">
-                        <i class="fas fa-rocket text-warning me-2"></i>
+                        <i class="fas fa-rocket text-warning mr-2"></i>
                         EVE Online Ship Readiness
                     </h1>
                     <p class="text-muted mb-0 mt-1">
-                        <i class="fas fa-database me-1"></i>
+                        <i class="fas fa-database mr-1"></i>
                         Dashboard de flota — <?= date('Y-m-d H:i') ?> UTC
                     </p>
                 </div>
-                <div class="d-flex gap-3">
+                <div class="d-flex" style="gap: 1rem;">
                     <div class="text-center">
                         <div class="eve-stat"><?= $ready_count ?></div>
                         <small class="text-muted">Ready to Fly</small>
@@ -358,19 +356,19 @@ $hangar_count  = count($hangar_ships);
         <div class="col-12">
             <div class="filter-section">
                 <div class="d-flex align-items-center mb-3">
-                    <i class="fas fa-filter text-warning me-2"></i>
+                    <i class="fas fa-filter text-warning mr-2"></i>
                     <strong>Filtros Globales</strong>
                 </div>
-                <div class="row g-3">
+                <div class="row">
                     <div class="col-md-4">
-                        <label class="form-label text-muted small">Pocket6 (Multiselect)</label>
-                        <div class="pocket6-filter d-flex flex-wrap gap-3">
-                            <?php foreach ($pocket6_vals as $p6): 
+                        <label class="text-muted small">Pocket6 (Multiselect)</label>
+                        <div class="pocket6-filter d-flex flex-wrap" style="gap: 0.75rem;">
+                            <?php foreach ($pocket6_vals as $p6):
                                 $p6_upper = strtoupper($p6);
                                 $checked = in_array($p6_upper, ['CLEAN','EXPER','NOKIA','SANGO']) ? 'checked' : '';
                             ?>
                             <div class="form-check">
-                                <input class="form-check-input pocket6-check" type="checkbox" 
+                                <input class="form-check-input pocket6-check" type="checkbox"
                                        value="<?= htmlspecialchars($p6) ?>" id="p6_<?= md5($p6) ?>" <?= $checked ?>>
                                 <label class="form-check-label" for="p6_<?= md5($p6) ?>">
                                     <?= get_pocket6_badge($p6) ?>
@@ -380,20 +378,20 @@ $hangar_count  = count($hangar_ships);
                         </div>
                     </div>
                     <div class="col-md-8">
-                        <div class="row g-2">
+                        <div class="row">
                             <div class="col-md-4">
-                                <label class="form-label text-muted small">Nave</label>
-                                <input type="text" id="filter-ship" class="form-control form-control-sm" 
+                                <label class="text-muted small">Nave</label>
+                                <input type="text" id="filter-ship" class="form-control form-control-sm"
                                        placeholder="Ej: Abaddon, Svipul...">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label text-muted small">Clase</label>
-                                <input type="text" id="filter-class" class="form-control form-control-sm" 
+                                <label class="text-muted small">Clase</label>
+                                <input type="text" id="filter-class" class="form-control form-control-sm"
                                        placeholder="Ej: Battleship, Destroyer...">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label text-muted small">Rol</label>
-                                <input type="text" id="filter-role" class="form-control form-control-sm" 
+                                <label class="text-muted small">Rol</label>
+                                <input type="text" id="filter-role" class="form-control form-control-sm"
                                        placeholder="Ej: Sniper, Drones...">
                             </div>
                         </div>
@@ -401,10 +399,10 @@ $hangar_count  = count($hangar_ships);
                 </div>
                 <div class="mt-3">
                     <button class="btn btn-sm btn-warning" onclick="applyFilters()">
-                        <i class="fas fa-sync-alt me-1"></i>Aplicar Filtros
+                        <i class="fas fa-sync-alt mr-1"></i>Aplicar Filtros
                     </button>
-                    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="resetFilters()">
-                        <i class="fas fa-undo me-1"></i>Limpiar
+                    <button class="btn btn-sm btn-outline-secondary ml-2" onclick="resetFilters()">
+                        <i class="fas fa-undo mr-1"></i>Limpiar
                     </button>
                 </div>
             </div>
@@ -415,21 +413,21 @@ $hangar_count  = count($hangar_ships);
     <div class="row">
         <div class="col-12">
             <ul class="nav nav-pills mb-3" id="shipTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="ready-tab" data-bs-toggle="pill" 
-                            data-bs-target="#ready-panel" type="button" role="tab">
-                        <i class="fas fa-fighter-jet me-1"></i>
+                <li class="nav-item">
+                    <a class="nav-link active" id="ready-tab" data-toggle="pill"
+                       href="#ready-panel" role="tab">
+                        <i class="fas fa-fighter-jet mr-1"></i>
                         Ready to Fly
-                        <span class="badge text-bg-success tab-badge"><?= $ready_count ?></span>
-                    </button>
+                        <span class="badge badge-success tab-badge"><?= $ready_count ?></span>
+                    </a>
                 </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="hangar-tab" data-bs-toggle="pill" 
-                            data-bs-target="#hangar-panel" type="button" role="tab">
-                        <i class="fas fa-warehouse me-1"></i>
+                <li class="nav-item">
+                    <a class="nav-link" id="hangar-tab" data-toggle="pill"
+                       href="#hangar-panel" role="tab">
+                        <i class="fas fa-warehouse mr-1"></i>
                         Hangar / Transporte
-                        <span class="badge text-bg-secondary tab-badge"><?= $hangar_count ?></span>
-                    </button>
+                        <span class="badge badge-secondary tab-badge"><?= $hangar_count ?></span>
+                    </a>
                 </li>
             </ul>
 
@@ -438,7 +436,7 @@ $hangar_count  = count($hangar_ships);
                 <div class="tab-pane fade show active" id="ready-panel" role="tabpanel">
                     <div class="eve-card">
                         <div class="eve-card-header d-flex justify-content-between align-items-center">
-                            <span><i class="fas fa-check-circle text-success me-2"></i>Naves Listas para Volar</span>
+                            <span><i class="fas fa-check-circle text-success mr-2"></i>Naves Listas para Volar</span>
                             <span class="text-muted small">Equipadas con módulos</span>
                         </div>
                         <div class="p-0">
@@ -459,27 +457,27 @@ $hangar_count  = count($hangar_ships);
                                 <tbody>
                                     <?php foreach ($ready_ships as $ship): ?>
                                     <tr data-pocket6="<?= htmlspecialchars(strtoupper($ship['pocket6'] ?? '')) ?>"
-                                        data-ship="<?= htmlspecialchars(strtolower($ship['ShipName'])) ?>"
-                                        data-class="<?= htmlspecialchars(strtolower($ship['TypeName'])) ?>"
-                                        data-role="<?= htmlspecialchars(strtolower($ship['TypicalRole'])) ?>">
+                                        data-ship="<?= htmlspecialchars(strtolower($ship['ShipName'] ?? '')) ?>"
+                                        data-class="<?= htmlspecialchars(strtolower($ship['TypeName'] ?? '')) ?>"
+                                        data-role="<?= htmlspecialchars(strtolower($ship['TypicalRole'] ?? '')) ?>">
                                         <td>
-                                            <strong><?= htmlspecialchars($ship['toon_name']) ?></strong>
+                                            <strong><?= htmlspecialchars($ship['toon_name'] ?? '') ?></strong>
                                         </td>
                                         <td><?= get_pocket6_badge($ship['pocket6'] ?? '') ?></td>
                                         <td>
-                                            <span class="ship-icon"><?= substr($ship['ShipName'], 0, 2) ?></span>
-                                            <?= htmlspecialchars($ship['ShipName']) ?>
+                                            <span class="ship-icon"><?= htmlspecialchars(substr($ship['ShipName'] ?? '', 0, 2)) ?></span>
+                                            <?= htmlspecialchars($ship['ShipName'] ?? '') ?>
                                         </td>
-                                        <td><?= htmlspecialchars($ship['TypeName']) ?></td>
+                                        <td><?= htmlspecialchars($ship['TypeName'] ?? '') ?></td>
                                         <td>
-                                            <span class="badge tech-badge-<?= strtolower($ship['Tech']) ?>">
-                                                <?= htmlspecialchars($ship['Tech']) ?>
+                                            <span class="badge tech-badge-<?= strtolower($ship['Tech'] ?? '') ?>">
+                                                <?= htmlspecialchars($ship['Tech'] ?? '—') ?>
                                             </span>
                                         </td>
-                                        <td><?= htmlspecialchars($ship['Race']) ?></td>
+                                        <td><?= htmlspecialchars($ship['Race'] ?? '') ?></td>
                                         <td>
-                                            <?php if ($ship['TypicalRole']): ?>
-                                                <span class="badge text-bg-info"><?= htmlspecialchars($ship['TypicalRole']) ?></span>
+                                            <?php if (!empty($ship['TypicalRole'])): ?>
+                                                <span class="badge badge-info"><?= htmlspecialchars($ship['TypicalRole']) ?></span>
                                             <?php else: ?>
                                                 <span class="text-muted">—</span>
                                             <?php endif; ?>
@@ -487,7 +485,7 @@ $hangar_count  = count($hangar_ships);
                                         <td class="location-cell" title="<?= htmlspecialchars($ship['location_desc'] ?? '') ?>">
                                             <?= htmlspecialchars($ship['location_desc'] ?? '—') ?>
                                         </td>
-                                        <td class="text-end font-monospace">
+                                        <td class="text-right font-monospace">
                                             <?= number_format((float)($ship['forge_value'] ?? 0), 2) ?>
                                         </td>
                                     </tr>
@@ -502,7 +500,7 @@ $hangar_count  = count($hangar_ships);
                 <div class="tab-pane fade" id="hangar-panel" role="tabpanel">
                     <div class="eve-card">
                         <div class="eve-card-header d-flex justify-content-between align-items-center">
-                            <span><i class="fas fa-warehouse text-secondary me-2"></i>Hangar / Transporte / Venta</span>
+                            <span><i class="fas fa-warehouse text-secondary mr-2"></i>Hangar / Transporte / Venta</span>
                             <span class="text-muted small">Sin equipo o en stacks</span>
                         </div>
                         <div class="p-0">
@@ -525,39 +523,39 @@ $hangar_count  = count($hangar_ships);
                                 <tbody>
                                     <?php foreach ($hangar_ships as $ship): ?>
                                     <tr data-pocket6="<?= htmlspecialchars(strtoupper($ship['pocket6'] ?? '')) ?>"
-                                        data-ship="<?= htmlspecialchars(strtolower($ship['ShipName'])) ?>"
-                                        data-class="<?= htmlspecialchars(strtolower($ship['TypeName'])) ?>"
-                                        data-role="<?= htmlspecialchars(strtolower($ship['TypicalRole'])) ?>">
+                                        data-ship="<?= htmlspecialchars(strtolower($ship['ShipName'] ?? '')) ?>"
+                                        data-class="<?= htmlspecialchars(strtolower($ship['TypeName'] ?? '')) ?>"
+                                        data-role="<?= htmlspecialchars(strtolower($ship['TypicalRole'] ?? '')) ?>">
                                         <td>
-                                            <strong><?= htmlspecialchars($ship['toon_name']) ?></strong>
+                                            <strong><?= htmlspecialchars($ship['toon_name'] ?? '') ?></strong>
                                         </td>
                                         <td><?= get_pocket6_badge($ship['pocket6'] ?? '') ?></td>
                                         <td>
-                                            <span class="ship-icon"><?= substr($ship['ShipName'], 0, 2) ?></span>
-                                            <?= htmlspecialchars($ship['ShipName']) ?>
+                                            <span class="ship-icon"><?= htmlspecialchars(substr($ship['ShipName'] ?? '', 0, 2)) ?></span>
+                                            <?= htmlspecialchars($ship['ShipName'] ?? '') ?>
                                         </td>
-                                        <td><?= htmlspecialchars($ship['TypeName']) ?></td>
+                                        <td><?= htmlspecialchars($ship['TypeName'] ?? '') ?></td>
                                         <td>
-                                            <span class="badge tech-badge-<?= strtolower($ship['Tech']) ?>">
-                                                <?= htmlspecialchars($ship['Tech']) ?>
+                                            <span class="badge tech-badge-<?= strtolower($ship['Tech'] ?? '') ?>">
+                                                <?= htmlspecialchars($ship['Tech'] ?? '—') ?>
                                             </span>
                                         </td>
-                                        <td><?= htmlspecialchars($ship['Race']) ?></td>
+                                        <td><?= htmlspecialchars($ship['Race'] ?? '') ?></td>
                                         <td>
-                                            <?php if ($ship['TypicalRole']): ?>
-                                                <span class="badge text-bg-info"><?= htmlspecialchars($ship['TypicalRole']) ?></span>
+                                            <?php if (!empty($ship['TypicalRole'])): ?>
+                                                <span class="badge badge-info"><?= htmlspecialchars($ship['TypicalRole']) ?></span>
                                             <?php else: ?>
                                                 <span class="text-muted">—</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td><?= get_substate_badge($ship['substate']) ?></td>
+                                        <td><?= get_substate_badge($ship['substate'] ?? '') ?></td>
                                         <td class="text-center">
-                                            <span class="badge text-bg-dark"><?= (int)$ship['quantity'] ?></span>
+                                            <span class="badge badge-dark"><?= (int)($ship['quantity'] ?? 0) ?></span>
                                         </td>
                                         <td class="location-cell" title="<?= htmlspecialchars($ship['location_desc'] ?? '') ?>">
                                             <?= htmlspecialchars($ship['location_desc'] ?? '—') ?>
                                         </td>
-                                        <td class="text-end font-monospace">
+                                        <td class="text-right font-monospace">
                                             <?= number_format((float)($ship['forge_value'] ?? 0), 2) ?>
                                         </td>
                                     </tr>
@@ -573,26 +571,21 @@ $hangar_count  = count($hangar_ships);
 </div>
 
 <!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.datatables.net/2.2.0/js/dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/2.2.0/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/2.2.0/js/dataTables.bootstrap4.min.js"></script>
 
 <script>
 let tableReady, tableHangar;
 
 $(document).ready(function() {
-    // Initialize DataTables 2.x - NO columnDefs con orderable en indices inexistentes
     tableReady = $('#table-ready').DataTable({
         pageLength: 25,
         language: {
             url: '//cdn.datatables.net/plug-ins/2.2.0/i18n/es-ES.json'
         },
-        order: [[0, 'asc']],
-        // No usar columnDefs con targets que no existan
-        initComplete: function() {
-            applyFilters();
-        }
+        order: [[0, 'asc']]
     });
 
     tableHangar = $('#table-hangar').DataTable({
@@ -600,15 +593,17 @@ $(document).ready(function() {
         language: {
             url: '//cdn.datatables.net/plug-ins/2.2.0/i18n/es-ES.json'
         },
-        order: [[0, 'asc']],
-        initComplete: function() {
-            applyFilters();
-        }
+        order: [[0, 'asc']]
     });
+
+    // Aplica los filtros por defecto ya con ambas tablas construidas
+    applyFilters();
 });
 
-function applyFilters() {
-    // Get selected pocket6 values
+function customSearch(settings, data, dataIndex) {
+    const row = settings.aoData[dataIndex] ? settings.aoData[dataIndex].nTr : null;
+    if (!row) return true;
+
     const selectedP6 = [];
     document.querySelectorAll('.pocket6-check:checked').forEach(cb => {
         selectedP6.push(cb.value.toUpperCase());
@@ -618,57 +613,24 @@ function applyFilters() {
     const classFilter = document.getElementById('filter-class').value.toLowerCase();
     const roleFilter = document.getElementById('filter-role').value.toLowerCase();
 
-    // Custom search function for each table
-    const customSearch = function(settings, data, dataIndex) {
-        const tableId = settings.nTable.id;
-        const row = settings.aoData[dataIndex].nTr;
+    const pocket6 = (row.getAttribute('data-pocket6') || '').toUpperCase();
+    const ship = (row.getAttribute('data-ship') || '').toLowerCase();
+    const cls = (row.getAttribute('data-class') || '').toLowerCase();
+    const role = (row.getAttribute('data-role') || '').toLowerCase();
 
-        if (!row) return true;
+    if (selectedP6.length > 0 && !selectedP6.includes(pocket6)) return false;
+    if (shipFilter && !ship.includes(shipFilter)) return false;
+    if (classFilter && !cls.includes(classFilter)) return false;
+    if (roleFilter && !role.includes(roleFilter)) return false;
 
-        const pocket6 = (row.getAttribute('data-pocket6') || '').toUpperCase();
-        const ship = (row.getAttribute('data-ship') || '').toLowerCase();
-        const cls = (row.getAttribute('data-class') || '').toLowerCase();
-        const role = (row.getAttribute('data-role') || '').toLowerCase();
+    return true;
+}
 
-        // Pocket6 filter
-        if (selectedP6.length > 0 && !selectedP6.includes(pocket6)) {
-            return false;
-        }
+function applyFilters() {
+    $.fn.dataTable.ext.search = [customSearch];
 
-        // Ship name filter
-        if (shipFilter && !ship.includes(shipFilter)) {
-            return false;
-        }
-
-        // Class filter
-        if (classFilter && !cls.includes(classFilter)) {
-            return false;
-        }
-
-        // Role filter
-        if (roleFilter && !role.includes(roleFilter)) {
-            return false;
-        }
-
-        return true;
-    };
-
-    // Apply custom search and redraw
-    if (tableReady) {
-        tableReady.search('').draw(); // Clear text search first
-        $.fn.dataTable.ext.search = [customSearch];
-        tableReady.draw();
-    }
-
-    if (tableHangar) {
-        tableHangar.search('').draw();
-        // Need to set search array for hangar too - but ext.search is global
-        // So we handle both tables in one function
-        $.fn.dataTable.ext.search = [function(settings, data, dataIndex) {
-            return customSearch(settings, data, dataIndex);
-        }];
-        tableHangar.draw();
-    }
+    if (tableReady) tableReady.draw();
+    if (tableHangar) tableHangar.draw();
 }
 
 function resetFilters() {
@@ -676,24 +638,17 @@ function resetFilters() {
     document.getElementById('filter-class').value = '';
     document.getElementById('filter-role').value = '';
 
-    // Reset pocket6 to defaults
     document.querySelectorAll('.pocket6-check').forEach(cb => {
         const val = cb.value.toUpperCase();
         cb.checked = ['CLEAN','EXPER','NOKIA','SANGO'].includes(val);
     });
 
-    // Clear custom search
     $.fn.dataTable.ext.search = [];
 
-    if (tableReady) {
-        tableReady.search('').columns().search('').draw();
-    }
-    if (tableHangar) {
-        tableHangar.search('').columns().search('').draw();
-    }
+    if (tableReady) tableReady.search('').draw();
+    if (tableHangar) tableHangar.search('').draw();
 }
 
-// Live filter on Enter key
 ['filter-ship', 'filter-class', 'filter-role'].forEach(id => {
     document.getElementById(id).addEventListener('keypress', function(e) {
         if (e.key === 'Enter') applyFilters();
