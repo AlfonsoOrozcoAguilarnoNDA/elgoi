@@ -1,7 +1,7 @@
 <?php
 /**
  * EVE Online - Ship Readiness Dashboard
- * PHP 8.4 Procedural | Bootstrap 6.4.x | DataTables | Font Awesome 5.15.4
+ * PHP 8.4 Procedural | Bootstrap 4.6.x | DataTables 2.x | Font Awesome 5.15.4
  * 
  * Requiere: include "config.php" con $link (mysqli)
  * 
@@ -169,12 +169,12 @@ $hangar_count  = count($hangar_ships);
     <title>EVE Online - Ship Readiness Dashboard</title>
 
     <!-- Bootstrap 6.4.x -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@6.4.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- Font Awesome 5.15.4 -->
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
 
-    <!-- DataTables Bootstrap 5 -->
+    <!-- DataTables 2.x Bootstrap 5 -->
     <link href="https://cdn.datatables.net/2.2.0/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 
     <style>
@@ -314,6 +314,11 @@ $hangar_count  = count($hangar_ships);
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        /* Fix DataTables 2.x with hidden columns */
+        .dt-column-order {
+            color: var(--eve-accent);
         }
     </style>
 </head>
@@ -568,7 +573,7 @@ $hangar_count  = count($hangar_ships);
 </div>
 
 <!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@6.4.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/2.2.0/js/dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/2.2.0/js/dataTables.bootstrap5.min.js"></script>
@@ -577,31 +582,29 @@ $hangar_count  = count($hangar_ships);
 let tableReady, tableHangar;
 
 $(document).ready(function() {
-    // Initialize DataTables
-    tableReady = new DataTable('#table-ready', {
+    // Initialize DataTables 2.x - NO columnDefs con orderable en indices inexistentes
+    tableReady = $('#table-ready').DataTable({
         pageLength: 25,
         language: {
             url: '//cdn.datatables.net/plug-ins/2.2.0/i18n/es-ES.json'
         },
         order: [[0, 'asc']],
-        columnDefs: [
-            { targets: [1, 4, 6], orderable: false }
-        ]
+        // No usar columnDefs con targets que no existan
+        initComplete: function() {
+            applyFilters();
+        }
     });
 
-    tableHangar = new DataTable('#table-hangar', {
+    tableHangar = $('#table-hangar').DataTable({
         pageLength: 25,
         language: {
             url: '//cdn.datatables.net/plug-ins/2.2.0/i18n/es-ES.json'
         },
         order: [[0, 'asc']],
-        columnDefs: [
-            { targets: [1, 4, 6, 7], orderable: false }
-        ]
+        initComplete: function() {
+            applyFilters();
+        }
     });
-
-    // Initial filter application
-    applyFilters();
 });
 
 function applyFilters() {
@@ -615,51 +618,57 @@ function applyFilters() {
     const classFilter = document.getElementById('filter-class').value.toLowerCase();
     const roleFilter = document.getElementById('filter-role').value.toLowerCase();
 
-    // Filter function
-    const filterRows = (tableId) => {
-        const table = tableId === 'table-ready' ? tableReady : tableHangar;
+    // Custom search function for each table
+    const customSearch = function(settings, data, dataIndex) {
+        const tableId = settings.nTable.id;
+        const row = settings.aoData[dataIndex].nTr;
 
-        table.rows().every(function() {
-            const row = this.node();
-            const pocket6 = row.getAttribute('data-pocket6') || '';
-            const ship = row.getAttribute('data-ship') || '';
-            const cls = row.getAttribute('data-class') || '';
-            const role = row.getAttribute('data-role') || '';
+        if (!row) return true;
 
-            let show = true;
+        const pocket6 = (row.getAttribute('data-pocket6') || '').toUpperCase();
+        const ship = (row.getAttribute('data-ship') || '').toLowerCase();
+        const cls = (row.getAttribute('data-class') || '').toLowerCase();
+        const role = (row.getAttribute('data-role') || '').toLowerCase();
 
-            // Pocket6 filter
-            if (selectedP6.length > 0 && !selectedP6.includes(pocket6)) {
-                show = false;
-            }
+        // Pocket6 filter
+        if (selectedP6.length > 0 && !selectedP6.includes(pocket6)) {
+            return false;
+        }
 
-            // Ship name filter
-            if (shipFilter && !ship.includes(shipFilter)) {
-                show = false;
-            }
+        // Ship name filter
+        if (shipFilter && !ship.includes(shipFilter)) {
+            return false;
+        }
 
-            // Class filter
-            if (classFilter && !cls.includes(classFilter)) {
-                show = false;
-            }
+        // Class filter
+        if (classFilter && !cls.includes(classFilter)) {
+            return false;
+        }
 
-            // Role filter
-            if (roleFilter && !role.includes(roleFilter)) {
-                show = false;
-            }
+        // Role filter
+        if (roleFilter && !role.includes(roleFilter)) {
+            return false;
+        }
 
-            if (show) {
-                $(row).show();
-            } else {
-                $(row).hide();
-            }
-        });
-
-        table.draw();
+        return true;
     };
 
-    filterRows('table-ready');
-    filterRows('table-hangar');
+    // Apply custom search and redraw
+    if (tableReady) {
+        tableReady.search('').draw(); // Clear text search first
+        $.fn.dataTable.ext.search = [customSearch];
+        tableReady.draw();
+    }
+
+    if (tableHangar) {
+        tableHangar.search('').draw();
+        // Need to set search array for hangar too - but ext.search is global
+        // So we handle both tables in one function
+        $.fn.dataTable.ext.search = [function(settings, data, dataIndex) {
+            return customSearch(settings, data, dataIndex);
+        }];
+        tableHangar.draw();
+    }
 }
 
 function resetFilters() {
@@ -673,7 +682,15 @@ function resetFilters() {
         cb.checked = ['CLEAN','EXPER','NOKIA','SANGO'].includes(val);
     });
 
-    applyFilters();
+    // Clear custom search
+    $.fn.dataTable.ext.search = [];
+
+    if (tableReady) {
+        tableReady.search('').columns().search('').draw();
+    }
+    if (tableHangar) {
+        tableHangar.search('').columns().search('').draw();
+    }
 }
 
 // Live filter on Enter key
