@@ -1,7 +1,8 @@
 <?php
 /*
 License GPL 3.0
-Alfonso Orozco Aguilar
+Author Alfonso Orozco Aguilar
+Purpose : Check the dossier of an Eve online pilot.
 */
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Cache-Control: post-check=0, pre-check=0", false);
@@ -12,7 +13,7 @@ include_once '../ui_functions.php';
 check_authorization();
 
 $toon_number = isset($_GET['t']) ? (int)$_GET['t'] : 0;
-if ($toon_number <= 0) die("<div class='alert alert-danger'>Error: Toon number inválido.</div>");
+if ($toon_number <= 0) die("<div class='alert alert-danger'>Error: Invalid toon number.</div>");
 
 $sql_pilot = "SELECT toon_name, skillpoints, DOB, corporation, pocket6, numitems,
               email_pilot, acctype, lastsaved, race, security, unalloc, wallet
@@ -20,7 +21,7 @@ $sql_pilot = "SELECT toon_name, skillpoints, DOB, corporation, pocket6, numitems
 
 $result_pilot = mysqli_query($link, $sql_pilot);
 if (!$result_pilot || mysqli_num_rows($result_pilot) == 0)
-    die("<div class='alert alert-danger'>Error: Piloto no encontrado.</div>");
+    die("<div class='alert alert-danger'>Error: Pilot not found.</div>");
 
 $pilot = mysqli_fetch_assoc($result_pilot);
 mysqli_free_result($result_pilot);
@@ -32,7 +33,7 @@ echo ui_header("Jack Knife - " . $pilot_name);
 echo crew_navbar();
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Jack Knife — <?php echo $pilot_name; ?></title>
@@ -47,7 +48,7 @@ echo crew_navbar();
             padding-bottom: 70px;
         }
 
-        /* ── CARDS BASE ── */
+        /* ── BASE CARDS ── */
         .card-eve {
             background-color: #1a1d21;
             border: 1px solid #343a40;
@@ -105,7 +106,7 @@ echo crew_navbar();
         }
         .data-value { color: #e0e0e0; font-size: 0.88rem; margin-bottom: 10px; }
 
-        /* ── TABLAS ── */
+        /* ── TABLES ── */
         .table-eve {
             color: #ced4da;
             font-size: 0.82rem;
@@ -129,7 +130,14 @@ echo crew_navbar();
             color: #adb5bd;
         }
 
-        /* Montos positivos/negativos */
+        /* Skill level cells: always black text so they are readable on the light backgrounds */
+        .table-eve td.skill-level,
+        .table-eve td.skill-level strong,
+        .table-eve tbody tr:hover td.skill-level {
+            color: #000 !important;
+        }
+
+        /* Positive/negative amounts */
         .val-pos { color: #28a745; font-weight: 700; font-family: monospace; }
         .val-neg { color: #dc3545; font-weight: 700; font-family: monospace; }
         .val-mon { color: #f39c12; font-family: monospace; }
@@ -138,7 +146,7 @@ echo crew_navbar();
 <body>
 <div class="container-fluid">
 
-    <!-- ── HEADER PILOTO ── -->
+    <!-- ── PILOT HEADER ── -->
     <div class="card-eve acc-blue mb-4">
         <div class="card-header">
             <h4 class="mb-0"><i class="fas fa-id-card mr-2 ic-blue"></i>Jack Knife Operational Dossier</h4>
@@ -162,27 +170,27 @@ echo crew_navbar();
                 <div class="col-md-10">
                     <div class="row">
                         <div class="col-md-4">
-                            <div class="data-label"><i class="fas fa-building mr-1"></i>Corporación</div>
+                            <div class="data-label"><i class="fas fa-building mr-1"></i>Corporation</div>
                             <div class="data-value"><?php echo htmlspecialchars($pilot['corporation']); ?></div>
                         </div>
                         <div class="col-md-4">
-                            <div class="data-label"><i class="fas fa-user-tag mr-1"></i>Tipo de Cuenta</div>
+                            <div class="data-label"><i class="fas fa-user-tag mr-1"></i>Account Type</div>
                             <div class="data-value" style="color:<?php echo strtolower($pilot['acctype'])=='omega'?'#f1c40f':'#95a5a6';?>;">
                                 <?php echo htmlspecialchars($pilot['acctype']); ?>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="data-label"><i class="fas fa-flag mr-1"></i>Raza</div>
+                            <div class="data-label"><i class="fas fa-flag mr-1"></i>Race</div>
                             <div class="data-value"><?php echo htmlspecialchars($pilot['race']); ?></div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-4">
-                            <div class="data-label"><i class="fas fa-birthday-cake mr-1"></i>Fecha de Nacimiento</div>
+                            <div class="data-label"><i class="fas fa-birthday-cake mr-1"></i>Date of Birth</div>
                             <div class="data-value"><?php echo $pilot['DOB'] ? date('Y-m-d', strtotime($pilot['DOB'])) : 'N/A'; ?></div>
                         </div>
                         <div class="col-md-4">
-                            <div class="data-label"><i class="fas fa-shield-alt mr-1"></i>Seguridad</div>
+                            <div class="data-label"><i class="fas fa-shield-alt mr-1"></i>Security</div>
                             <div class="data-value" style="color:<?php echo $pilot['security']>=0?'#28a745':'#dc3545';?>;">
                                 <?php echo number_format($pilot['security'],2); ?>
                             </div>
@@ -199,15 +207,15 @@ echo crew_navbar();
                     </div>
                     <div class="row">
                         <div class="col-md-4">
-                            <div class="data-label"><i class="fas fa-boxes mr-1"></i>Items Totales</div>
+                            <div class="data-label"><i class="fas fa-boxes mr-1"></i>Total Items</div>
                             <div class="data-value"><?php echo number_format($pilot['numitems']); ?></div>
                         </div>
                         <div class="col-md-4">
-                            <div class="data-label"><i class="fas fa-wallet mr-1"></i>ISK en Wallet</div>
+                            <div class="data-label"><i class="fas fa-wallet mr-1"></i>Wallet ISK</div>
                             <div class="data-value val-mon"><?php echo number_format($pilot['wallet'],2); ?></div>
                         </div>
                         <div class="col-md-4">
-                            <div class="data-label"><i class="fas fa-clock mr-1"></i>Última Actualización</div>
+                            <div class="data-label"><i class="fas fa-clock mr-1"></i>Last Updated</div>
                             <div class="data-value"><small><?php echo $pilot['lastsaved']; ?></small></div>
                         </div>
                     </div>
@@ -222,7 +230,7 @@ echo crew_navbar();
         <div class="col-md-6"><?php echo magic14($toon_number); ?></div>
     </div>
 
-    <!-- ── SECCIONES ── -->
+    <!-- ── SECTIONS ── -->
     <?php echo corpstory2($toon_number); ?>
     <?php echo contacts2($toon_number); ?>
     <?php echo mails2($toon_number); ?>
@@ -240,7 +248,7 @@ echo crew_navbar();
 
 <?php
 // ====================================================================
-// FUNCIONES — lógica intacta, solo clases CSS actualizadas
+// FUNCTIONS — logic untouched, only CSS classes updated
 // ====================================================================
 
 function extrapilotdata2($t) {
@@ -326,9 +334,10 @@ function Q2($skill, $t) {
         case '1': case '2': $class = 'table-warning'; break;
         case '3': $class = 'bg-warning';   break;
         case '4': $class = 'table-success'; break;
-        case '5': $class = 'bg-success text-white'; break;
+        case '5': $class = 'bg-success';    break;
     }
-    return "<td class='text-center {$class}'><strong>{$rank}</strong></td>";
+    // 'skill-level' forces black text (see CSS) so the numbers are readable
+    return "<td class='text-center skill-level {$class}' style='color:#000;'><strong>{$rank}</strong></td>";
 }
 
 function corpstory2($t) {
@@ -336,13 +345,13 @@ function corpstory2($t) {
     $sql = "SELECT toon_name, email_pilot, corp_story FROM PILOTS WHERE toon_number = $t";
     list($name, $pilot, $data) = avalues319($sql);
     if ($data == '[]' || empty($data))
-        return "<div class='card-eve acc-blue mb-3'><div class='card-body text-muted'><i class='fas fa-info-circle mr-1 ic-blue'></i>No hay historial de corporaciones para " . htmlspecialchars($name) . "</div></div>";
+        return "<div class='card-eve acc-blue mb-3'><div class='card-body text-muted'><i class='fas fa-info-circle mr-1 ic-blue'></i>No corporation history for " . htmlspecialchars($name) . "</div></div>";
     $data = stripslashes($data);
     $xml  = new SimpleXMLElement(json2xml($data));
     $h  = "<div class='card-eve acc-blue mb-3'>";
-    $h .= "<div class='card-header'><h5><i class='fas fa-history mr-2 ic-blue'></i>Historial Corporativo — " . htmlspecialchars($name) . "</h5></div>";
+    $h .= "<div class='card-header'><h5><i class='fas fa-history mr-2 ic-blue'></i>Corporation History — " . htmlspecialchars($name) . "</h5></div>";
     $h .= "<div class='card-body p-0'><div class='table-responsive'>";
-    $h .= "<table class='table table-sm table-eve mb-0'><thead><tr><th>#</th><th>Corporación</th><th>Link</th><th>Record ID</th><th>Fecha Inicio</th><th>Días</th></tr></thead><tbody>";
+    $h .= "<table class='table table-sm table-eve mb-0'><thead><tr><th>#</th><th>Corporation</th><th>Link</th><th>Record ID</th><th>Start Date</th><th>Days</th></tr></thead><tbody>";
     $csh=0; $old_date="now()";
     foreach ($xml->item as $item) {
         $csh++;
@@ -367,13 +376,13 @@ function contacts2($t) {
     $sql = "SELECT toon_name, email_pilot, contacts FROM PILOTS WHERE toon_number = $t";
     list($name, $pilot, $data) = avalues319($sql);
     if ($data == '[]' || empty($data))
-        return "<div class='card-eve acc-green mb-3'><div class='card-body text-muted'><i class='fas fa-info-circle mr-1 ic-green'></i>No hay contactos para " . htmlspecialchars($name) . "</div></div>";
+        return "<div class='card-eve acc-green mb-3'><div class='card-body text-muted'><i class='fas fa-info-circle mr-1 ic-green'></i>No contacts for " . htmlspecialchars($name) . "</div></div>";
     $data = stripslashes($data);
     $xml  = new SimpleXMLElement(json2xml($data));
     $h  = "<div class='card-eve acc-green mb-3'>";
-    $h .= "<div class='card-header'><h5><i class='fas fa-address-book mr-2 ic-green'></i>Contactos — " . htmlspecialchars($name) . "</h5></div>";
+    $h .= "<div class='card-header'><h5><i class='fas fa-address-book mr-2 ic-green'></i>Contacts — " . htmlspecialchars($name) . "</h5></div>";
     $h .= "<div class='card-body p-0'><div class='table-responsive'>";
-    $h .= "<table class='table table-sm table-eve mb-0'><thead><tr><th>#</th><th>ID</th><th>Tipo</th><th>Nombre</th><th>Standing</th></tr></thead><tbody>";
+    $h .= "<table class='table table-sm table-eve mb-0'><thead><tr><th>#</th><th>ID</th><th>Type</th><th>Name</th><th>Standing</th></tr></thead><tbody>";
     $csh=0;
     foreach ($xml->item as $item) {
         $csh++;
@@ -394,13 +403,13 @@ function mails2($t) {
     $sql = "SELECT toon_name, email_pilot, mails FROM PILOTS WHERE toon_number = $t";
     list($name, $pilot, $data) = avalues319($sql);
     if ($data == '[]' || empty($data))
-        return "<div class='card-eve acc-cyan mb-3'><div class='card-body text-muted'><i class='fas fa-info-circle mr-1 ic-cyan'></i>No hay correos para " . htmlspecialchars($name) . "</div></div>";
+        return "<div class='card-eve acc-cyan mb-3'><div class='card-body text-muted'><i class='fas fa-info-circle mr-1 ic-cyan'></i>No mails for " . htmlspecialchars($name) . "</div></div>";
     $data = stripslashes($data);
     $xml  = new SimpleXMLElement(json2xml($data));
     $h  = "<div class='card-eve acc-cyan mb-3'>";
-    $h .= "<div class='card-header'><h5><i class='fas fa-envelope mr-2 ic-cyan'></i>Últimos 50 Correos — " . htmlspecialchars($name) . "</h5></div>";
+    $h .= "<div class='card-header'><h5><i class='fas fa-envelope mr-2 ic-cyan'></i>Last 50 Mails — " . htmlspecialchars($name) . "</h5></div>";
     $h .= "<div class='card-body p-0'><div class='table-responsive'>";
-    $h .= "<table class='table table-sm table-eve mb-0'><thead><tr><th>#</th><th>De</th><th>Leído</th><th>Mail ID</th><th>Asunto</th><th>Fecha</th><th>Destinatarios</th></tr></thead><tbody>";
+    $h .= "<table class='table table-sm table-eve mb-0'><thead><tr><th>#</th><th>From</th><th>Read</th><th>Mail ID</th><th>Subject</th><th>Date</th><th>Recipients</th></tr></thead><tbody>";
     $csh=0;
     foreach ($xml->item as $item) {
         $csh++;
@@ -408,8 +417,8 @@ function mails2($t) {
         $from_url = str_replace(" ","+",$from);
         $linkA    = ($item->from==$t) ? $from : "<a href='https://evewho.com/pilot/$from_url' target='_blank' class='text-info'>" . htmlspecialchars($from) . "</a>";
         $read_b   = ($item->is_read=='true')
-            ? "<span style='background:#343a40;color:#adb5bd;padding:1px 7px;border-radius:2px;font-size:0.7rem;'>Leído</span>"
-            : "<span style='background:#1a1200;border:1px solid #ffc107;color:#ffc107;padding:1px 7px;border-radius:2px;font-size:0.7rem;'>No leído</span>";
+            ? "<span style='background:#343a40;color:#adb5bd;padding:1px 7px;border-radius:2px;font-size:0.7rem;'>Read</span>"
+            : "<span style='background:#1a1200;border:1px solid #ffc107;color:#ffc107;padding:1px 7px;border-radius:2px;font-size:0.7rem;'>Unread</span>";
         $h .= "<tr><td class='text-muted'>{$csh}</td><td>{$linkA}</td><td>{$read_b}</td><td>{$item->mail_id}</td>";
         $h .= "<td class='text-white'>" . htmlspecialchars($item->subject) . "</td><td><small class='text-muted'>{$item->timestamp}</small></td><td>";
         if (isset($item->recipients)) {
@@ -432,13 +441,13 @@ function notifications2($t) {
     $sql = "SELECT toon_name, email_pilot, notifications FROM PILOTS WHERE toon_number = $t";
     list($name, $pilot, $data) = avalues319($sql);
     if ($data == '[]' || empty($data))
-        return "<div class='card-eve acc-yellow mb-3'><div class='card-body text-muted'><i class='fas fa-info-circle mr-1 ic-yellow'></i>No hay notificaciones para " . htmlspecialchars($name) . "</div></div>";
+        return "<div class='card-eve acc-yellow mb-3'><div class='card-body text-muted'><i class='fas fa-info-circle mr-1 ic-yellow'></i>No notifications for " . htmlspecialchars($name) . "</div></div>";
     $data = stripslashes($data);
     $xml  = new SimpleXMLElement(json2xml($data));
     $h  = "<div class='card-eve acc-yellow mb-3'>";
-    $h .= "<div class='card-header'><h5><i class='fas fa-bell mr-2 ic-yellow'></i>Notificaciones — " . htmlspecialchars($name) . "</h5></div>";
+    $h .= "<div class='card-header'><h5><i class='fas fa-bell mr-2 ic-yellow'></i>Notifications — " . htmlspecialchars($name) . "</h5></div>";
     $h .= "<div class='card-body p-0'><div class='table-responsive'>";
-    $h .= "<table class='table table-sm table-eve mb-0'><thead><tr><th>#</th><th>ID</th><th>Sender ID</th><th>Tipo</th><th>Texto</th><th>Tipo Notif</th><th>Timestamp</th></tr></thead><tbody>";
+    $h .= "<table class='table table-sm table-eve mb-0'><thead><tr><th>#</th><th>ID</th><th>Sender ID</th><th>Type</th><th>Text</th><th>Notif Type</th><th>Timestamp</th></tr></thead><tbody>";
     $csh=0;
     foreach ($xml->item as $item) {
         $csh++;
@@ -466,13 +475,13 @@ function journal2($t) {
     $sql = "SELECT toon_name, email_pilot, journal FROM PILOTS WHERE toon_number = $t";
     list($name, $pilot, $data) = avalues319($sql);
     if ($data == '[]' || empty($data))
-        return "<div class='card-eve acc-blue mb-3'><div class='card-body text-muted'><i class='fas fa-info-circle mr-1 ic-blue'></i>No hay journal para " . htmlspecialchars($name) . "</div></div>";
+        return "<div class='card-eve acc-blue mb-3'><div class='card-body text-muted'><i class='fas fa-info-circle mr-1 ic-blue'></i>No journal for " . htmlspecialchars($name) . "</div></div>";
     $data = stripslashes($data);
     $xml  = new SimpleXMLElement(json2xml($data));
     $h  = "<div class='card-eve acc-blue mb-3'>";
     $h .= "<div class='card-header'><h5><i class='fas fa-book mr-2 ic-blue'></i>Wallet Journal — " . htmlspecialchars($name) . "</h5></div>";
     $h .= "<div class='card-body p-0'><div class='table-responsive'>";
-    $h .= "<table class='table table-sm table-eve mb-0'><thead><tr><th>#</th><th>Monto</th><th>Balance</th><th>Context ID</th><th>Tipo Context</th><th>Fecha</th><th>Descripción</th><th>Party 1</th><th>ID</th><th>Ref Type</th><th>Party 2</th></tr></thead><tbody>";
+    $h .= "<table class='table table-sm table-eve mb-0'><thead><tr><th>#</th><th>Amount</th><th>Balance</th><th>Context ID</th><th>Context Type</th><th>Date</th><th>Description</th><th>Party 1</th><th>ID</th><th>Ref Type</th><th>Party 2</th></tr></thead><tbody>";
     $csh=0;
     foreach ($xml->item as $item) {
         $csh++;
@@ -504,13 +513,13 @@ function transactions2($t) {
     $sql = "SELECT toon_name, email_pilot, transactions FROM PILOTS WHERE toon_number = $t";
     list($name, $pilot, $data) = avalues319($sql);
     if ($data == '[]' || empty($data))
-        return "<div class='card-eve acc-green mb-3'><div class='card-body text-muted'><i class='fas fa-info-circle mr-1 ic-green'></i>No hay transacciones para " . htmlspecialchars($name) . "</div></div>";
+        return "<div class='card-eve acc-green mb-3'><div class='card-body text-muted'><i class='fas fa-info-circle mr-1 ic-green'></i>No transactions for " . htmlspecialchars($name) . "</div></div>";
     $data = stripslashes($data);
     $xml  = new SimpleXMLElement(json2xml($data));
     $h  = "<div class='card-eve acc-green mb-3'>";
-    $h .= "<div class='card-header'><h5><i class='fas fa-exchange-alt mr-2 ic-green'></i>Transacciones — " . htmlspecialchars($name) . "</h5></div>";
+    $h .= "<div class='card-header'><h5><i class='fas fa-exchange-alt mr-2 ic-green'></i>Transactions — " . htmlspecialchars($name) . "</h5></div>";
     $h .= "<div class='card-body p-0'><div class='table-responsive'>";
-    $h .= "<table class='table table-sm table-eve mb-0'><thead><tr><th>#</th><th>Trans ID</th><th>Cliente</th><th>Fecha</th><th>Compra</th><th>Personal</th><th>Journal Ref</th><th>Ubicación</th><th>Type ID</th><th>Item</th><th>Cantidad</th><th>Precio Unit</th><th>Total</th></tr></thead><tbody>";
+    $h .= "<table class='table table-sm table-eve mb-0'><thead><tr><th>#</th><th>Trans ID</th><th>Client</th><th>Date</th><th>Buy/Sell</th><th>Personal</th><th>Journal Ref</th><th>Location</th><th>Type ID</th><th>Item</th><th>Quantity</th><th>Unit Price</th><th>Total</th></tr></thead><tbody>";
     $csh=0;
     foreach ($xml->item as $item) {
         $csh++;
@@ -524,10 +533,10 @@ function transactions2($t) {
         list($desc)=avalues319("SELECT typeName FROM invTypes WHERE typeID='{$item->type_id}'");
         if ($desc=='') $desc='n/a';
         $ib = ($item->is_buy=='true')
-            ? "<span style='background:#1a0000;border:1px solid #dc3545;color:#dc3545;padding:1px 6px;border-radius:2px;font-size:0.7rem;'>Compra</span>"
-            : "<span style='background:#0d1f0d;border:1px solid #28a745;color:#28a745;padding:1px 6px;border-radius:2px;font-size:0.7rem;'>Venta</span>";
+            ? "<span style='background:#1a0000;border:1px solid #dc3545;color:#dc3545;padding:1px 6px;border-radius:2px;font-size:0.7rem;'>Buy</span>"
+            : "<span style='background:#0d1f0d;border:1px solid #28a745;color:#28a745;padding:1px 6px;border-radius:2px;font-size:0.7rem;'>Sell</span>";
         $ip = ($item->is_personal=='true')
-            ? "<span style='background:#001a2a;border:1px solid #17a2b8;color:#17a2b8;padding:1px 6px;border-radius:2px;font-size:0.7rem;'>Sí</span>"
+            ? "<span style='background:#001a2a;border:1px solid #17a2b8;color:#17a2b8;padding:1px 6px;border-radius:2px;font-size:0.7rem;'>Yes</span>"
             : "<span style='background:#343a40;color:#6c757d;padding:1px 6px;border-radius:2px;font-size:0.7rem;'>No</span>";
         $total=CFDINumbers($item->unit_price*$item->quantity);
         $h .= "<tr><td class='text-muted'>{$csh}</td><td>{$item->transaction_id}</td>";
@@ -545,7 +554,7 @@ function transactions2($t) {
     return $h;
 }
 
-// ── Funciones auxiliares — SIN CAMBIOS ──
+// ── Helper functions — UNCHANGED ──
 
 function json2xml($json) {
     $a = json_decode($json);
