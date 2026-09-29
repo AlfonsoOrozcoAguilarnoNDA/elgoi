@@ -69,8 +69,9 @@ $tiles = [
 
 $tiles2 = [	
 	showTile("experimental/kimitest4.php", "fa-chart-pie", "primary"),	
-	showTile("specific/cargohold.php", "fa-dollar-sign", "warning"),	
+	showTile("specific/cargohold.php", "fa-dollar-sign", "warning"),		
 	showTile("industry/ready_to_build.php", "fa-list-ol", "info"),	
+	showTile("specific/fittingsEFT.php", "fa-balance-scale-right", "danger"),		
 	showTile("industry/calc_p1.php", "fa-calculator", "info"),	
 	showTile("experimental/whereare.php", "fa-globe", "success"),
 	showTile("experimental/newpanels.php", "fa-users", "info"),	
