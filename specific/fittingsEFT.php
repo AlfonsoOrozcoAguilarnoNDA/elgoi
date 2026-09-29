@@ -22,8 +22,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-require_once 'config.php';
-include_once 'ui_functions.php';
+require_once '../config.php';
+include_once '../ui_functions.php';
 
 function normalizeFittingItems(array $items): string
 {
