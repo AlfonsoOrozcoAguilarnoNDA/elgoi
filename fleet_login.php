@@ -423,6 +423,7 @@ $login_url = ESI_AUTH_URL . '?' . http_build_query($auth_params);
     </style>
 </head>
 <body>
+    <div align='center'><img src='logo.jpg'></div></img></div>
     <div class="login-container">
         <div class="header">
             <h1>⚡ Fleet Commander</h1>
