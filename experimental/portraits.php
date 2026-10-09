@@ -11,7 +11,7 @@
  */
 
 include '../config.php';
-
+check_authorization();
 // --- Fetch all pilots excluding "catalog" ---
 $sql = "SELECT toon_number, toon_name, pocket6 FROM PILOTS 
         WHERE toon_name NOT LIKE '%catalog%' 
