@@ -405,7 +405,9 @@ $login_url = ESI_AUTH_URL . '?' . http_build_query($auth_params);
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(35, 134, 54, 0.4);
         }
-        
+        .imagen-mitad {
+            zoom: 0.5; /* Reduce la imagen al 50% de sus dimensiones reales */
+        }
         .footer {
             text-align: center;
             margin-top: 30px;
@@ -423,7 +425,8 @@ $login_url = ESI_AUTH_URL . '?' . http_build_query($auth_params);
     </style>
 </head>
 <body>
-    <div align='center'><img src='logo.jpg'></div></img></div>
+    <div align='center'><img src='logo.jpg width=50%' class='imagen-mitad'></div></img></div>
+    <br />
     <div class="login-container">
         <div class="header">
             <h1>⚡ Fleet Commander</h1>
