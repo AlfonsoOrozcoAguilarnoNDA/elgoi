@@ -41,5 +41,9 @@ git fetch origin
 # 4. Force local alignment with main branch
 git reset --hard origin/main
 
-# 5. Copy the updater.php to your directory, and run.
+# 5. Maybe you get dubious owership try to do this with www-data
+
+chown -R USUARIO:USUARIO /var/www/domain.com
+
+# 6. Copy the updater.php to your directory, and run.
 
