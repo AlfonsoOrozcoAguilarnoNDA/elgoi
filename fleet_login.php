@@ -425,7 +425,7 @@ $login_url = ESI_AUTH_URL . '?' . http_build_query($auth_params);
     </style>
 </head>
 <body>
-    <div align='center'><img src='logo.jpg width=50%' class='imagen-mitad'></div></img></div>
+    <div align='center'><img src='logo.jpg' width='50%' class='imagen-mitad'></div></img></div>
     <br />
     <div class="login-container">
         <div class="header">
