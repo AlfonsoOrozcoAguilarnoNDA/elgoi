@@ -180,9 +180,9 @@ if (isset($_GET['code'])) {
 }
 
 // ============================================
-// PROCESAR LOGOUT
+// PROCESAR UT
 // ============================================
-if (isset($_GET['logout'])) {
+if (isset($_GET['ut'])) {
     session_destroy();
     header('Location: ' . $_SERVER['PHP_SELF']);
     exit;
@@ -424,10 +424,10 @@ $login_url = ESI_AUTH_URL . '?' . http_build_query($auth_params);
         }
     </style>
 </head>
-<body>
-    <div align='center'><img src='logo.jpg' width='50%' class='imagen-mitad'></div></img></div>
-    <br />
+<body>   
+    
     <div class="login-container">
+        <div align='center'><img src='logo.jpg' width='70%' class='imagen-mitad'></div></img></div>
         <div class="header">
             <h1>⚡ Fleet Commander</h1>
             <div class="subtitle">EVE Online Fleet Management System</div>
