@@ -78,8 +78,9 @@ $tiles2 = [
 	showTile("experimental/contacts_and_factions.php", "fa-address-book", "secondary"),	
 	showTile("experimental/june15.php", "fa-gem", "secondary"),
 	showTile("mimonitor.php", "fa-memory", "secondary"),
-	showTile("experimental/mimonitor.php", "fa-portrait", "secondary"),
-	showTile("experimental/remaps.php", "fa-stopwatch", "secondary"),
+	showTile("experimental/portraits.php", "fa-portrait", "secondary"),
+	showTile("experimental/remaps.php", "fa-hourglass-start", "secondary"),
+	showTile("experimental/shipstests.php", "fa-warehouse", "secondary"),
     showTile("experimental/thesix.php", "fa-users", "primary")    
 ];
 
