@@ -17,7 +17,7 @@ $protocol = $_SERVER['REQUEST_SCHEME'] ?? 'https';
 $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 
 // Definimos la constante de forma dinámica
-define('ESI_CALLBACK_URL', "$protocol://www.$host/fleet_login.php");
+define('ESI_CALLBACK_URL', "$protocol://$host/fleet_login.php");
 
 
 define('ESI_AUTH_URL', 'https://login.eveonline.com/v2/oauth/authorize');
