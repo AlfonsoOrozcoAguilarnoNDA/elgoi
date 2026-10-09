@@ -426,9 +426,7 @@ $login_url = ESI_AUTH_URL . '?' . http_build_query($auth_params);
 </head>
 <body>   
     <div class="login-container order-1">
-    <div align='center'><img src='logo.jpg' width='70%' class='imagen-mitad'></div></img></div>
-    </div>
-    <div class="login-container order-2">
+    <img src='logo.jpg' width='70%' class='imagen-mitad'></img>
         <div class="header">
             <h1>⚡ Fleet Commander</h1>
             <div class="subtitle">EVE Online Fleet Management System</div>
