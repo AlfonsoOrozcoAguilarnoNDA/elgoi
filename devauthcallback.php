@@ -1308,5 +1308,40 @@ function xml_child_exists($xml, $childpath)
     $result = $xml->xpath($childpath); 
     return (bool) (count($result));
 }
+function pilotfrominternet($numidpilot)
+{
+    $id = (int)$numidpilot;
+    if ($id <= 0) {
+        return 'not found';
+    }
 
+    $url = "https://esi.evetech.net/latest/characters/{$id}/?datasource=tranquility";
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTPHEADER     => [
+            'Accept: application/json',
+            // CCP pide identificarse; pon tu sitio o correo
+            'User-Agent: vibecodingmexico.com (contacto@tudominio.com)',
+        ],
+    ]);
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($resp === false || $code !== 200) {
+        return 'not found';
+    }
+
+    $data = json_decode($resp, true);
+    if (!is_array($data) || empty($data['name'])) {
+        return 'not found';
+    }
+
+    return (string)$data['name'];
+}
 ?>
