@@ -406,7 +406,7 @@ $login_url = ESI_AUTH_URL . '?' . http_build_query($auth_params);
             box-shadow: 0 10px 30px rgba(35, 134, 54, 0.4);
         }
         .imagen-mitad {
-            zoom: 0.7; /* Reduce la imagen al 70% de sus dimensiones reales */
+            zoom: 0.3; /* Reduce la imagen al 30% de sus dimensiones reales */
         }
         .footer {
             text-align: center;
