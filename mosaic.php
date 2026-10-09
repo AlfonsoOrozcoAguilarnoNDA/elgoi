@@ -81,7 +81,7 @@ $tiles2 = [
 	showTile("experimental/portraits.php", "fa-portrait", "secondary"),
 	showTile("experimental/remaps.php", "fa-history", "secondary"),
 	showTile("experimental/shipstest.php", "fa-warehouse", "secondary"),
-	showTile("experimental/oldversion.php", "fa-backward", "secondary"),
+	showTile("experimental/oldversion.php", "fa-rotate-left", "secondary"),
     showTile("experimental/thesix.php", "fa-users", "primary")    
 ];
 
