@@ -9,6 +9,8 @@ https://vibecodingmexico.com/gemini-como-wikipedia/
 */
 // 1. Connection and Data Control
 require "../config.php";
+check_authorization();
+
 
 // Quick procedural sanitization
 function safe_input($data) {
