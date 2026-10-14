@@ -625,7 +625,7 @@ sort($non_php_files);
             </button>
             <div class='dropdown-menu' aria-labelledby='imgdropdown'>
                <a class='dropdown-item text-muted' href='?module=profile'><i class='fa fa-user pr-2'></i> Profile</a>
-               <a class='dropdown-item text-muted' href='?module=profile-edit'><i class='fa-user-edit pr-2'></i> Edit Profile</a>
+               <a class='dropdown-item text-muted' href='?module=profile-edit'><i class='fa fa-user-edit pr-2'></i> Edit Profile</a>
                <a class='dropdown-item text-muted' href='?module=logout'><i class='fa fa-running pr-2'></i> Logout</a>
             </div>
          </div>
