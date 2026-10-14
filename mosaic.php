@@ -206,6 +206,7 @@ sort($non_php_files);
         
         .nav-bar-top {
             top: 0;
+			z-index: 1100;
             height: 60px;
             display: flex;
             align-items: center;
