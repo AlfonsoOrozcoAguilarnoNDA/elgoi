@@ -610,6 +610,17 @@ sort($non_php_files);
             </span>
             <button class="logout-btn" onclick="showLogoutModal()">Logout</button>
         </div>
+	    <div class='dropdown'>
+            <button class='btn btn-dark dropdown-toggle' type='button' id='imgdropdown' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>
+                <img class='navbar-img' src='https://images.evetech.net/characters/<?php echo htmlspecialchars($_SESSION['fleet_commander_number'] ?? '0'); ?>/portrait'>
+                <span class='caret'></span>
+            </button>
+            <div class='dropdown-menu' aria-labelledby='imgdropdown'>
+               <a class='dropdown-item text-muted' href='?module=profile'><i class='fa fa-user pr-2'></i> Perfil</a>
+               <a class='dropdown-item text-muted' href='?module=profile-edit'><i class='ion-edit pr-2'></i> Editar Perfil</a>
+               <a class='dropdown-item text-muted' href='?module=logout'><i class='fa fa-running pr-2'></i> Salir</a>
+            </div>
+         </div>
     </nav>
     
     <!-- ============================================
