@@ -618,7 +618,7 @@ sort($non_php_files);
         </div>
 	    <div class='dropdown'>
             <button class='btn btn-dark dropdown-toggle' type='button' id='imgdropdown' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>
-                <img class='navbar-img' src='https://images.evetech.net/characters/<?php echo htmlspecialchars($_SESSION['fleet_commander_number'] ?? '0'); ?>/portrait'>
+                <img class='navbar-img' src='https://images.evetech.net/characters/<?php echo htmlspecialchars($_SESSION['character_id'] ?? '0'); ?>/portrait'>
                 <span class='caret'></span>
             </button>
             <div class='dropdown-menu' aria-labelledby='imgdropdown'>
