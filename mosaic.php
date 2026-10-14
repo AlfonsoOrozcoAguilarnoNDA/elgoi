@@ -588,6 +588,12 @@ sort($non_php_files);
         .modal-btn.cancel:hover {
             background: #484f58;
         }
+		.navbar-img {
+           width: 30px;
+           height: 30px;
+           object-fit: cover;
+           border-radius: 50%;
+		}
     </style>
 </head>
 <body>
