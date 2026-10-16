@@ -4,7 +4,7 @@ header('Expires: Thu, 1 Jan 1970 00:00:00 GMT');
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Cache-Control: post-check=0, pre-check=0',false);
 header('Pragma: no-cache');
-check_authorization();
+
 
 ini_set("memory_limit","384M");
 
@@ -19,7 +19,7 @@ if (!function_exists('check_authorization')) {
     // Si NO existe la función, incluimos el archivo que la define
     include_once "../config.php";
 }
-
+check_authorization(); // of config.php
 //$_SESSION['character_id']=000000; // debug your pilot number
 //$_SESSION['pilot_name']="Your name"; // debug
 $_SESSION['youremail']="admin@example.com"; // temporal
