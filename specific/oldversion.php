@@ -64,18 +64,18 @@ echo "<!DOCTYPE html>
 echo "<script type='text/javascript' src='includes/sortable.js'></script>";
 if ($m=='dt2') { echo dt2().footboot(); die(); }
 if ($m=='dp2') { echo dp2().footboot(); die(); }
-if ($m=='161') { echo topboot().barrido().footboot(); die(); }
-if ($m=='162') { echo topboot().inventory().footboot(); die(); }
-if ($m=='170') { echo topboot().whatship().footboot(); die(); }
-if ($m=='190') { echo css().topboot().showmyships().footboot(); die(); }
-if ($m=='191') { echo css().topboot().Limpiador().footboot(); die(); }
+if ($m=='161') { echo boot().barrido().footboot(); die(); }
+if ($m=='162') { echo boot().inventory().footboot(); die(); }
+if ($m=='170') { echo boot().whatship().footboot(); die(); }
+if ($m=='190') { echo css().boot().showmyships().footboot(); die(); }
+if ($m=='191') { echo css().boot().Limpiador().footboot(); die(); }
 if ($m=='settings') { echo settings().footboot(); die(); }
 
 if ($m=='113v2') { echo charskills_and_queue().footboot(); die(); }
 if ($m=='119') { echo module119().footboot(); die(); }
-if ($m=='201') { echo topboot().gempanels().footboot(); die(); }
-if ($m=='202') { echo topboot().gemplanets().footboot(); die(); }
-if ($m=='207') { echo topboot().gemjerarquia().footboot(); die(); }
+if ($m=='201') { echo boot().gempanels().footboot(); die(); }
+if ($m=='202') { echo boot().gemplanets().footboot(); die(); }
+if ($m=='207') { echo boot().gemjerarquia().footboot(); die(); }
 
 if ($m=='fit') {
      $who=$_GET['who'];
@@ -86,7 +86,7 @@ if ($m=='fit') {
      echo $pass.footboot();
      die ();
 } 
-if ($m=='item') { echo topboot().whoitem().footboot(); die(); }
+if ($m=='item') { echo boot().whoitem().footboot(); die(); }
 if ($m=='122') { echo checkalpha().footboot(); die(); }
 if ($m=='127') { echo planets().footboot();  die(); }
 if ($m=='400') { echo is400().footboot(); die(); }
@@ -458,7 +458,7 @@ if ($sess==3 or $sess==''){
      die();
 }
 
-echo css(). topboot();
+echo css(). boot();
 $m=$_GET['module'] ?? "";
 if ($m=='newdate'){
   $fec=$_POST['fec'];
@@ -510,7 +510,7 @@ function planets(){
     // die("The pilot $who $name is in the database but belong to other user (12)");
 
     $nameH = htmlspecialchars($name);
-    $pass = css().topboot()."<h3>Installed Planetary Colonies of $nameH</h3>";
+    $pass = css().boot()."<h3>Installed Planetary Colonies of $nameH</h3>";
     if ($data=='[]' or $data=='') return "<h3>no data planets for $nameH</h3>";
 
     $planets = json_decode(stripslashes($data), true);
@@ -1594,7 +1594,7 @@ footer { margin-top: 100px; position: absolute; bottom: 0; width: 100%; height: 
                         </ul>
                 </div>
             </div>
-            </nav><main class='flex-shrink-0' style='padding-bottom:50px; padding-top:40px'>
+            </nav><main class='flex-shrink-0' style='padding-bottom:50px; padding-top:90px'>
             <div name='main' id='main' class='flex-fill p-3'>            
             <div class='row'>
             <div class='col-md-12'>        
