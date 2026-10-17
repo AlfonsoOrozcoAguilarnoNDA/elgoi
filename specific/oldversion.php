@@ -5,21 +5,20 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Cache-Control: post-check=0, pre-check=0',false);
 header('Pragma: no-cache');
 
-
 ini_set("memory_limit","384M");
 
-
-if ($_SESSION['pilot_name']==""){
-  // redirige a fleet_login.php
-   header('Location: fleet_login.php');
-   exit;
-}
 date_default_timezone_set('America/Mexico_City');
 if (!function_exists('check_authorization')) {
     // Si NO existe la función, incluimos el archivo que la define
     include_once "../config.php";
 }
 check_authorization(); // of config.php
+if ($_SESSION['pilot_name']==""){
+  // redirige a fleet_login.php
+   header('Location: ../fleet_login.php');
+   exit;
+}
+
 //$_SESSION['character_id']=000000; // debug your pilot number
 //$_SESSION['pilot_name']="Your name"; // debug
 $_SESSION['youremail']="admin@example.com"; // temporal
