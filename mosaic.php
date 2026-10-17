@@ -654,9 +654,8 @@ sort($non_php_files);
             </div>
             
             <a href="#">Reports</a>
-			<li class='nav-item'>
-                                <a target='_blank' class='nav-link' href='./devauthcallback.php'><i class='fas fa-user-plus'></i> Add Character</a>
-            </li>                    
+			
+            <a target='_blank' class='nav-link' href='./devauthcallback.php'><i class='fas fa-user-plus'></i> Add Character</a>            
         </div>
     </nav>
 </body>
