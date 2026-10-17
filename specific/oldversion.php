@@ -67,15 +67,15 @@ if ($m=='dp2') { echo dp2().footboot(); die(); }
 if ($m=='161') { echo boot().barrido().footboot(); die(); }
 if ($m=='162') { echo boot().inventory().footboot(); die(); }
 if ($m=='170') { echo boot().whatship().footboot(); die(); }
-if ($m=='190') { echo css().boot().showmyships().footboot(); die(); }
-if ($m=='191') { echo css().boot().Limpiador().footboot(); die(); }
+if ($m=='190') { echo css().topboot().showmyships().footboot(); die(); }
+if ($m=='191') { echo css().topboot().Limpiador().footboot(); die(); }
 if ($m=='settings') { echo settings().footboot(); die(); }
 
 if ($m=='113v2') { echo charskills_and_queue().footboot(); die(); }
 if ($m=='119') { echo module119().footboot(); die(); }
-if ($m=='201') { echo boot().gempanels().footboot(); die(); }
-if ($m=='202') { echo boot().gemplanets().footboot(); die(); }
-if ($m=='207') { echo boot().gemjerarquia().footboot(); die(); }
+if ($m=='201') { echo topboot().gempanels().footboot(); die(); }
+if ($m=='202') { echo topboot().gemplanets().footboot(); die(); }
+if ($m=='207') { echo topboot().gemjerarquia().footboot(); die(); }
 
 if ($m=='fit') {
      $who=$_GET['who'];
