@@ -1552,7 +1552,6 @@ footer { margin-top: 100px; position: absolute; bottom: 0; width: 100%; height: 
                     <span class='navbar-toggler-icon'></span>
                 </button>
 
-
                 <div class='collapse navbar-collapse' id='navbarSupportedContent'>
 
                     <!-- Left Side Of Navbar -->
@@ -1560,15 +1559,11 @@ footer { margin-top: 100px; position: absolute; bottom: 0; width: 100%; height: 
 
                     </ul>
 
-                    <!-- Right Side Of Navbar -->                                                
+                    <!-- Right Side Of Navbar -->
                             
                     <ul class='navbar-nav ml-auto'>
-                       <li class='nav-item'><a target='_blank' class='nav-link' href='?'><i class='fas fa-home'></i> Home</a></li>                       
-                            <li class='nav-item'>
-                                <a target='_blank' class='nav-link' href='./devauthcallback.php'><i class='fas fa-user-plus'></i> Add Character</a>
-                            </li>
-                    
-                    
+                       <li class='nav-item'><a target='_blank' class='nav-link' href='?'><i class='fas fa-home'></i> Home</a></li>
+					   
                     <div class='dropdown'>
                                 <button class='btn btn-dark dropdown-toggle' type='button' id='imgdropdown' data-toggle='dropdown' aria-haspopup='true' aria-expanded='false'>
                                     <i class='fas fa-microchip'></i> Auto
