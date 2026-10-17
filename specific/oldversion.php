@@ -458,7 +458,7 @@ if ($sess==3 or $sess==''){
      die();
 }
 
-echo css(). boot();
+echo css(). topboot();
 $m=$_GET['module'] ?? "";
 if ($m=='newdate'){
   $fec=$_POST['fec'];
