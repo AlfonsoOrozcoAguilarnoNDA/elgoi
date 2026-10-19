@@ -1293,9 +1293,9 @@ return $pass;
 
 function whatship(){
 global $link;
-$who=$_SESSION['youremail'];
+$who=$_SESSION['character_id'];
 $pass ="<h3>Checking Ships Usable by pilots</h3><table class='hovertable'>";
-$sql="select toon_number as num,toon_name,race,skillpoints/1000000 as SP from PILOTS where email_pilot='$who'
+$sql="select toon_number as num,toon_name,race,skillpoints/1000000 as SP from PILOTS where parent_toon_number='$_SESSION['character_id']'
 and toon_name not in ('Nokia Catalog','Experiment Catalog','All Others Catalog')  order by SP Desc";
 $csh=0;
 $rs = mysqli_query($link,$sql);
