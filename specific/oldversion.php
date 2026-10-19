@@ -64,9 +64,9 @@ echo "<!DOCTYPE html>
 echo "<script type='text/javascript' src='includes/sortable.js'></script>";
 if ($m=='dt2') { echo dt2().footboot(); die(); }
 if ($m=='dp2') { echo dp2().footboot(); die(); }
-if ($m=='161') { echo boot().barrido().footboot(); die(); }
-if ($m=='162') { echo boot().inventory().footboot(); die(); }
-if ($m=='170') { echo boot().whatship().footboot(); die(); }
+if ($m=='161') { echo topboot().barrido().footboot(); die(); }
+if ($m=='162') { echo topboot().inventory().footboot(); die(); }
+if ($m=='170') { echo topboot().whatship().footboot(); die(); }
 if ($m=='190') { echo css().topboot().showmyships().footboot(); die(); }
 if ($m=='191') { echo css().topboot().Limpiador().footboot(); die(); }
 if ($m=='settings') { echo settings().footboot(); die(); }
