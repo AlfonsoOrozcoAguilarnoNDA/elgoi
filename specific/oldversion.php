@@ -86,7 +86,7 @@ if ($m=='fit') {
      echo $pass.footboot();
      die ();
 } 
-if ($m=='item') { echo boot().whoitem().footboot(); die(); }
+if ($m=='item') { echo topboot().whoitem().footboot(); die(); }
 if ($m=='122') { echo checkalpha().footboot(); die(); }
 if ($m=='127') { echo planets().footboot();  die(); }
 if ($m=='400') { echo is400().footboot(); die(); }
