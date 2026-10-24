@@ -2,565 +2,628 @@
 /**
  * EVE Assets Analysis Dashboard
  * Recursive CTE with exclusions and orphan detection
- * MariaDB 11.8.6+
+ * MariaDB 11.8.6+ 24/oct/2026
  * License GPL
- * Alfonso Orozco Aguilar
+ * Alfonso Orozco Aguilar 
+ * Claude Sonnet 5.5 under prompts and database form Alfonso Orozco Aguilar
+
+ * unsafe_assets.php
+ * Lists every EVE asset that is NOT safely docked in an NPC station:
+ *   - Asset Safety wraps (always listed, so they get recovered)
+ *   - Items in a player structure (citadel, engineering complex, refinery...)
+ *   - Items floating in space (ships, containers, deployables)
+ *
+ * Single file, procedural. Requires config.php, which must create $link (mysqli).
+ * Tables used: EVE_ASSETS (items) and PILOTS (toon_name, pocket6).
  */
 
 require_once '../config.php';
-check_authorization();
 
-// ============================================================
-// EXCLUSION LIST
-// ============================================================
-$excludeList = "'Capsule', 'Reaper', 'Ibis', 'Impairor', 'Velator', 
-                'Civilian Miner', 'Civilian Afterburner', 'Civilian Shield Booster',
-                '1MN Civilian Afterburner', 'Civilian Gatling Autocannon',
-                'Civilian Gatling Pulse Laser', 'Civilian Gatling Railgun', 'Civilian Pulse Laser'";
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
 
-// ============================================================
-// SECTION 1: Safety Assets (with exclusions)
-// ============================================================
-$safety_sql = "SELECT 
-    a.*, 
-    p.toon_name, 
-    p.pocket6 
-FROM EVE_ASSETS a 
-JOIN PILOTS p ON a.toon_number = p.toon_number 
-WHERE a.location_flag = 'AssetSafety' 
-  AND a.type_description NOT IN ($excludeList)
-ORDER BY a.toon_number, a.description";
+// Names for structure IDs (location_id). Purely cosmetic: they stay listed as unsafe.
+$STRUCTURE_NAMES = [
+    1021011818054 => "Verite's Stellar Cartography",
+];
 
-$safety_result = mysqli_query($link, $safety_sql);
-$safety_count = mysqli_num_rows($safety_result);
+// Structure IDs you know sit in wormhole space.
+// There is no Asset Safety there: if the structure dies, everything inside is lost.
+$WORMHOLE_STRUCTURES = [
+    // 1021011818054,
+];
 
-// ============================================================
-// RECURSIVE CTE: Trace each asset up the location chain
-// ============================================================
-$offstation_sql = "
-WITH RECURSIVE asset_chain AS (
-    SELECT 
-        a.ID,
-        a.toon_number,
-        a.location_flag,
-        a.location_id,
-        a.description,
-        a.quantity,
-        a.type_id,
-        a.type_description,
-        a.eveunique,
-        a.date_insert,
-        a.unit_price,
-        a.forge_value,
-        1 AS depth
-    FROM EVE_ASSETS a
-    WHERE a.type_description NOT IN ($excludeList)
+// Starter ships and default gear of new pilots: not worth listing.
+$IGNORE_NAMES    = ['ibis', 'reaper', 'velator', 'impairor'];   // exact type name, any case
+$IGNORE_PREFIXES = ['civilian'];                                // type name starts with
 
-    UNION ALL
+$STALE_DAYS   = 14;   // flag data older than this many days
+$DETAIL_LIMIT = 30;   // max items shown when a row is expanded
 
-    SELECT 
-        ac.ID,
-        ac.toon_number,
-        ac.location_flag,
-        parent.location_id,
-        ac.description,
-        ac.quantity,
-        ac.type_id,
-        ac.type_description,
-        ac.eveunique,
-        ac.date_insert,
-        ac.unit_price,
-        ac.forge_value,
-        ac.depth + 1
-    FROM asset_chain ac
-    JOIN EVE_ASSETS parent ON ac.location_id = parent.eveunique
-    WHERE ac.depth < 20
-      AND CAST(ac.location_id AS CHAR) NOT LIKE '600%'
-      AND ac.location_id IS NOT NULL
-      AND parent.type_description NOT IN ($excludeList)
-)
-SELECT 
-    ac.ID,
-    ac.toon_number,
-    ac.location_flag,
-    ac.location_id AS final_location_id,
-    ac.description,
-    ac.quantity,
-    ac.type_id,
-    ac.type_description,
-    ac.eveunique,
-    ac.date_insert,
-    ac.unit_price,
-    ac.forge_value,
-    ac.depth
-FROM asset_chain ac
-INNER JOIN (
-    SELECT ID, MAX(depth) AS max_depth
-    FROM asset_chain
-    GROUP BY ID
-) deepest ON ac.ID = deepest.ID AND ac.depth = deepest.max_depth
-WHERE CAST(ac.location_id AS CHAR) NOT LIKE '600%'
-  AND ac.location_id IS NOT NULL
-ORDER BY ac.toon_number, ac.description
-";
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-$offstation_result = mysqli_query($link, $offstation_sql);
-
-if (!$offstation_result) {
-    die("Recursive query error: " . mysqli_error($link));
+// Pocket colors (for badge)
+function getColorPocket($pocket) {
+    $p = strtoupper(trim($pocket ?? ''));
+    return match($p) {
+        'EXPER' => '#28a745',
+        'CLEAN' => '#0078d7',
+        'SANGO' => '#ffc107',
+        'LUCKY' => '#6f42c1',
+        'NOKIA' => '#e81123',
+        'YENN'  => '#cccccc',
+        'OTHER' => '#fd7e14',
+        default => '#444444'
+    };
 }
 
-$offstation_items = [];
-$summary_data = [];
-$detail_count = 0;
-
-while ($row = mysqli_fetch_assoc($offstation_result)) {
-    $tn = $row['toon_number'];
-    if (!isset($summary_data[$tn])) {
-        $summary_data[$tn] = [
-            'toon_number' => $tn,
-            'off_station_count' => 0,
-            'total_assets' => 0
-        ];
-    }
-    $summary_data[$tn]['off_station_count']++;
-    $offstation_items[] = $row;
-    $detail_count++;
+function h($s) {
+    return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-// ============================================================
-// Get pilot info + total asset counts
-// ============================================================
-$pilot_info = [];
-if (!empty($summary_data)) {
-    $pilot_ids = implode(',', array_keys($summary_data));
+function isk($v) {
+    return number_format((float)$v, 0, '.', ',') . ' ISK';
+}
 
-    // Pilot names and pocket6
-    $pilot_sql = "SELECT toon_number, toon_name, pocket6 FROM PILOTS WHERE toon_number IN ($pilot_ids)";
-    $pilot_result = mysqli_query($link, $pilot_sql);
-    while ($p = mysqli_fetch_assoc($pilot_result)) {
-        $pilot_info[$p['toon_number']] = $p;
+function pocket_badge($pocket) {
+    $p     = strtoupper(trim((string)$pocket));
+    $label = $p !== '' ? $p : 'n/a';
+    $dark  = ($p === 'SANGO' || $p === 'YENN') ? ' dark-text' : '';
+    return '<span class="pocket-badge' . $dark . '" style="background-color:'
+         . h(getColorPocket($pocket)) . ';">' . h($label) . '</span>';
+}
+
+// True for starter ships and default rookie gear.
+function is_ignored_type($name, $names, $prefixes) {
+    $n = strtolower(trim((string)$name));
+    if ($n === '') {
+        return false;
     }
-
-    // Total asset counts per pilot (excluding excluded items)
-    $total_sql = "SELECT 
-        toon_number, 
-        COUNT(*) AS total_count 
-    FROM EVE_ASSETS 
-    WHERE toon_number IN ($pilot_ids) 
-      AND type_description NOT IN ($excludeList)
-    GROUP BY toon_number";
-    $total_result = mysqli_query($link, $total_sql);
-    while ($t = mysqli_fetch_assoc($total_result)) {
-        if (isset($summary_data[$t['toon_number']])) {
-            $summary_data[$t['toon_number']]['total_assets'] = $t['total_count'];
+    if (in_array($n, $names, true)) {
+        return true;
+    }
+    foreach ($prefixes as $p) {
+        if (strncmp($n, $p, strlen($p)) === 0) {
+            return true;
         }
     }
+    return false;
 }
 
-$summary_count = count($summary_data);
-
-// ============================================================
-// SECTION 3 Detail: Get full data with pilot info
-// ============================================================
-$detail_with_pilot = [];
-if (!empty($offstation_items)) {
-    $ids = array_column($offstation_items, 'ID');
-    $id_list = implode(',', $ids);
-    $detail_sql = "SELECT 
-        a.*,
-        p.toon_name,
-        p.pocket6
-    FROM EVE_ASSETS a
-    JOIN PILOTS p ON a.toon_number = p.toon_number
-    WHERE a.ID IN ($id_list)
-    ORDER BY p.toon_name, a.description";
-    $detail_result = mysqli_query($link, $detail_sql);
-    while ($row = mysqli_fetch_assoc($detail_result)) {
-        $detail_with_pilot[] = $row;
+/**
+ * Follow the chain item -> container/ship -> ... until reaching the place
+ * where the whole stack really sits, and say how safe that place is.
+ *
+ * $map is keyed "toon|item_id" => ['loc' => location_id, 'flag' => location_flag]
+ *
+ * Returns [category, root location_id] where category is one of:
+ *   npc        docked in an NPC station (safe)
+ *   safety     inside an Asset Safety wrap
+ *   structure  hangar of a player structure
+ *   wormhole   hangar of a structure listed in $WORMHOLE_STRUCTURES
+ *   space      in a solar system, outside any station
+ *   unresolved parent item missing from the table (usually stale data)
+ */
+function resolve_root($toon, $locId, $flag, $map, $wormholes) {
+    $seen  = [];
+    $depth = 0;
+    while (true) {
+        if ($flag === 'AssetSafety') {
+            return ['safety', $locId];
+        }
+        if ($locId >= 60000000 && $locId < 64000000) {
+            return ['npc', $locId];
+        }
+        if ($locId >= 30000000 && $locId < 33000000) {
+            return ['space', $locId];
+        }
+        if ($locId >= 1000000000000) {
+            $key = $toon . '|' . $locId;
+            if (isset($map[$key]) && !isset($seen[$key]) && $depth < 15) {
+                // location_id is another item (ship or container): keep climbing
+                $seen[$key] = true;
+                $flag  = $map[$key]['flag'];
+                $locId = $map[$key]['loc'];
+                $depth++;
+                continue;
+            }
+            // Not an item we know. Only flags that exist directly in a structure
+            // hangar can mean "this is a structure"; anything else means the
+            // parent ship/container is missing from the table.
+            $direct = ($flag === 'Hangar' || $flag === 'Deliveries'
+                    || $flag === 'CorpDeliveries' || strncmp($flag, 'CorpSAG', 7) === 0);
+            if (!$direct) {
+                return ['unresolved', $locId];
+            }
+            return [in_array($locId, $wormholes, true) ? 'wormhole' : 'structure', $locId];
+        }
+        return ['unresolved', $locId];
     }
 }
 
-// ============================================================
-// SECTION 4: Orphan Pilots (in EVE_ASSETS but not in PILOTS)
-// ============================================================
-$orphan_sql = "SELECT DISTINCT 
-    a.toon_number,
-    COUNT(*) AS orphan_asset_count
-FROM EVE_ASSETS a
-LEFT JOIN PILOTS p ON a.toon_number = p.toon_number
-WHERE p.toon_number IS NULL
-GROUP BY a.toon_number
-ORDER BY a.toon_number";
+// ---------------------------------------------------------------------------
+// Category definitions (display order = priority)
+// ---------------------------------------------------------------------------
 
-$orphan_result = mysqli_query($link, $orphan_sql);
-$orphan_count = mysqli_num_rows($orphan_result);
-$orphan_data = [];
-while ($row = mysqli_fetch_assoc($orphan_result)) {
-    $orphan_data[] = $row;
+$CATS = [
+    'wormhole'  => ['label' => 'Structures in wormhole space',
+                    'hint'  => 'No Asset Safety in wormholes. If the structure falls, everything inside is lost.',
+                    'icon'  => 'fa-skull-crossbones', 'color' => '#dc3545'],
+    'safety'    => ['label' => 'In Asset Safety',
+                    'hint'  => 'These items were wrapped after a structure was lost. Recover them.',
+                    'icon'  => 'fa-hourglass-half',   'color' => '#f39c12'],
+    'structure' => ['label' => 'In player structures',
+                    'hint'  => 'Safe only while the structure stands and you keep docking access.',
+                    'icon'  => 'fa-building',         'color' => '#5dade2'],
+    'space'     => ['label' => 'In space',
+                    'hint'  => 'Not docked anywhere. Anyone can find and destroy these.',
+                    'icon'  => 'fa-rocket',           'color' => '#a29bfe'],
+];
+
+// ---------------------------------------------------------------------------
+// Data
+// ---------------------------------------------------------------------------
+
+$error   = null;
+$pilots  = [];   // toon_number => ['name' => ..., 'pocket' => ...]
+$pockets = [];   // distinct pocket6 values for the combo
+$rows    = [];
+
+$res = mysqli_query($link, "SELECT toon_number, toon_name, pocket6 FROM PILOTS");
+if ($res) {
+    while ($r = mysqli_fetch_assoc($res)) {
+        $pilots[(int)$r['toon_number']] = ['name' => $r['toon_name'], 'pocket' => $r['pocket6']];
+    }
+    mysqli_free_result($res);
+} else {
+    $error = 'Could not read the pilot list.';
+    error_log('unsafe_assets.php PILOTS: ' . mysqli_error($link));
 }
 
+$res = mysqli_query($link, "SELECT DISTINCT pocket6 FROM PILOTS
+                            WHERE pocket6 IS NOT NULL AND pocket6 <> '' ORDER BY pocket6");
+if ($res) {
+    while ($r = mysqli_fetch_assoc($res)) {
+        $pockets[] = $r['pocket6'];
+    }
+    mysqli_free_result($res);
+}
+
+// Selected filter must be one of the real values; anything else means "All".
+$selected = '';
+if (isset($_GET['pocket']) && in_array($_GET['pocket'], $pockets, true)) {
+    $selected = $_GET['pocket'];
+}
+
+$res = mysqli_query($link, "SELECT toon_number, location_flag, location_id, description, quantity,
+                                   type_id, type_description, eveunique, date_insert, forge_value
+                            FROM EVE_ASSETS");
+if ($res) {
+    while ($r = mysqli_fetch_assoc($res)) {
+        $rows[] = $r;
+    }
+    mysqli_free_result($res);
+} elseif ($error === null) {
+    $error = 'Could not read the asset list.';
+    error_log('unsafe_assets.php EVE_ASSETS: ' . mysqli_error($link));
+}
+
+// item lookup across ALL rows, so containers can be traced even when filtered
+$map = [];
+foreach ($rows as $r) {
+    $map[(int)$r['toon_number'] . '|' . $r['eveunique']] = [
+        'loc'  => (int)$r['location_id'],
+        'flag' => (string)$r['location_flag'],
+    ];
+}
+
+// ---------------------------------------------------------------------------
+// Classify and group
+// ---------------------------------------------------------------------------
+
+$groups     = [];
+$unresolved = 0;
+$ignored    = 0;
+$newest     = '';
+
+foreach ($rows as $r) {
+    $toon = (int)$r['toon_number'];
+
+    if ($selected !== '') {
+        if (!isset($pilots[$toon]) || trim((string)$pilots[$toon]['pocket']) !== $selected) {
+            continue;
+        }
+    }
+
+    [$cat, $root] = resolve_root($toon, (int)$r['location_id'], (string)$r['location_flag'], $map, $WORMHOLE_STRUCTURES);
+
+    if ($cat === 'npc') {
+        continue;
+    }
+    if ($cat === 'unresolved') {
+        $unresolved++;
+        continue;
+    }
+    // Starter ships and rookie gear (only counted when they would have been listed)
+    if (is_ignored_type($r['type_description'], $IGNORE_NAMES, $IGNORE_PREFIXES)) {
+        $ignored++;
+        continue;
+    }
+
+    $key = $toon . '|' . $cat . '|' . $root;
+    if (!isset($groups[$key])) {
+        $groups[$key] = [
+            'toon' => $toon, 'cat' => $cat, 'loc' => $root, 'name' => '',
+            'wraps' => 0, 'items' => 0, 'value' => 0.0, 'updated' => '', 'list' => [],
+        ];
+    }
+    $g = &$groups[$key];
+
+    if ($g['name'] === '' && trim((string)$r['description']) !== '') {
+        $g['name'] = trim($r['description']);
+    }
+    $g['value'] += (float)$r['forge_value'];
+    if ($r['date_insert'] > $g['updated']) {
+        $g['updated'] = $r['date_insert'];
+    }
+    if ($r['date_insert'] > $newest) {
+        $newest = $r['date_insert'];
+    }
+
+    if ((int)$r['type_id'] === 60) {            // Asset Safety Wrap
+        $g['wraps']++;
+    } else {
+        $qty = max(1, (int)$r['quantity']);
+        $g['items'] += $qty;
+        $g['list'][] = [
+            'name'  => trim((string)$r['type_description']) !== '' ? $r['type_description'] : $r['description'],
+            'qty'   => $qty,
+            'value' => (float)$r['forge_value'],
+        ];
+    }
+    unset($g);
+}
+
+// Known structure names win over whatever the table says
+foreach ($groups as $gk => $g) {
+    if ($g['cat'] !== 'space' && isset($STRUCTURE_NAMES[$g['loc']])) {
+        $groups[$gk]['name'] = $STRUCTURE_NAMES[$g['loc']];
+    }
+}
+
+// Totals per category
+$totals = [];
+foreach ($CATS as $c => $meta) {
+    $totals[$c] = ['wraps' => 0, 'items' => 0, 'value' => 0.0, 'groups' => 0];
+}
+$affected = [];
+foreach ($groups as $g) {
+    $totals[$g['cat']]['wraps']  += $g['wraps'];
+    $totals[$g['cat']]['items']  += $g['items'];
+    $totals[$g['cat']]['value']  += $g['value'];
+    $totals[$g['cat']]['groups'] ++;
+    $affected[$g['toon']] = true;
+}
+$grandValue = 0.0;
+foreach ($totals as $t) {
+    $grandValue += $t['value'];
+}
+
+// Order: category priority, then value (highest first)
+$order = array_flip(array_keys($CATS));
+uasort($groups, function ($a, $b) use ($order) {
+    if ($a['cat'] !== $b['cat']) {
+        return $order[$a['cat']] <=> $order[$b['cat']];
+    }
+    return $b['value'] <=> $a['value'];
+});
+
+$staleLimit = strtotime('-' . (int)$STALE_DAYS . ' days');
+$detailId   = 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EVE Assets Analysis - Recursive Location Trace</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>Unsafe assets</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+<style>
+    body {
+        background-color: #1a1d21;
+        color: #e0e0e0;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        padding-bottom: 60px;
+    }
+    .navbar-eve {
+        background-color: #0b0c0e;
+        border-bottom: 2px solid #495057;
+        margin-bottom: 0;
+    }
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+    /* filter bar */
+    .filter-bar {
+        background-color: #16191c;
+        border-bottom: 2px solid #007bff;
+        padding: 12px 20px;
+        margin-bottom: 20px;
+    }
+    .filter-bar .form-control {
+        background-color: #2a2d31;
+        border-color: #495057;
+        color: #e0e0e0;
+        max-width: 180px;
+    }
+    .filter-bar .form-control:focus {
+        background-color: #2a2d31;
+        color: #fff;
+        border-color: #007bff;
+        box-shadow: none;
+    }
 
-    <style>
-        body { background-color: #0d1117; color: #c9d1d9; padding-top: 20px; font-family: 'Segoe UI', system-ui, sans-serif; }
-        .card { background-color: #161b22; border: 1px solid #30363d; margin-bottom: 25px; }
-        .card-header { background-color: #21262d; color: #58a6ff; font-weight: 600; border-bottom: 1px solid #30363d; }
-        .table { color: #c9d1d9; }
-        .table thead th { border-top: none; border-bottom: 2px solid #30363d; color: #8b949e; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        .table tbody tr:hover { background-color: #1f242c; }
-        .badge-safety { background-color: #da3633; color: #fff; }
-        .badge-offstation { background-color: #f0883e; color: #000; }
-        .badge-station { background-color: #238636; color: #fff; }
-        .pocket-badge { background-color: #1f6feb; color: #fff; }
-        .orphan-badge { background-color: #8957e5; color: #fff; }
-        .section-icon { margin-right: 10px; width: 20px; display: inline-block; text-align: center; }
-        .stat-number { font-size: 2.2rem; font-weight: 700; }
-        .stat-label { color: #8b949e; font-size: 0.9rem; }
-        .stat-card { text-align: center; padding: 25px 15px; }
-        .dataTables_wrapper .dataTables_length, 
-        .dataTables_wrapper .dataTables_filter,
-        .dataTables_wrapper .dataTables_info,
-        .dataTables_wrapper .dataTables_paginate { color: #c9d1d9 !important; }
-        .dataTables_wrapper .dataTables_filter input { background-color: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
-        .dataTables_wrapper .dataTables_length select { background-color: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
-        .page-item.active .page-link { background-color: #1f6feb; border-color: #1f6feb; }
-        .page-link { background-color: #21262d; color: #58a6ff; border-color: #30363d; }
-        .page-link:hover { background-color: #30363d; color: #58a6ff; border-color: #30363d; }
-        .alert-dark { background-color: #21262d; border-color: #30363d; color: #8b949e; }
-        .risk-high { color: #da3633; }
-        .risk-moderate { color: #f0883e; }
-        .risk-low { color: #3fb950; }
-        code { background-color: #21262d; color: #ff7b72; padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
-        .orphan-row { background-color: rgba(137, 87, 229, 0.1) !important; }
-        .orphan-row:hover { background-color: rgba(137, 87, 229, 0.2) !important; }
-        .evewho-link { color: #58a6ff; text-decoration: none; }
-        .evewho-link:hover { color: #79c0ff; text-decoration: underline; }
-        .evewho-link i { font-size: 0.8em; margin-left: 4px; }
-    </style>
+    /* messages */
+    .msg-ok, .msg-note, .msg-err {
+        padding: 7px 16px;
+        font-size: 0.82rem;
+        margin-bottom: 14px;
+    }
+    .msg-ok   { background-color: #1a2a1a; border-left: 4px solid #28a745; color: #7ee07e; }
+    .msg-note { background-color: #16191c; border-left: 4px solid #495057; color: #adb5bd; }
+    .msg-err  { background-color: #2a1517; border-left: 4px solid #dc3545; color: #f1a1a8; }
+
+    /* summary cards */
+    .stat {
+        background-color: #1e2126;
+        border-left: 5px solid var(--c);
+        border-radius: 2px;
+        padding: .9rem 1rem;
+        height: 100%;
+    }
+    .stat .ttl { color: var(--c); font-size: .85rem; font-weight: 600; }
+    .stat .num { color: #fff; font-size: 1.6rem; font-weight: 600; line-height: 1.2; }
+    .stat .num small { color: #adb5bd; font-size: .85rem; font-weight: 400; }
+    .stat .sub { color: #adb5bd; font-size: .8rem; }
+
+    /* category blocks */
+    .block {
+        background-color: #1e2126;
+        border-left: 5px solid var(--c);
+        border-radius: 2px;
+        margin-bottom: 1.5rem;
+    }
+    .block-head { padding: .85rem 1rem .6rem; }
+    .block-head h2 { color: var(--c); font-size: 1.1rem; font-weight: 600; margin: 0; }
+    .block-head p { color: #adb5bd; font-size: .85rem; margin: .15rem 0 0; }
+
+    /* dark table */
+    .block table.table { color: #e0e0e0; font-size: 0.82rem; margin-bottom: 0; }
+    .block thead th {
+        background-color: #0d0f11;
+        color: #adb5bd;
+        border-top: 0;
+        white-space: nowrap;
+    }
+    .block td, .block th { border-color: #343a40 !important; vertical-align: middle !important; }
+    .block tr.r-a { background-color: #1e2126; }
+    .block tr.r-b { background-color: #22262c; }
+    .block tr.r-a:hover, .block tr.r-b:hover { background-color: #2a3040; }
+    .num-col { text-align: right; white-space: nowrap; }
+    .loc-id { color: #6c757d; font-size: .72rem; }
+    .val-money { color: #f39c12; font-family: monospace; }
+    .stale { color: #f39c12; }
+    .detail-cell { padding: 0 !important; border-top: 0 !important; background-color: #16191c; }
+    .detail-inner { padding: .5rem 1rem 1rem 2.5rem; background-color: #16191c; }
+    .detail-inner td { border-color: #2a2d31 !important; }
+    .btn-items { color: #adb5bd; border-color: #495057; }
+    .btn-items:hover { color: #fff; background-color: #495057; border-color: #495057; }
+
+    /* Pocket badge */
+    .pocket-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #fff;
+        border-radius: 2px;
+    }
+    .pocket-badge.dark-text { color: #111; }
+
+    @media (prefers-reduced-motion: reduce) { .collapsing { transition: none; } }
+</style>
 </head>
 <body>
 
+<nav class="navbar navbar-dark navbar-eve px-3">
+    <span class="navbar-brand mb-0 h5">
+        <i class="fas fa-truck-loading mr-2 text-warning"></i>Unsafe assets
+    </span>
+    <span class="text-muted small">
+        <i class="fas fa-users mr-1"></i><?= number_format(count($affected)) ?> pilots with assets at risk
+    </span>
+</nav>
+
+<div class="filter-bar">
+    <form method="get" class="form-inline flex-wrap" style="gap:10px;">
+        <label for="pocket" class="text-light mr-1"><i class="fas fa-folder mr-1"></i>Pocket:</label>
+        <select name="pocket" id="pocket" class="form-control form-control-sm mr-3" onchange="this.form.submit()">
+            <option value="">-- All --</option>
+<?php foreach ($pockets as $p): ?>
+            <option value="<?= h($p) ?>"<?= $p === $selected ? ' selected' : '' ?>><?= h($p) ?></option>
+<?php endforeach; ?>
+        </select>
+        <noscript><button type="submit" class="btn btn-sm btn-primary mr-2"><i class="fas fa-filter mr-1"></i> Filter</button></noscript>
+<?php if ($selected !== ''): ?>
+        <?= pocket_badge($selected) ?>
+        <a href="<?= h(strtok($_SERVER['REQUEST_URI'], '?')) ?>" class="btn btn-sm btn-link">Clear filter</a>
+<?php endif; ?>
+        <span class="ml-auto text-muted small">
+            Latest refresh in this view: <?= $newest !== '' ? h(substr($newest, 0, 16)) : 'no data' ?>
+        </span>
+    </form>
+</div>
+
 <div class="container-fluid">
 
-    <!-- Header -->
+<?php if ($error !== null): ?>
+    <div class="msg-err"><i class="fas fa-exclamation-circle mr-1"></i><?= h($error) ?> Check the server error log.</div>
+<?php endif; ?>
+
+    <div class="msg-note">
+        <i class="fas fa-info-circle mr-1"></i>
+        Everything not docked in an NPC station. Asset Safety wraps are always listed.
+        Starter ships (<?= h(implode(', ', array_map('ucfirst', $IGNORE_NAMES))) ?>) and every item whose name starts with
+        &ldquo;<?= h(ucfirst($IGNORE_PREFIXES[0])) ?>&rdquo; are omitted
+        (<?= number_format($ignored) ?> item lines skipped).
+    </div>
+
     <div class="row mb-4">
-        <div class="col-12 text-center">
-            <h1><i class="fas fa-truck-loading mr-2 text-warning"></i>EVE Assets Analysis Dashboard</h1>
-            <p class="text-muted">Recursive Location Chain Tracing &mdash; Off-Station Detection</p>
-        </div>
-    </div>
-
-    <!-- Stats Row -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card stat-card">
-                <div class="stat-number text-danger"><?php echo $safety_count; ?></div>
-                <div class="stat-label"><i class="fas fa-shield-alt section-icon"></i>Safety Assets</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stat-card">
-                <div class="stat-number text-warning"><?php echo $summary_count; ?></div>
-                <div class="stat-label"><i class="fas fa-users section-icon"></i>Pilots with Off-Station Items</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stat-card">
-                <div class="stat-number" style="color: #f0883e;"><?php echo $detail_count; ?></div>
-                <div class="stat-label"><i class="fas fa-box-open section-icon"></i>Total Off-Station Items</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card stat-card">
-                <div class="stat-number" style="color: #8957e5;"><?php echo $orphan_count; ?></div>
-                <div class="stat-label"><i class="fas fa-ghost section-icon"></i>Orphan Pilots</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- SECTION 1: Safety Assets -->
-    <!-- ============================================================ -->
-    <div class="card">
-        <div class="card-header">
-            <i class="fas fa-shield-alt section-icon"></i>
-            Section 1: Asset Safety Wraps
-            <span class="badge badge-safety float-right"><?php echo $safety_count; ?> items</span>
-        </div>
-        <div class="card-body">
-            <?php if ($safety_count > 0): ?>
-            <div class="table-responsive">
-                <table class="table table-sm table-hover">
-                    <thead>
-                        <tr>
-                            <th>Pilot</th>
-                            <th>Pocket</th>
-                            <th>Description</th>
-                            <th>Qty</th>
-                            <th>Type</th>
-                            <th>Location Flag</th>
-                            <th>Location ID</th>
-                            <th>Unit Price</th>
-                            <th>Forge Value</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php while ($row = mysqli_fetch_assoc($safety_result)): ?>
-                        <tr>
-                            <td><strong><?php echo htmlspecialchars($row['toon_name']); ?></strong></td>
-                            <td><span class="badge pocket-badge"><?php echo htmlspecialchars($row['pocket6']); ?></span></td>
-                            <td><?php echo htmlspecialchars($row['description']); ?></td>
-                            <td><?php echo number_format($row['quantity']); ?></td>
-                            <td><?php echo htmlspecialchars($row['type_description']); ?></td>
-                            <td><span class="badge badge-safety"><?php echo htmlspecialchars($row['location_flag']); ?></span></td>
-                            <td><code><?php echo $row['location_id']; ?></code></td>
-                            <td class="text-right"><?php echo number_format($row['unit_price'], 2); ?></td>
-                            <td class="text-right"><?php echo number_format($row['forge_value'], 2); ?></td>
-                            <td><small><?php echo $row['date_insert']; ?></small></td>
-                        </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php else: ?>
-                <div class="alert alert-dark"><i class="fas fa-info-circle"></i> No safety assets found.</div>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- SECTION 2: Summary by Pilot (with total assets column) -->
-    <!-- ============================================================ -->
-    <div class="card">
-        <div class="card-header">
-            <i class="fas fa-chart-bar section-icon"></i>
-            Section 2: Off-Station Asset Count by Pilot
-            <span class="badge badge-offstation float-right"><?php echo $summary_count; ?> pilots</span>
-        </div>
-        <div class="card-body">
-            <?php if ($summary_count > 0): ?>
-            <div class="table-responsive">
-                <table class="table table-sm table-hover">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Pilot Name</th>
-                            <th>Pocket</th>
-                            <th class="text-right">Total Assets</th>
-                            <th class="text-right">Off-Station Items</th>
-                            <th class="text-right">% Off-Station</th>
-                            <th>Risk Level</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php 
-                        $rank = 1;
-                        foreach ($summary_data as $tn => $data):
-                            $pilot = $pilot_info[$tn] ?? ['toon_name' => 'Unknown', 'pocket6' => 'N/A'];
-                            $off_count = $data['off_station_count'];
-                            $total_count = $data['total_assets'];
-                            $percent = $total_count > 0 ? round(($off_count / $total_count) * 100, 1) : 0;
-                        ?>
-                        <tr>
-                            <td class="text-muted"><?php echo $rank++; ?></td>
-                            <td><strong><?php echo htmlspecialchars($pilot['toon_name']); ?></strong></td>
-                            <td><span class="badge pocket-badge"><?php echo htmlspecialchars($pilot['pocket6']); ?></span></td>
-                            <td class="text-right"><span class="badge badge-secondary"><?php echo number_format($total_count); ?></span></td>
-                            <td class="text-right">
-                                <span class="badge badge-offstation" style="font-size: 1.1em;">
-                                    <?php echo number_format($off_count); ?>
-                                </span>
-                            </td>
-                            <td class="text-right">
-                                <span class="badge <?php echo $percent > 50 ? 'badge-danger' : ($percent > 20 ? 'badge-warning' : 'badge-success'); ?>">
-                                    <?php echo $percent; ?>%
-                                </span>
-                            </td>
-                            <td>
-                                <?php if ($off_count > 100): ?>
-                                    <span class="risk-high"><i class="fas fa-skull-crossbones"></i> Critical</span>
-                                <?php elseif ($off_count > 20): ?>
-                                    <span class="risk-moderate"><i class="fas fa-exclamation-triangle"></i> High</span>
-                                <?php elseif ($off_count > 5): ?>
-                                    <span class="text-warning"><i class="fas fa-exclamation-circle"></i> Moderate</span>
-                                <?php else: ?>
-                                    <span class="risk-low"><i class="fas fa-check-circle"></i> Low</span>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php else: ?>
-                <div class="alert alert-dark"><i class="fas fa-check-circle text-success"></i> All assets are safely stored in stations.</div>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- SECTION 3: Detailed Off-Station Assets (DataTable) -->
-    <!-- ============================================================ -->
-    <div class="card">
-        <div class="card-header">
-            <i class="fas fa-list-alt section-icon"></i>
-            Section 3: Detailed Off-Station Assets
-            <span class="badge badge-offstation float-right"><?php echo $detail_count; ?> items</span>
-        </div>
-        <div class="card-body">
-            <?php if ($detail_count > 0): ?>
-            <div class="table-responsive">
-                <table id="detailTable" class="table table-sm table-hover" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th>Pilot</th>
-                            <th>Pocket</th>
-                            <th>Description</th>
-                            <th>Qty</th>
-                            <th>Type</th>
-                            <th>Location Flag</th>
-                            <th>Final Location ID</th>
-                            <th>EVE Unique</th>
-                            <th>Unit Price</th>
-                            <th>Forge Value</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($detail_with_pilot as $row): ?>
-                        <tr>
-                            <td><strong><?php echo htmlspecialchars($row['toon_name']); ?></strong></td>
-                            <td><span class="badge pocket-badge"><?php echo htmlspecialchars($row['pocket6']); ?></span></td>
-                            <td><?php echo htmlspecialchars($row['description']); ?></td>
-                            <td><?php echo number_format($row['quantity']); ?></td>
-                            <td><?php echo htmlspecialchars($row['type_description']); ?></td>
-                            <td><code><?php echo htmlspecialchars($row['location_flag']); ?></code></td>
-                            <td><code><?php echo $row['location_id']; ?></code></td>
-                            <td><small class="text-muted"><?php echo $row['eveunique']; ?></small></td>
-                            <td class="text-right"><?php echo number_format($row['unit_price'], 2); ?></td>
-                            <td class="text-right"><?php echo number_format($row['forge_value'], 2); ?></td>
-                            <td><small><?php echo $row['date_insert']; ?></small></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php else: ?>
-                <div class="alert alert-dark"><i class="fas fa-check-circle text-success"></i> No off-station assets detected.</div>
-            <?php endif; ?>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- SECTION 4: Orphan Pilots (in EVE_ASSETS but not in PILOTS) -->
-    <!-- ============================================================ -->
-    <div class="card">
-        <div class="card-header">
-            <i class="fas fa-ghost section-icon"></i>
-            Section 4: Orphan Pilots &mdash; Assets Without Pilot Record
-            <span class="badge orphan-badge float-right"><?php echo $orphan_count; ?> pilots</span>
-        </div>
-        <div class="card-body">
-            <?php if ($orphan_count > 0): ?>
-            <div class="alert alert-warning" style="background-color: rgba(240, 136, 62, 0.1); border-color: #f0883e; color: #f0883e;">
-                <i class="fas fa-exclamation-triangle"></i>
-                <strong>Warning:</strong> The following pilot numbers exist in EVE_ASSETS but have no matching record in PILOTS. 
-                These are likely deleted characters that need manual cleanup.
-            </div>
-            <div class="table-responsive">
-                <table class="table table-sm table-hover">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Orphan Toon Number</th>
-                            <th>EVEWho</th>
-                            <th class="text-right">Asset Count</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php 
-                        $idx = 1;
-                        foreach ($orphan_data as $orphan): 
-                            $evewho_url = "https://evewho.com/character/" . $orphan['toon_number'];
-                        ?>
-                        <tr class="orphan-row">
-                            <td class="text-muted"><?php echo $idx++; ?></td>
-                            <td><code style="font-size: 1.1em;"><?php echo $orphan['toon_number']; ?></code></td>
-                            <td>
-                                <a href="<?php echo $evewho_url; ?>" target="_blank" class="evewho-link" title="View on EVEWho">
-                                    <?php echo $evewho_url; ?>
-                                    <i class="fas fa-external-link-alt"></i>
-                                </a>
-                            </td>
-                            <td class="text-right">
-                                <span class="badge orphan-badge"><?php echo number_format($orphan['orphan_asset_count']); ?> items</span>
-                            </td>
-                            <td>
-                                <span class="text-muted"><i class="fas fa-broom"></i> Requires manual cleanup</span>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <div class="mt-3">
-                <h6><i class="fas fa-code section-icon"></i>Quick Cleanup SQL:</h6>
-                <div class="p-3" style="background-color: #0d1117; border-radius: 6px; border: 1px solid #30363d;">
-                    <code style="color: #7ee787;">
-                        DELETE FROM EVE_ASSETS WHERE toon_number IN (
-                        <?php echo implode(', ', array_column($orphan_data, 'toon_number')); ?>
-                        );
-                    </code>
+<?php foreach ($CATS as $c => $meta):
+          $t = $totals[$c];
+          if ($c === 'wormhole' && $t['groups'] === 0) { continue; }
+          $main = ($c === 'safety') ? $t['wraps'] : $t['items'];
+          $unit = ($c === 'safety') ? 'wraps' : 'items';
+?>
+        <div class="col-6 col-lg mb-3">
+            <div class="stat" style="--c: <?= h($meta['color']) ?>">
+                <div class="ttl"><i class="fas <?= h($meta['icon']) ?> mr-1"></i><?= h($meta['label']) ?></div>
+                <div class="num"><?= number_format($main) ?> <small><?= $unit ?></small></div>
+                <div class="sub">
+<?php if ($c === 'safety' && $t['items'] > 0): ?>
+                    <?= number_format($t['items']) ?> items inside &middot;
+<?php endif; ?>
+                    <span class="val-money"><?= isk($t['value']) ?></span>
                 </div>
             </div>
-            <?php else: ?>
-                <div class="alert alert-dark"><i class="fas fa-check-circle text-success"></i> No orphan pilots found. All assets are linked to valid pilots.</div>
-            <?php endif; ?>
+        </div>
+<?php endforeach; ?>
+        <div class="col-6 col-lg mb-3">
+            <div class="stat" style="--c: #adb5bd">
+                <div class="ttl">Total outside NPC stations</div>
+                <div class="num val-money"><?= isk($grandValue) ?></div>
+                <div class="sub">Estimated value (forge_value)</div>
+            </div>
         </div>
     </div>
+
+<?php foreach ($CATS as $c => $meta):
+          $list = [];
+          foreach ($groups as $gk => $g) {
+              if ($g['cat'] === $c) { $list[$gk] = $g; }
+          }
+          if (!$list) {
+              if ($c === 'safety') { ?>
+    <div class="msg-ok"><i class="fas fa-check-circle mr-1"></i>No Asset Safety wraps for this selection.</div>
+<?php         }
+              continue;
+          }
+          $rowNo = 0;
+?>
+    <section class="block" style="--c: <?= h($meta['color']) ?>">
+        <div class="block-head">
+            <h2><i class="fas <?= h($meta['icon']) ?> mr-2"></i><?= h($meta['label']) ?></h2>
+            <p><?= h($meta['hint']) ?></p>
+        </div>
+        <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+            <thead>
+                <tr>
+                    <th>Pilot</th>
+                    <th>Location</th>
+                    <th class="num-col"><?= $c === 'safety' ? 'Wraps / items' : 'Items' ?></th>
+                    <th class="num-col">Value</th>
+                    <th>Updated</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+<?php foreach ($list as $g):
+          $p = $pilots[$g['toon']] ?? null;
+          $pilotName = $p ? $p['name'] : ('Unknown pilot #' . $g['toon']);
+          $pocket    = $p ? $p['pocket'] : '';
+          $isStale   = $g['updated'] !== '' && strtotime($g['updated']) < $staleLimit;
+          $isJ       = ($g['loc'] >= 31000000 && $g['loc'] < 32000000);
+          usort($g['list'], function ($a, $b) { return $b['value'] <=> $a['value']; });
+          $hasDetail = count($g['list']) > 0;
+          $detailId++;
+          $stripe = (++$rowNo % 2) ? 'r-a' : 'r-b';
+?>
+                <tr class="<?= $stripe ?>">
+                    <td><strong class="text-white"><?= h($pilotName) ?></strong> <?= pocket_badge($pocket) ?></td>
+                    <td>
+                        <?php if ($c === 'space'): ?>
+                            Solar system <?= h($g['loc']) ?><?= $isJ ? ' <span class="badge badge-secondary">Wormhole</span>' : '' ?>
+                        <?php else: ?>
+                            <?= $g['name'] !== '' ? h($g['name']) : 'Location ' . h($g['loc']) ?>
+                            <?php if ($g['name'] !== ''): ?><div class="loc-id">ID <?= h($g['loc']) ?></div><?php endif; ?>
+                        <?php endif; ?>
+                    </td>
+                    <td class="num-col">
+                        <?php if ($c === 'safety'): ?>
+                            <?= number_format($g['wraps']) ?> / <?= number_format($g['items']) ?>
+                        <?php else: ?>
+                            <?= number_format($g['items']) ?>
+                        <?php endif; ?>
+                    </td>
+                    <td class="num-col val-money"><?= isk($g['value']) ?></td>
+                    <td class="<?= $isStale ? 'stale' : '' ?>" style="white-space:nowrap">
+                        <?= h(substr($g['updated'], 0, 10)) ?>
+                        <?php if ($isStale): ?><i class="fas fa-history ml-1" title="Not refreshed in over <?= (int)$STALE_DAYS ?> days"></i><?php endif; ?>
+                    </td>
+                    <td class="text-right">
+<?php if ($hasDetail): ?>
+                        <button type="button" class="btn btn-sm btn-items" data-toggle="collapse"
+                                data-target="#d<?= $detailId ?>" aria-expanded="false" aria-controls="d<?= $detailId ?>">
+                            <i class="fas fa-list mr-1"></i>Items
+                        </button>
+<?php endif; ?>
+                    </td>
+                </tr>
+<?php if ($hasDetail): ?>
+                <tr>
+                    <td colspan="6" class="detail-cell">
+                        <div class="collapse" id="d<?= $detailId ?>">
+                            <div class="detail-inner">
+                                <table class="table table-sm mb-0">
+                                    <tbody>
+<?php foreach (array_slice($g['list'], 0, $DETAIL_LIMIT) as $it): ?>
+                                        <tr>
+                                            <td><?= h($it['name']) ?></td>
+                                            <td class="num-col">&times; <?= number_format($it['qty']) ?></td>
+                                            <td class="num-col val-money"><?= isk($it['value']) ?></td>
+                                        </tr>
+<?php endforeach; ?>
+<?php if (count($g['list']) > $DETAIL_LIMIT): ?>
+                                        <tr><td colspan="3" class="text-muted">+ <?= count($g['list']) - $DETAIL_LIMIT ?> more lines of lower value</td></tr>
+<?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+<?php endif; ?>
+<?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+    </section>
+<?php endforeach; ?>
+
+<?php if ($unresolved > 0): ?>
+    <div class="msg-note">
+        <i class="fas fa-info-circle mr-1"></i><?= number_format($unresolved) ?> item lines could not be traced to a location
+        (their ship or container is missing from the data, usually because that pilot has not been refreshed recently) and are not listed above.
+    </div>
+<?php endif; ?>
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
-
-<script>
-$(document).ready(function() {
-    $('#detailTable').DataTable({
-        pageLength: 25,
-        order: [[0, 'asc'], [2, 'asc']],
-        language: {
-            search: "Filter assets:",
-            lengthMenu: "Show _MENU_ per page",
-            info: "Showing _START_ to _END_ of _TOTAL_ items",
-            paginate: {
-                first: "First",
-                last: "Last",
-                next: "Next",
-                previous: "Previous"
-            }
-        },
-        columnDefs: [
-            { targets: [8, 9], className: "text-right" }
-        ]
-    });
-});
-</script>
-
 </body>
 </html>
