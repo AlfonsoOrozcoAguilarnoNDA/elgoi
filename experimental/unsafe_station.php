@@ -35,7 +35,7 @@ $WORMHOLE_STRUCTURES = [
 ];
 
 // Starter ships and default gear of new pilots: not worth listing.
-$IGNORE_NAMES    = ['ibis', 'reaper', 'velator', 'impairor','capsule','1MN Civilian Afterburner'];   // exact type name, any case
+$IGNORE_NAMES    = ['ibis', 'reaper', 'velator', 'impairor','capsule','1mn civilian afterburner'];   // exact type name, lower case
 $IGNORE_PREFIXES = ['civilian'];                                // type name starts with
 
 $STALE_DAYS   = 14;   // flag data older than this many days
