@@ -14,7 +14,7 @@ Objetivo: reformular un script de kimi sobrre objetos en el espacio o citadels.
  * Tables used: EVE_ASSETS (items) and PILOTS (toon_name, pocket6).
  */
 
-require_once __DIR__ . '../config.php';
+require_once '../config.php';
 
 // ---------------------------------------------------------------------------
 // Settings
