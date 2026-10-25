@@ -40,7 +40,7 @@ Creamos mosaico
 */
 
 $tiles = [
-    showTile("adminer-6.1.2-mysql-en.php", "fa-database", "dark"),
+    showTile("adminer-6.2.0-mysql-en.php", "fa-database", "dark"),
 	showTile("crew/moneymakers.php", "fa-coins", "primary"),    
     showTile("crew/biometrics.php", "fa-fingerprint", "primary"),
 	showTile("crew/apex_roster.php", "fa-users", "primary"),
