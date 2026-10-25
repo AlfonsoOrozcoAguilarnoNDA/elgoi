@@ -57,10 +57,8 @@ $tiles = [
 	showTile("specific/explode.php", "fa-bomb", "light"),    
     
     showTile("updater.php", "fa-satellite-dish", "dark"),
-	showTile("industry/blueprints.php", "fa-layer-group", "secondary"),    
-    showTile("industry/inventory.php", "fa-gem", "warning"),	
-    showTile("industry/inventory_pi.php", "fa-layer-group", "secondary"),    
-    showTile("industry/minerals_bpo_bpc.php", "fa-gem", "warning"),	
+	showTile("industry/blueprints.php", "fa-layer-group", "secondary"),
+    showTile("industry/inventory.php", "fa-gem", "warning"),
     
 	showTile("industry/slots_and_ceo.php", "fa-user-tie", "info"),
 	showTile("experimental/unsafe_station.php", "fa-truck-loading", "danger"),
