@@ -22,7 +22,7 @@ date_default_timezone_set('America/Mexico_City');
 // CONFIGURACIÓN INVENTARIO
 // ---------------------------------------------------------------------
 $verificando = "Corax,Catalyst,Cormorant,Kestrel,Caracal,Antimatter Charge M,Scourge Light Missile,Antimatter Charge S,Tranquil Exotic Filament,Tranquil Electrical Filament,Tranquil Dark Filament,Tranquil Firestorm Filament,Tranquil Gamma Filament";
-$pilotos = "Abyssal Firestorm,Hypervisor,Sue Rtuda";
+$pilotos = "Abyssal Firestorm,R1h net,Sue Rtuda";
 
 // CONFIGURACIÓN DE REGIONES municion
 // ============================================
