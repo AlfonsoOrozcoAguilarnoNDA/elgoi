@@ -7,14 +7,18 @@
  * Alfonso Orozco Aguilar 
  * Claude Sonnet 5.5 under prompts and database form Alfonso Orozco Aguilar
 
- * unsafe_assets.php
- * Lists every EVE asset that is NOT safely docked in an NPC station:
+ * Two tabs, one shared pocket filter:
+ *
+ * Tab 1 - Unsafe assets. Lists every EVE asset that is NOT safely docked in an NPC station:
  *   - Asset Safety wraps (always listed, so they get recovered)
  *   - Items in a player structure (citadel, engineering complex, refinery...)
  *   - Items floating in space (ships, containers, deployables)
  *
+ * Tab 2 - Low-sec stations. Lists every item docked in an NPC station whose true
+ *   security is below $LOWSEC_LIMIT (see the setting and its explanation below).
+ *
  * Single file, procedural. Requires config.php, which must create $link (mysqli).
- * Tables used: EVE_ASSETS (items) and PILOTS (toon_name, pocket6).
+ * Tables used: EVE_ASSETS (items), PILOTS (toon_name, pocket6) and staStations (stationName, security).
  */
 
 require_once '../config.php';
@@ -41,6 +45,17 @@ $IGNORE_PREFIXES = ['civilian'];                                // type name sta
 
 $STALE_DAYS   = 14;   // flag data older than this many days
 $DETAIL_LIMIT = 30;   // max items shown when a row is expanded
+
+/*
+ * Low-sec tab: security limit. Stations whose TRUE security is strictly below this value are listed.
+ * The game displays the true value rounded to one decimal, so a system with true security
+ * 0.468 (Autaris) is shown as 0.5 in game and behaves as high-security.
+ * A station only shows 0.4 or lower in game when its true value is below 0.45.
+ *   0.45 = matches what you see in game (high-sec ends at a displayed 0.5)  <- default
+ *   0.50 = raw cut-off on the true value (will include systems that display as 0.5)
+ */
+$LOWSEC_LIMIT = 0.45;
+$TBL_STATIONS = 'staStations';   // change the case here if your table is named differently
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -199,6 +214,9 @@ if (isset($_GET['pocket']) && in_array($_GET['pocket'], $pockets, true)) {
     $selected = $_GET['pocket'];
 }
 
+// Which tab is open (kept when the pocket filter reloads the page)
+$activeTab = (isset($_GET['tab']) && $_GET['tab'] === 'lowsec') ? 'lowsec' : 'unsafe';
+
 $res = mysqli_query($link, "SELECT toon_number, location_flag, location_id, description, quantity,
                                    type_id, type_description, eveunique, date_insert, forge_value
                             FROM EVE_ASSETS");
@@ -322,6 +340,55 @@ uasort($groups, function ($a, $b) use ($order) {
     return $b['value'] <=> $a['value'];
 });
 
+// ---------------------------------------------------------------------------
+// Tab 2: items docked in low-security NPC stations
+// ---------------------------------------------------------------------------
+
+$lowRows     = [];
+$lowPilots   = [];
+$lowStations = [];
+$lowValue    = 0.0;
+$lowError    = null;
+
+$res = mysqli_query($link, "SELECT a.toon_number, s.stationName, s.security, a.location_flag,
+                                   a.type_description, a.quantity, a.forge_value
+                            FROM EVE_ASSETS a
+                            INNER JOIN `" . $TBL_STATIONS . "` s ON s.stationID = a.location_id
+                            WHERE s.security < " . (float)$LOWSEC_LIMIT);
+if ($res) {
+    while ($r = mysqli_fetch_assoc($res)) {
+        $toon = (int)$r['toon_number'];
+        if ($selected !== '') {
+            if (!isset($pilots[$toon]) || trim((string)$pilots[$toon]['pocket']) !== $selected) {
+                continue;
+            }
+        }
+        $r['pilot_name']  = isset($pilots[$toon]) ? (string)$pilots[$toon]['name'] : 'Unknown pilot #' . $toon;
+        $r['pocket']      = isset($pilots[$toon]) ? $pilots[$toon]['pocket'] : '';
+        $lowRows[]        = $r;
+        $lowPilots[$toon] = true;
+        $lowStations[$r['stationName']] = true;
+        $lowValue += (float)$r['forge_value'];
+    }
+    mysqli_free_result($res);
+} else {
+    $lowError = 'Could not read the low-security station list.';
+    error_log('unsafe_assets.php low-sec: ' . mysqli_error($link));
+}
+
+// Order: pilot, station, value (highest first)
+usort($lowRows, function ($a, $b) {
+    $c = strcasecmp($a['pilot_name'], $b['pilot_name']);
+    if ($c !== 0) {
+        return $c;
+    }
+    $c = strcmp((string)$a['stationName'], (string)$b['stationName']);
+    if ($c !== 0) {
+        return $c;
+    }
+    return (float)$b['forge_value'] <=> (float)$a['forge_value'];
+});
+
 $staleLimit = strtotime('-' . (int)$STALE_DAYS . ' days');
 $detailId   = 0;
 ?>
@@ -365,6 +432,28 @@ $detailId   = 0;
         border-color: #007bff;
         box-shadow: none;
     }
+
+    /* tabs */
+    .nav-eve {
+        border-bottom: 2px solid #343a40;
+        margin-bottom: 1.25rem;
+    }
+    .nav-eve .nav-link {
+        color: #adb5bd;
+        background-color: transparent;
+        border: 0;
+        border-bottom: 3px solid transparent;
+        border-radius: 0;
+        padding: .6rem 1.1rem;
+        margin-bottom: -2px;
+    }
+    .nav-eve .nav-link:hover { color: #fff; }
+    .nav-eve .nav-link.active {
+        color: #fff;
+        background-color: #1e2126;
+        border-bottom-color: #007bff;
+    }
+    .nav-eve .badge { background-color: #343a40; color: #e0e0e0; font-weight: 600; }
 
     /* messages */
     .msg-ok, .msg-note, .msg-err {
@@ -422,6 +511,11 @@ $detailId   = 0;
     .btn-items { color: #adb5bd; border-color: #495057; }
     .btn-items:hover { color: #fff; background-color: #495057; border-color: #495057; }
 
+    /* low-sec tab */
+    .muted-cell { color: #6c757d; }
+    .sec-low  { color: #f0a43a; font-weight: 600; }
+    .sec-null { color: #e5534b; font-weight: 600; }
+
     /* Pocket badge */
     .pocket-badge {
         display: inline-block;
@@ -450,6 +544,7 @@ $detailId   = 0;
 
 <div class="filter-bar">
     <form method="get" class="form-inline flex-wrap" style="gap:10px;">
+        <input type="hidden" name="tab" id="tabField" value="<?= h($activeTab) ?>">
         <label for="pocket" class="text-light mr-1"><i class="fas fa-folder mr-1"></i>Pocket:</label>
         <select name="pocket" id="pocket" class="form-control form-control-sm mr-3" onchange="this.form.submit()">
             <option value="">-- All --</option>
@@ -460,7 +555,7 @@ $detailId   = 0;
         <noscript><button type="submit" class="btn btn-sm btn-primary mr-2"><i class="fas fa-filter mr-1"></i> Filter</button></noscript>
 <?php if ($selected !== ''): ?>
         <?= pocket_badge($selected) ?>
-        <a href="<?= h(strtok($_SERVER['REQUEST_URI'], '?')) ?>" class="btn btn-sm btn-link">Clear filter</a>
+        <a href="<?= h(strtok($_SERVER['REQUEST_URI'], '?')) ?>?tab=<?= h($activeTab) ?>" class="btn btn-sm btn-link">Clear filter</a>
 <?php endif; ?>
         <span class="ml-auto text-muted small">
             Latest refresh in this view: <?= $newest !== '' ? h(substr($newest, 0, 16)) : 'no data' ?>
@@ -473,6 +568,28 @@ $detailId   = 0;
 <?php if ($error !== null): ?>
     <div class="msg-err"><i class="fas fa-exclamation-circle mr-1"></i><?= h($error) ?> Check the server error log.</div>
 <?php endif; ?>
+
+    <ul class="nav nav-eve" id="viewTabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link<?= $activeTab === 'unsafe' ? ' active' : '' ?>" id="nav-unsafe" data-toggle="tab" data-tab="unsafe"
+               href="#tab-unsafe" role="tab" aria-controls="tab-unsafe" aria-selected="<?= $activeTab === 'unsafe' ? 'true' : 'false' ?>">
+                <i class="fas fa-truck-loading mr-1 text-warning"></i>Unsafe assets
+                <span class="badge badge-pill ml-1"><?= number_format(count($groups)) ?></span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link<?= $activeTab === 'lowsec' ? ' active' : '' ?>" id="nav-lowsec" data-toggle="tab" data-tab="lowsec"
+               href="#tab-lowsec" role="tab" aria-controls="tab-lowsec" aria-selected="<?= $activeTab === 'lowsec' ? 'true' : 'false' ?>">
+                <i class="fas fa-shield-alt mr-1 text-warning"></i>Low-sec stations
+                <span class="badge badge-pill ml-1"><?= number_format(count($lowRows)) ?></span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+
+    <!-- ===================== TAB 1: UNSAFE ASSETS ===================== -->
+    <div class="tab-pane<?= $activeTab === 'unsafe' ? ' active' : '' ?>" id="tab-unsafe" role="tabpanel" aria-labelledby="nav-unsafe">
 
     <div class="msg-note">
         <i class="fas fa-info-circle mr-1"></i>
@@ -622,9 +739,125 @@ $detailId   = 0;
     </div>
 <?php endif; ?>
 
+    </div><!-- /tab-unsafe -->
+
+    <!-- ===================== TAB 2: LOW-SEC STATIONS ===================== -->
+    <div class="tab-pane<?= $activeTab === 'lowsec' ? ' active' : '' ?>" id="tab-lowsec" role="tabpanel" aria-labelledby="nav-lowsec">
+
+<?php if ($lowError !== null): ?>
+    <div class="msg-err"><i class="fas fa-exclamation-circle mr-1"></i><?= h($lowError) ?> Check the server error log.</div>
+<?php endif; ?>
+
+    <div class="msg-note">
+        <i class="fas fa-info-circle mr-1"></i>
+        This tab only covers items docked in NPC stations with a true security below
+        <strong><?= h(number_format($LOWSEC_LIMIT, 2)) ?></strong>.
+        Items in player structures or in space are not included here; they are on the Unsafe assets tab.
+    </div>
+
+    <div class="msg-note">
+        <i class="fas fa-ruler mr-1"></i>
+        <strong>Why this limit?</strong>
+        The game shows security rounded to one decimal, but the database stores the true value.
+        For example, Autaris has a true security of 0.468 and appears as 0.5 in game, so it is
+        high-security even though 0.468 is below 0.5. A cut-off of 0.5 on the true value would list
+        systems like it by mistake. A station only displays 0.4 or lower in game when its true value
+        is below 0.45. The limit is set in <code>$LOWSEC_LIMIT</code> at the top of the script.
+        The Security column shows the true value, with the in-game value in parentheses.
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-6 col-lg mb-3">
+            <div class="stat" style="--c: #f39c12">
+                <div class="ttl"><i class="fas fa-boxes mr-1"></i>Item lines</div>
+                <div class="num"><?= number_format(count($lowRows)) ?></div>
+            </div>
+        </div>
+        <div class="col-6 col-lg mb-3">
+            <div class="stat" style="--c: #5dade2">
+                <div class="ttl"><i class="fas fa-users mr-1"></i>Pilots affected</div>
+                <div class="num"><?= number_format(count($lowPilots)) ?></div>
+            </div>
+        </div>
+        <div class="col-6 col-lg mb-3">
+            <div class="stat" style="--c: #a29bfe">
+                <div class="ttl"><i class="fas fa-warehouse mr-1"></i>Stations</div>
+                <div class="num"><?= number_format(count($lowStations)) ?></div>
+            </div>
+        </div>
+        <div class="col-6 col-lg mb-3">
+            <div class="stat" style="--c: #adb5bd">
+                <div class="ttl">Total value</div>
+                <div class="num val-money"><?= isk($lowValue) ?></div>
+                <div class="sub">Estimated value (forge_value)</div>
+            </div>
+        </div>
+    </div>
+
+<?php if ($lowError === null && count($lowRows) === 0): ?>
+    <div class="msg-ok">
+        <i class="fas fa-check-circle mr-1"></i>No assets found in stations with true security below
+        <?= h(number_format($LOWSEC_LIMIT, 2)) ?> for this selection.
+    </div>
+<?php elseif (count($lowRows) > 0): ?>
+    <section class="block" style="--c: #f0a43a">
+        <div class="block-head">
+            <h2><i class="fas fa-shield-alt mr-2"></i>In low-security stations</h2>
+            <p>Docked in NPC stations below the security limit. Sorted by pilot, station and value.</p>
+        </div>
+        <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+            <thead>
+                <tr>
+                    <th class="num-col">#</th>
+                    <th>Pilot ID</th>
+                    <th>Pilot</th>
+                    <th>Station</th>
+                    <th class="num-col">Security (in game)</th>
+                    <th>Location</th>
+                    <th>Item</th>
+                    <th class="num-col">Qty</th>
+                    <th class="num-col">Value</th>
+                </tr>
+            </thead>
+            <tbody>
+<?php $lowN = 0;
+      foreach ($lowRows as $r):
+          $sec      = (float)$r['security'];
+          $secClass = ($sec <= 0.0) ? 'sec-null' : 'sec-low';
+          $stripe   = (++$lowN % 2) ? 'r-a' : 'r-b';
+?>
+                <tr class="<?= $stripe ?>">
+                    <td class="num-col muted-cell"><?= $lowN ?></td>
+                    <td class="muted-cell"><?= h($r['toon_number']) ?></td>
+                    <td><strong class="text-white"><?= h($r['pilot_name']) ?></strong> <?= pocket_badge($r['pocket']) ?></td>
+                    <td><?= h($r['stationName']) ?></td>
+                    <td class="num-col <?= $secClass ?>"><?= number_format($sec, 3) ?> <span class="muted-cell">(<?= number_format(round($sec, 1), 1) ?>)</span></td>
+                    <td class="muted-cell"><?= h($r['location_flag']) ?></td>
+                    <td><?= h(stripslashes((string)$r['type_description'])) ?></td>
+                    <td class="num-col"><?= number_format((int)$r['quantity']) ?></td>
+                    <td class="num-col val-money"><?= number_format((float)$r['forge_value'], 2) ?></td>
+                </tr>
+<?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+    </section>
+<?php endif; ?>
+
+    </div><!-- /tab-lowsec -->
+
+    </div><!-- /tab-content -->
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Keep the open tab when the pocket filter reloads the page
+$('#viewTabs a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+    $('#tabField').val($(e.target).data('tab'));
+});
+</script>
 </body>
 </html>
