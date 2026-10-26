@@ -9,7 +9,15 @@
  */
 require '../config.php';
 
-$lsr_sec_limit    = 0.5;           // Report everything strictly below this security level
+/*
+ * Security limit: the report lists stations whose TRUE security is strictly below this value.
+ * The game displays the true value rounded to one decimal, so a system with true security
+ * 0.468 (Autaris) is shown as 0.5 in game and behaves as high-security.
+ * A station only shows 0.4 or lower in game when its true value is below 0.45.
+ *   0.45 = matches what you see in game (high-sec ends at a displayed 0.5)  <- default
+ *   0.50 = raw cut-off on the true value (will include systems that display as 0.5)
+ */
+$lsr_sec_limit    = 0.45;
 $lsr_tbl_stations = 'staStations'; // Change the case here if your table is named differently
 
 // Pocket badge color (skipped if your main code already defines it, so merging is safe)
@@ -120,9 +128,20 @@ if ($lsr_res === false) {
 
     <div class="lsr-note p-3 mb-4 rounded">
         <i class="fas fa-info-circle text-warning"></i>
-        This report only covers items located in NPC stations with a security level below
-        <strong><?= lsr_h(number_format($lsr_sec_limit, 1)) ?></strong>.
+        This report only covers items located in NPC stations with a true security level below
+        <strong><?= lsr_h(number_format($lsr_sec_limit, 2)) ?></strong>.
         Items inside player-owned structures (citadels) or in space are not included.
+    </div>
+
+    <div class="lsr-note p-3 mb-4 rounded">
+        <i class="fas fa-ruler text-warning"></i>
+        <strong>Why this limit?</strong>
+        The game shows security rounded to one decimal, but the database stores the true value.
+        For example, Autaris has a true security of 0.468 and appears as 0.5 in game, so it is
+        high-security even though 0.468 is below 0.5. A cut-off of 0.5 on the true value would list
+        systems like it by mistake. A station only displays 0.4 or lower in game when its true value
+        is below 0.45. The limit is set in <code>$lsr_sec_limit</code> at the top of the script.
+        The Security column shows the true value, with the in-game value in parentheses.
     </div>
 
 <?php if ($lsr_error !== ''): ?>
@@ -133,7 +152,7 @@ if ($lsr_res === false) {
 <?php elseif (count($lsr_rows) === 0): ?>
     <div class="lsr-stat">
         <i class="fas fa-check-circle text-success"></i>
-        No assets found in stations with security below <?= lsr_h(number_format($lsr_sec_limit, 1)) ?>.
+        No assets found in stations with true security below <?= lsr_h(number_format($lsr_sec_limit, 2)) ?>.
     </div>
 <?php else: ?>
 
@@ -148,11 +167,12 @@ if ($lsr_res === false) {
         <table class="table table-sm lsr-table">
             <thead>
                 <tr>
+                    <th class="num-col">#</th>
                     <th>Pilot</th>
-                    <th>Pilot #</th>
+                    <th>Pilot ID</th>
                     <th>Pocket</th>
                     <th>Station</th>
-                    <th class="num-col">Security</th>
+                    <th class="num-col">Security (in game)</th>
                     <th>Location</th>
                     <th>Item</th>
                     <th class="num-col">Qty</th>
@@ -160,18 +180,21 @@ if ($lsr_res === false) {
                 </tr>
             </thead>
             <tbody>
-<?php foreach ($lsr_rows as $r):
+<?php $lsr_n = 0;
+foreach ($lsr_rows as $r):
+    $lsr_n++;
     $bg  = getColorPocket($r['pocket6']);
     $fg  = lsr_text_color($bg);
     $sec = (float)$r['security'];
     $secClass = ($sec <= 0.0) ? 'sec-null' : 'sec-low';
 ?>
                 <tr>
+                    <td class="num-col muted"><?= $lsr_n ?></td>
                     <td><?= $r['toon_name'] !== null ? lsr_h($r['toon_name']) : '<span class="muted">(unknown pilot)</span>' ?></td>
                     <td class="muted"><?= lsr_h($r['toon_number']) ?></td>
                     <td><span class="badge badge-pocket" style="background:<?= lsr_h($bg) ?>;color:<?= lsr_h($fg) ?>"><?= lsr_h($r['pocket6'] ?? 'N/A') ?></span></td>
                     <td><?= lsr_h($r['stationName']) ?></td>
-                    <td class="num-col <?= $secClass ?>"><?= number_format($sec, 2) ?></td>
+                    <td class="num-col <?= $secClass ?>"><?= number_format($sec, 3) ?> <span class="muted">(<?= number_format(round($sec, 1), 1) ?>)</span></td>
                     <td class="muted"><?= lsr_h($r['location_flag']) ?></td>
                     <td><?= lsr_h($r['type_description']) ?></td>
                     <td class="num-col"><?= number_format((int)$r['quantity']) ?></td>
