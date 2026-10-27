@@ -68,17 +68,17 @@ $tiles = [
 ];
 
 $tiles2 = [	
-	showTile("experimental/kimitest4.php", "fa-chart-pie", "primary"),	
+	showTile("crew/interactions.php", "fa-passport", "primary"),
 	showTile("specific/cargohold.php", "fa-dollar-sign", "warning"),		
 	showTile("industry/ready_to_build.php", "fa-list-ol", "info"),	
 	showTile("specific/fittingsEFT.php", "fa-balance-scale-right", "danger"),		
 	showTile("industry/calc_p1.php", "fa-calculator", "info"),	
 	showTile("experimental/whereare.php", "fa-globe", "success"),
 	showTile("experimental/newpanels.php", "fa-users", "info"),	
+	showTile("experimental/kimitest4.php", "fa-chart-pie", "secondary"),	
 	showTile("experimental/contacts_and_factions.php", "fa-address-book", "secondary"),		
 	showTile("mimonitor.php", "fa-microchip", "secondary"),
-	showTile("experimental/portraits.php", "fa-portrait", "secondary"),
-	showTile("crew/interactions.php", "fa-passport", "primary"),
+	showTile("experimental/portraits.php", "fa-portrait", "secondary"),	
 	showTile("experimental/shipstest.php", "fa-warehouse", "secondary"),
 	showTile("specific/oldversion.php", "fa-undo", "secondary"),
     showTile("experimental/thesix.php", "fa-users", "primary")    
