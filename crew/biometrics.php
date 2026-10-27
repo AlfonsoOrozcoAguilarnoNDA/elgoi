@@ -269,7 +269,7 @@ function renderTabRemap() {
     ?>
     <!-- Header bar -->
     <div class="remap-header mb-4 p-3 rounded d-flex justify-content-between align-items-center" style="background:#16191c;border-bottom:2px solid #007bff;">
-        <h5 class="mb-0 text-white"><i class="fas fa-dna mr-2" style="color:#007bff;"></i>Pilot Remap Dashboard</h5>
+        <h5 class="mb-0 text-white"><i class="fas fa-history mr-2" style="color:#007bff;"></i>Pilot Remap Dashboard</h5>
         <div>
             <span class="total-badge ready-badge"><i class="fas fa-check-circle mr-1"></i><?php echo number_format($ready_count); ?> READY</span>
             <span class="total-badge"><i class="fas fa-list mr-1"></i><?php echo number_format(count($pilots)); ?> pilots</span>
@@ -990,7 +990,7 @@ echo crew_navbar();
         </li>
         <li class="nav-item">
             <a class="nav-link <?php echo ($active_tab == 'remap') ? 'active' : ''; ?>" href="?tab=remap">
-                <i class="fas fa-dna"></i> Remap
+                <i class="fas fa-history"></i> Remap
             </a>
         </li>
         <li class="nav-item">
