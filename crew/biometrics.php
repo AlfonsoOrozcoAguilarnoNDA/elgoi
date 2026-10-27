@@ -3,7 +3,7 @@
  * EVE Online - Unified CREW Audit Tool
  * License: GPL
  * Author: Alfonso Orozco Aguilar
- * Tabs: Graduation | Reputation | Biometrics | Planet/flags | Evermarks
+ * Tabs: Graduation | Remap | Biometrics | Planet/flags | Evermarks
  * Stack: PHP 8.x Procedural, MariaDB, Bootstrap 4.6.2, Font Awesome 5.15.4
  */
 
@@ -23,6 +23,10 @@ mysqli_query($link, "UPDATE PILOTS SET finishqueue = NULL WHERE finishqueue = '0
 
 $self       = basename(__FILE__);
 $active_tab = $_GET['tab'] ?? 'graduation';
+
+// Remap tab: if the cooldown date expired more than this many days ago,
+// show READY instead of "N days ago".
+const READY_THRESHOLD_DAYS = 365;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SHARED: TRADEFIELD UPDATE (skill catalog maintenance — runs always)
@@ -65,6 +69,20 @@ if ($resPending && mysqli_num_rows($resPending) > 0) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// SHARED HELPERS: pocket colors (used by Graduation and Remap)
+// ══════════════════════════════════════════════════════════════════════════════
+function get_pocket_color($val) {
+    return match(strtoupper(trim($val ?? ''))) {
+        'EXPER' => '#28a745', 'CLEAN' => '#0078d7', 'SANGO' => '#ffc107',
+        'LUCKY' => '#6f42c1', 'NOKIA' => '#e81123', 'YENN'  => '#cccccc',
+        'OTHER' => '#fd7e14', default => '#444444'
+    };
+}
+function get_pocket_text($val) {
+    return in_array(strtoupper(trim($val ?? '')), ['SANGO','YENN']) ? '#111' : '#fff';
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // TAB 1 — GRADUATION: tradefield + queue audit
 // ══════════════════════════════════════════════════════════════════════════════
 function obtenerOficio($p) {
@@ -91,13 +109,6 @@ function getPanelStatus($expiration) {
     $vence = new DateTime($expiration);
     if ($vence < $hoy) return '<span class="text-secondary">n/a</span>';
     return '<span class="text-white font-weight-bold">' . $hoy->diff($vence)->format('%a') . ' D</span>';
-}
-
-function getBirreteStyle($finishQueue, $planets) {
-    $ahora = date('Y-m-d H:i:s');
-    if (!empty($finishQueue) && $finishQueue > $ahora) return 'text-success';
-    if (empty($planets) || $planets == '[]')          return 'text-secondary';
-    return 'text-warning';
 }
 
 function renderTabGraduation() {
@@ -161,11 +172,7 @@ function renderTabGraduation() {
                         : '<span class="text-muted">N/A</span>'; ?></td>
                 <td class="text-center font-weight-bold"><?php echo $diasCola; ?></td>
                 <td class="text-center col-panel"><?php echo getPanelStatus($p['manualExpiration']); ?></td>
-                <td class="text-center" style="font-size:1.1rem;">
-                    <i class="fas fa-globe-asia mx-1 <?php echo ($p['planets'] != '[]') ? 'text-success' : 'text-dark'; ?>"></i>
-                    <i class="fas fa-tools     mx-1 <?php echo ($p['jobs']    != '[]') ? 'text-warning' : 'text-dark'; ?>"></i>
-                    <i class="fas fa-graduation-cap mx-1 <?php echo getBirreteStyle($p['finishqueue'], $p['planets']); ?>"></i>
-                </td>
+                <td class="text-center"><?php echo geticons($p['toon_number']); ?></td>
                 <td>
                     <?php
                     $p6v = $p['pocket6'] ?? 'N/A';
@@ -183,145 +190,191 @@ function renderTabGraduation() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// TAB 2 — REPUTATION: diplomatic control
+// TAB 2 — REMAP: attributes + remap cooldown status
 // ══════════════════════════════════════════════════════════════════════════════
-function get_pocket_color($val) {
-    return match(strtoupper(trim($val ?? ''))) {
-        'EXPER' => '#28a745', 'CLEAN' => '#0078d7', 'SANGO' => '#ffc107',
-        'LUCKY' => '#6f42c1', 'NOKIA' => '#e81123', 'YENN'  => '#cccccc',
-        'OTHER' => '#fd7e14', default => '#444444'
-    };
-}
-function get_pocket_text($val) {
-    return in_array(strtoupper(trim($val ?? '')), ['SANGO','YENN']) ? '#111' : '#fff';
-}
+function renderTabRemap() {
+    global $link;
 
-function renderTabReputation() {
-    global $link, $self;
-    $f_owner  = $_POST['owner_email']        ?? '';
-    $f_pilot  = $_POST['pilot_name']         ?? '';
-    $f_target = $_POST['target_description'] ?? '';
-    $f_pocket = $_POST['pocket6_dip']        ?? '';
+    $sql = "SELECT `toon_name`, `DOB`, `pocket6`, `attrib`, `remaps`
+            FROM `PILOTS`
+            WHERE `toon_name` NOT LIKE '%catalog%'
+            ORDER BY `DOB` ASC";
 
-    $res_owners      = mysqli_query($link, "SELECT DISTINCT owner_email FROM DIPLOMATIC WHERE owner_email != '' ORDER BY owner_email ASC");
-    $res_pilots_list = mysqli_query($link, "SELECT DISTINCT toon_name FROM PILOTS ORDER BY toon_name ASC");
-    $res_corps       = mysqli_query($link, "SELECT DISTINCT target_description FROM DIPLOMATIC WHERE target_description != '' ORDER BY target_description ASC");
-    $res_pockets     = mysqli_query($link, "SELECT DISTINCT pocket6 FROM PILOTS WHERE pocket6 != '' ORDER BY pocket6 ASC");
+    $result = mysqli_query($link, $sql);
+    if (!$result) {
+        return '<div class="alert alert-danger">Database Error: ' . htmlspecialchars(mysqli_error($link)) . '</div>';
+    }
 
-    $where = "WHERE 1=1";
-    if (!empty($f_owner))  $where .= " AND D.owner_email = '"        . mysqli_real_escape_string($link, $f_owner)  . "'";
-    if (!empty($f_pilot))  $where .= " AND D.pilot_name = '"         . mysqli_real_escape_string($link, $f_pilot)  . "'";
-    if (!empty($f_target)) $where .= " AND D.target_description = '" . mysqli_real_escape_string($link, $f_target) . "'";
-    if (!empty($f_pocket)) $where .= " AND P.pocket6 = '"            . mysqli_real_escape_string($link, $f_pocket) . "'";
+    $pilots      = [];
+    $ready_count = 0;
+    $now         = new DateTime('now', new DateTimeZone('UTC'));
 
-    $sql_main   = "SELECT D.*, P.pocket6, P.tradefield, P.toon_number
-                   FROM DIPLOMATIC D
-                   LEFT JOIN PILOTS P ON D.pilot_name = P.toon_name
-                   $where
-                   ORDER BY D.reputation DESC, D.id DESC";
-    $res_main   = mysqli_query($link, $sql_main);
-    $total_rows = mysqli_num_rows($res_main);
+    while ($row = mysqli_fetch_assoc($result)) {
+        $pocket_raw = strtoupper(trim($row['pocket6'] ?? '')) ?: 'CLEAN';
+
+        $pilot = [
+            'toon_name'     => htmlspecialchars($row['toon_name'], ENT_QUOTES, 'UTF-8'),
+            'DOB'           => $row['DOB'],
+            'pocket6'       => htmlspecialchars($pocket_raw, ENT_QUOTES, 'UTF-8'),
+            'pocket_key'    => $pocket_raw,
+            'remaps'        => (int)($row['remaps'] ?? 0),
+            'attributes'    => [],
+            'cooldown_date' => null,
+            'days_diff'     => null,
+            'status'        => 'unknown',
+        ];
+
+        // Parse attrib JSON with stripslashes
+        if (!empty($row['attrib'])) {
+            $clean_json = stripslashes($row['attrib']);
+            $attrs = json_decode($clean_json, true);
+
+            if (json_last_error() === JSON_ERROR_NONE && is_array($attrs)) {
+                $pilot['attributes'] = [
+                    'intelligence' => (int)($attrs['intelligence'] ?? 0),
+                    'memory'       => (int)($attrs['memory'] ?? 0),
+                    'perception'   => (int)($attrs['perception'] ?? 0),
+                    'willpower'    => (int)($attrs['willpower'] ?? 0),
+                    'charisma'     => (int)($attrs['charisma'] ?? 0),
+                ];
+
+                if (!empty($attrs['accrued_remap_cooldown_date'])) {
+                    try {
+                        $cooldown = new DateTime($attrs['accrued_remap_cooldown_date'], new DateTimeZone('UTC'));
+                        $pilot['cooldown_date'] = $cooldown->format('Y-m-d H:i');
+
+                        $interval = $now->diff($cooldown);
+                        $pilot['days_diff'] = (int)$interval->format('%r%a');
+
+                        if ($pilot['days_diff'] < 0) {
+                            $pilot['status'] = 'ready';      // Cooldown expired
+                            $ready_count++;
+                        } elseif ($pilot['days_diff'] === 0) {
+                            $pilot['status'] = 'today';      // Expires today
+                        } else {
+                            $pilot['status'] = 'waiting';    // Still on cooldown
+                        }
+                    } catch (Exception $e) {
+                        $pilot['cooldown_date'] = 'Invalid Date';
+                    }
+                }
+            }
+        }
+
+        $pilots[] = $pilot;
+    }
+    mysqli_free_result($result);
+
     ob_start();
     ?>
-    <!-- Filter bar -->
-    <form action="<?php echo $self; ?>?tab=reputation" method="POST" class="form-row align-items-end mb-4 p-3 rounded" style="background:#16191c;border-bottom:2px solid #007bff;">
-        <div class="form-group col-6 col-md-2 mb-2">
-            <label class="filter-label"><i class="fas fa-user-tie mr-1"></i>Owner</label>
-            <select name="owner_email" class="form-control form-control-sm eve-select">
-                <option value="">-- All --</option>
-                <?php while ($r = mysqli_fetch_assoc($res_owners)): ?>
-                    <option value="<?php echo htmlspecialchars($r['owner_email']); ?>" <?php echo ($f_owner == $r['owner_email']) ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($r['owner_email']); ?>
-                    </option>
-                <?php endwhile; ?>
-            </select>
+    <!-- Header bar -->
+    <div class="remap-header mb-4 p-3 rounded d-flex justify-content-between align-items-center" style="background:#16191c;border-bottom:2px solid #007bff;">
+        <h5 class="mb-0 text-white"><i class="fas fa-dna mr-2" style="color:#007bff;"></i>Pilot Remap Dashboard</h5>
+        <div>
+            <span class="total-badge ready-badge"><i class="fas fa-check-circle mr-1"></i><?php echo number_format($ready_count); ?> READY</span>
+            <span class="total-badge"><i class="fas fa-list mr-1"></i><?php echo number_format(count($pilots)); ?> pilots</span>
         </div>
-        <div class="form-group col-6 col-md-2 mb-2">
-            <label class="filter-label"><i class="fas fa-user mr-1"></i>Pilot</label>
-            <select name="pilot_name" class="form-control form-control-sm eve-select">
-                <option value="">-- All --</option>
-                <?php while ($r = mysqli_fetch_assoc($res_pilots_list)): ?>
-                    <option value="<?php echo htmlspecialchars($r['toon_name']); ?>" <?php echo ($f_pilot == $r['toon_name']) ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($r['toon_name']); ?>
-                    </option>
-                <?php endwhile; ?>
-            </select>
-        </div>
-        <div class="form-group col-6 col-md-3 mb-2">
-            <label class="filter-label"><i class="fas fa-building mr-1"></i>Corp Target</label>
-            <select name="target_description" class="form-control form-control-sm eve-select">
-                <option value="">-- All --</option>
-                <?php while ($r = mysqli_fetch_assoc($res_corps)): ?>
-                    <option value="<?php echo htmlspecialchars($r['target_description']); ?>" <?php echo ($f_target == $r['target_description']) ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($r['target_description']); ?>
-                    </option>
-                <?php endwhile; ?>
-            </select>
-        </div>
-        <div class="form-group col-6 col-md-2 mb-2">
-            <label class="filter-label"><i class="fas fa-folder mr-1"></i>Pocket</label>
-            <select name="pocket6_dip" class="form-control form-control-sm eve-select">
-                <option value="">-- All --</option>
-                <?php while ($r = mysqli_fetch_assoc($res_pockets)): ?>
-                    <option value="<?php echo htmlspecialchars($r['pocket6']); ?>" <?php echo ($f_pocket == $r['pocket6']) ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($r['pocket6']); ?>
-                    </option>
-                <?php endwhile; ?>
-            </select>
-        </div>
-        <div class="form-group col-12 col-md-3 mb-2 d-flex align-items-end" style="gap:8px;">
-            <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search mr-1"></i> Filter</button>
-            <a href="<?php echo $self; ?>?tab=reputation" class="btn btn-outline-secondary btn-sm"><i class="fas fa-sync-alt mr-1"></i> Clear</a>
-            <span class="total-badge ml-2"><i class="fas fa-list mr-1"></i><?php echo $total_rows; ?> records</span>
-        </div>
-    </form>
+    </div>
 
     <div class="table-responsive rounded shadow">
-        <table id="tbl-reputation" class="table table-sm table-eve mb-0">
+        <table id="remapTable" class="table table-sm table-bordered w-100">
             <thead>
                 <tr>
-                    <th width="40" class="text-center">#</th>
-                    <th>Pilot</th>
-                    <th>Trade Field</th>
-                    <th>Corp Target</th>
-                    <th class="text-right">Reputation</th>
-                    <th class="text-center">Pocket</th>
-                    <th class="text-center">Actions</th>
+                    <th class="text-center">#</th>
+                    <th><i class="fas fa-user-astronaut"></i> Pilot Name</th>
+                    <th class="text-center"><i class="fas fa-shield-alt"></i> Pocket</th>
+                    <th><i class="fas fa-birthday-cake"></i> DOB</th>
+                    <th class="text-center"><i class="fas fa-brain"></i> INT</th>
+                    <th class="text-center"><i class="fas fa-memory"></i> MEM</th>
+                    <th class="text-center"><i class="fas fa-eye"></i> PER</th>
+                    <th class="text-center"><i class="fas fa-fist-raised"></i> WIL</th>
+                    <th class="text-center"><i class="fas fa-comments"></i> CHA</th>
+                    <th><i class="fas fa-clock"></i> Cooldown Date</th>
+                    <th><i class="fas fa-hourglass-half"></i> Days</th>
                 </tr>
             </thead>
             <tbody>
-            <?php
-            $cnt = 1;
-            if ($total_rows > 0):
-                while ($row = mysqli_fetch_assoc($res_main)):
-                    $rep       = (float)$row['reputation'];
-                    $rep_class = ($rep > 0) ? 'rep-pos' : (($rep < 0) ? 'rep-neg' : 'rep-neu');
-                    $p6_val    = $row['pocket6'] ?? 'N/A';
-                    $tradefield = $row['tradefield'] ?? '';
-            ?>
-            <tr>
-                <td class="text-center row-num"><?php echo $cnt++; ?></td>
-                <td><strong class="text-white"><?php echo htmlspecialchars($row['pilot_name']); ?></strong></td>
-                <td>
-                    <?php if (!empty($tradefield) && $tradefield !== 'n/a'): ?>
-                        <span class="trade-pill"><?php echo htmlspecialchars($tradefield); ?></span>
-                    <?php else: ?><small class="text-muted">-</small><?php endif; ?>
-                </td>
-                <td style='color:#ffffff;'><?php echo htmlspecialchars($row['target_description']); ?></td>
-                <td class="text-right reputation-num <?php echo $rep_class; ?>"><?php echo number_format($rep, 2); ?></td>
-                <td class="text-center">
-                    <span class="pocket-badge-dip" style="background-color:<?php echo get_pocket_color($p6_val); ?>;color:<?php echo get_pocket_text($p6_val); ?>;">
-                        <?php echo htmlspecialchars($p6_val); ?>
-                    </span>
-                </td>
-                <td class="text-center"><?php echo geticons($row['toon_number']); ?></td>
-            </tr>
-            <?php endwhile;
-            else: ?>
-            <tr><td colspan="7" class="text-center py-5 text-muted"><i class="fas fa-satellite mr-2"></i>No data available.</td></tr>
-            <?php endif; ?>
+                <?php $rowNum = 1; foreach ($pilots as $p):
+                    $pb = get_pocket_color($p['pocket_key']);
+                    $pt = get_pocket_text($p['pocket_key']);
+                ?>
+                <tr>
+                    <td class="remap-row-num"><?php echo $rowNum++; ?></td>
+                    <td class="pilot-name-cell">
+                        <strong class="text-white"><?php echo $p['toon_name']; ?></strong><br>
+                        <?php if ($p['remaps'] > 0): ?>
+                            <span class="remap-badge remap-yes" title="Remaps">
+                                <i class="fas fa-check"></i> <?php echo $p['remaps']; ?>
+                            </span>
+                        <?php else: ?>
+                            <span class="remap-badge remap-no" title="Remaps">
+                                <i class="fas fa-times"></i> 0
+                            </span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="text-center">
+                        <span class="remap-pocket-badge" style="background-color:<?php echo $pb; ?>;color:<?php echo $pt; ?>;">
+                            <?php echo $p['pocket6']; ?>
+                        </span>
+                    </td>
+                    <td class="dob-cell"><?php echo ($p['DOB'] ? date('Y-m-d', strtotime($p['DOB'])) : 'N/A'); ?></td>
+
+                    <!-- Attributes -->
+                    <td class="text-center attr-value attr-intel"><?php echo $p['attributes']['intelligence'] ?? '-'; ?></td>
+                    <td class="text-center attr-value attr-mem"><?php echo $p['attributes']['memory'] ?? '-'; ?></td>
+                    <td class="text-center attr-value attr-per"><?php echo $p['attributes']['perception'] ?? '-'; ?></td>
+                    <td class="text-center attr-value attr-will"><?php echo $p['attributes']['willpower'] ?? '-'; ?></td>
+                    <td class="text-center attr-value attr-cha"><?php echo $p['attributes']['charisma'] ?? '-'; ?></td>
+
+                    <!-- Cooldown Date -->
+                    <td>
+                        <?php if ($p['cooldown_date']): ?>
+                            <?php echo $p['cooldown_date']; ?><?php echo ($p['cooldown_date'] !== 'Invalid Date') ? ' UTC' : ''; ?>
+                        <?php else: ?>
+                            <span class="text-muted">No data</span>
+                        <?php endif; ?>
+                    </td>
+
+                    <!-- Days Difference -->
+                    <td data-order="<?php echo ($p['days_diff'] !== null) ? $p['days_diff'] : 999999; ?>">
+                        <?php if ($p['cooldown_date'] && $p['days_diff'] !== null): ?>
+                            <?php if ($p['status'] === 'ready'): ?>
+                                <span class="status-ready">
+                                    <i class="fas fa-check-circle"></i>
+                                    <?php if (abs($p['days_diff']) > READY_THRESHOLD_DAYS): ?>
+                                        READY
+                                    <?php else: ?>
+                                        <?php echo abs($p['days_diff']); ?> days ago
+                                    <?php endif; ?>
+                                </span>
+                            <?php elseif ($p['status'] === 'today'): ?>
+                                <span class="status-today">
+                                    <i class="fas fa-exclamation-circle"></i> Today
+                                </span>
+                            <?php else: ?>
+                                <span class="status-waiting">
+                                    <i class="fas fa-hourglass-start"></i>
+                                    <?php echo $p['days_diff']; ?> days
+                                </span>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <span class="text-muted">-</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
             </tbody>
         </table>
+    </div>
+
+    <!-- Legend -->
+    <div class="remap-legend">
+        <i class="fas fa-info-circle"></i>
+        <strong>Legend:</strong>
+        <span class="status-ready">Green</span> = Cooldown expired, remap available
+        (<span class="status-ready">READY</span> = expired more than <?php echo READY_THRESHOLD_DAYS; ?> days ago).
+        <span class="status-waiting">Red</span> = Still on cooldown.
+        <span class="status-today">Yellow</span> = Cooldown expires today.
     </div>
     <?php
     return ob_get_clean();
@@ -799,7 +852,7 @@ echo crew_navbar();
         .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
         .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover { opacity: 0.4; }
 
-        /* ── POCKET6 COLORED BADGE (shared graduation + reputation) ── */
+        /* ── POCKET6 COLORED BADGE (graduation) ── */
         .pocket6-badge {
             display: inline-block; padding: 2px 9px; font-size: 0.72rem;
             font-weight: 700; text-transform: uppercase; border-radius: 2px;
@@ -810,15 +863,67 @@ echo crew_navbar();
         .trade-tag { color: #bb86fc; font-weight: 500; letter-spacing: 0.5px; }
         .col-panel { background-color: rgba(255,255,255,0.02); border-left: 1px solid #333; }
 
-        /* ── REPUTATION ── */
-        .reputation-num { font-family: 'Consolas', monospace; font-weight: bold; font-size: 0.95rem; }
-        .rep-pos { color: #28a745; } .rep-neg { color: #dc3545; } .rep-neu { color: #adb5bd; }
-        .pocket-badge-dip { display: inline-block; padding: 2px 10px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; border-radius: 2px; min-width: 70px; text-align: center; }
-        .trade-pill { background-color: #2d3748; color: #f39c12; padding: 1px 8px; border-radius: 10px; font-size: 0.75rem; white-space: nowrap; }
-        .row-num { color: #6c757d; font-size: 0.78rem; }
+        /* ── SHARED BADGES ── */
         .industry-icons { display: inline-flex; gap: 9px; align-items: center; font-size: 1.05rem; }
         .industry-icons i { cursor: default; }
         .total-badge { background-color: #0d0f11; border: 1px solid #007bff; color: #007bff; font-size: 0.8rem; padding: 3px 10px; border-radius: 3px; }
+
+        /* ── REMAP ── */
+        .total-badge.ready-badge { border-color: #28a745; color: #28a745; margin-right: 8px; }
+
+        #remapTable { font-size: 0.83rem; color: #ced4da; }
+        #remapTable thead th {
+            background-color: #0d0f11;
+            color: #6c757d;
+            border-color: #343a40;
+            text-transform: uppercase;
+            font-size: 0.73rem;
+            letter-spacing: 0.4px;
+            white-space: nowrap;
+        }
+        #remapTable tbody tr { background-color: #1e2126; color: #ced4da; }
+        #remapTable tbody tr:nth-child(even) { background-color: #1a1d21; }
+        #remapTable td, #remapTable th { border-color: #2c3035 !important; vertical-align: middle !important; }
+
+        /* Hover: lighter background and text always readable */
+        #remapTable tbody tr:hover { background-color: #2a3040 !important; }
+        #remapTable tbody tr:hover > td { color: #fff; }
+        #remapTable tbody tr:hover .text-muted { color: #adb5bd !important; }
+
+        /* Semantic colors are kept on hover (higher specificity) */
+        #remapTable tbody tr:hover > td.attr-intel { color: #4dabf7; }
+        #remapTable tbody tr:hover > td.attr-mem   { color: #69db7c; }
+        #remapTable tbody tr:hover > td.attr-per   { color: #ffa94d; }
+        #remapTable tbody tr:hover > td.attr-will  { color: #ff6b6b; }
+        #remapTable tbody tr:hover > td.attr-cha   { color: #da77f2; }
+
+        .remap-row-num { color: #6c757d; font-size: 0.8rem; text-align: center; }
+        .pilot-name-cell { line-height: 1.4; }
+        .dob-cell { white-space: nowrap; }
+
+        .remap-pocket-badge {
+            display: inline-block; padding: 1px 8px; font-size: 0.7rem;
+            font-weight: 700; border-radius: 2px; text-transform: uppercase;
+        }
+        .remap-badge {
+            display: inline-block; padding: 1px 8px; font-size: 0.7rem;
+            font-weight: 700; border-radius: 2px; color: #fff; margin-top: 3px;
+        }
+        .remap-yes { background-color: #28a745; }
+        .remap-no  { background-color: #dc3545; }
+
+        .attr-value { font-family: monospace; font-weight: 700; font-size: 1rem; }
+        .attr-intel { color: #4dabf7; }
+        .attr-mem   { color: #69db7c; }
+        .attr-per   { color: #ffa94d; }
+        .attr-will  { color: #ff6b6b; }
+        .attr-cha   { color: #da77f2; }
+
+        .status-ready   { color: #28a745; font-weight: 700; }
+        .status-waiting { color: #dc3545; font-weight: 700; }
+        .status-today   { color: #ffc107; font-weight: 700; }
+
+        .remap-legend { color: #6c757d; font-size: 0.8rem; margin-top: 14px; }
 
         /* ── FILTER SHARED ── */
         .filter-label { color: #adb5bd; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; display: block; }
@@ -884,8 +989,8 @@ echo crew_navbar();
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link <?php echo ($active_tab == 'reputation') ? 'active' : ''; ?>" href="?tab=reputation">
-                <i class="fas fa-passport"></i> Reputation
+            <a class="nav-link <?php echo ($active_tab == 'remap') ? 'active' : ''; ?>" href="?tab=remap">
+                <i class="fas fa-dna"></i> Remap
             </a>
         </li>
         <li class="nav-item">
@@ -911,7 +1016,7 @@ echo crew_navbar();
     <?php
     switch ($active_tab) {
         case 'graduation': echo renderTabGraduation(); break;
-        case 'reputation': echo renderTabReputation(); break;
+        case 'remap':      echo renderTabRemap();      break;
         case 'biometrics': echo renderTabBiometrics(); break;
         case 'planets':    echo renderTabPlanetsFlags(); break;
         case 'evermarks':  echo renderTabEvermarks();  break;
@@ -954,13 +1059,21 @@ $(document).ready(function() {
             columnDefs: [{ orderable: false, targets: [8] }]
         });
     }
-    if ($('#tbl-reputation').length) {
-        $('#tbl-reputation').DataTable({
-            pageLength: 50,
-            lengthMenu: [[25, 50, 100, -1], [25, 50, 100, "All"]],
-            order: [],
-            language: { search: "Search:", lengthMenu: "Show _MENU_ records" },
-            columnDefs: [{ orderable: false, targets: [6] }]
+    if ($('#remapTable').length) {
+        $('#remapTable').DataTable({
+            pageLength: 100,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Todos"]],
+            order: [[3, "asc"]], // DOB by default
+            columnDefs: [{ orderable: false, targets: [0] }],
+            language: {
+                search:       "Buscar:",
+                lengthMenu:   "Mostrar _MENU_ pilotos",
+                info:         "Mostrando _START_ a _END_ de _TOTAL_ pilotos",
+                infoEmpty:    "Sin resultados",
+                infoFiltered: "(filtrado de _MAX_ totales)",
+                zeroRecords:  "No se encontraron resultados",
+                paginate: { first: "«", last: "»", next: "›", previous: "‹" }
+            }
         });
     }
 });
