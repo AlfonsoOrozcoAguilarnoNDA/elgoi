@@ -1,9 +1,10 @@
 <?php
 /*
- * EVE Online - CREW Reputation (NPC diplomatic control)
+ * EVE Online - CREW Diplomacy (Reputation + Contacts & Faction Standings)
  * License: GPL
  * Author: Alfonso Orozco Aguilar
- * Standalone version of the "Reputation" tab from the Unified CREW Audit Tool.
+ * Merged version, three tabs: Contacts, Faction Standings and NPC Standings
+ * (the former standalone "Reputation" tab), in one tabbed page.
  * Same look & tab structure, so more tabs can be added later.
  * Stack: PHP 8.x Procedural, MariaDB, Bootstrap 4.6.2, Font Awesome 5.15.4
  */
@@ -22,7 +23,54 @@ date_default_timezone_set('America/Mexico_City');
 mysqli_set_charset($link, "utf8mb4");
 
 $self       = basename(__FILE__);
-$active_tab = $_GET['tab'] ?? 'reputation';
+$active_tab = $_GET['tab'] ?? 'contacts';
+
+// ══════════════════════════════════════════════════════════════════════════════
+// EVE FACTION NAMES MAP (display names instead of raw IDs)
+// https://evemissioneer.com/factions# can check them
+// ══════════════════════════════════════════════════════════════════════════════
+$FACTION_NAMES = [
+    500001 => 'Caldari State',
+    500002 => 'Minmatar Republic',
+    500003 => 'Amarr Empire',
+    500004 => 'Gallente Federation',
+    500005 => 'Jove Empire',
+    500006 => 'CONCORD Assembly',
+    500007 => 'Ammatar Mandate',
+    500008 => 'Khanid Kingdom',
+    500009 => 'The Syndicate',
+    500010 => 'Guristas Pirates',
+    500011 => "Angel Cartel",
+    500012 => "Blood Raider Covenant",
+    500013 => "The InterBus",
+    500014 => "ORE",
+    500015 => "Thukker Tribe",
+    500016 => "Servant Sisters of EVE",
+    500017 => "The Society",
+    500018 => "Mordu's Legion Command",
+    500019 => "Sansha's Nation",
+    500020 => "Serpentis",
+    500021 => "Unknown 21",
+    500022 => "Unknown 22",
+    500023 => "Unknown 23",
+    500024 => "Drifters",
+    500025 => "Rogue Drones",
+    500026 => "Triglavian Collective",
+    500027 => "EDENCOM",
+    500028 => "Association for Interdisciplinary Research",
+    500029 => "Deathless Circle",
+    500030 => "Unknown 30",
+    500031 => "Unknown 31",
+    500032 => "Unknown 32",
+    500033 => "Unknown 33",
+    500034 => "Unknown 34",
+    500035 => "Unknown 35",
+    500036 => "Unknown 36",
+    500037 => "Unknown 37",
+    500038 => "Unknown 38",
+    500039 => "Unknown 39",
+    500040 => "Unknown 40",
+];
 
 // ══════════════════════════════════════════════════════════════════════════════
 // HELPERS
@@ -38,10 +86,220 @@ function get_pocket_text($val) {
     return in_array(strtoupper(trim($val ?? '')), ['SANGO','YENN']) ? '#111' : '#fff';
 }
 
+// Pilot portrait URL (EVE image server)
+function get_pilot_portrait_url($toon_number, $size = 128) {
+    return 'https://images.evetech.net/characters/' . intval($toon_number) . '/portrait?size=' . intval($size);
+}
+
+// Faction display name from its ID
+function get_faction_name($faction_id, $default = null) {
+    global $FACTION_NAMES;
+    if ($default !== null) return $default;
+    return $FACTION_NAMES[intval($faction_id)] ?? ('Faction ' . $faction_id);
+}
+
+// EVEWho link builder (character / corporation / alliance)
+function evewho_link($id, $type, $label = null) {
+    $id = intval($id);
+    $type = strtolower($type);
+    $valid_types = ['character', 'corporation', 'alliance'];
+
+    if (!in_array($type, $valid_types)) {
+        return htmlspecialchars($label ?? $id);
+    }
+
+    $display = htmlspecialchars($label ?? $id);
+    return '<a href="https://evewho.com/' . $type . '/' . $id . '" target="_blank" rel="noopener noreferrer" class="evewho-link">' . $display . ' <i class="fas fa-external-link-alt fa-xs"></i></a>';
+}
+
+// Fetch ALL pilots from the database (ordered by DOB)
+function fetch_all_pilots($link) {
+    $sql = "SELECT toon_number, toon_name, parent_toon_number, corporation_name,
+                   tradefield, pocket6, gf, DOB, contacts, standings, corpID, allianceID
+            FROM PILOTS
+            ORDER BY DOB ASC";
+
+    $result = mysqli_query($link, $sql);
+    if (!$result) {
+        error_log("Query failed: " . mysqli_error($link));
+        return [];
+    }
+
+    $pilots = [];
+    while ($row = mysqli_fetch_assoc($result)) {
+        $pilots[] = $row;
+    }
+    return $pilots;
+}
+
+// Parse contacts JSON (ignore standing == 0), sorted by standing DESC
+function parse_contacts($contacts_json) {
+    if (empty($contacts_json)) return [];
+
+    $clean = stripslashes($contacts_json);
+    $data = json_decode($clean, true);
+    if (!is_array($data)) return [];
+
+    $filtered = [];
+    foreach ($data as $item) {
+        if (isset($item['standing']) && floatval($item['standing']) != 0) {
+            $filtered[] = $item;
+        }
+    }
+
+    usort($filtered, function($a, $b) {
+        return floatval($b['standing']) <=> floatval($a['standing']);
+    });
+
+    return $filtered;
+}
+
+// Parse faction standings JSON (only from_type == 'faction', zeros are shown), sorted by standing DESC
+function parse_faction_standings($standings_json) {
+    if (empty($standings_json)) return [];
+
+    $clean = stripslashes($standings_json);
+    $data = json_decode($clean, true);
+    if (!is_array($data)) return [];
+
+    $filtered = [];
+    foreach ($data as $item) {
+        if (isset($item['from_type']) && $item['from_type'] === 'faction') {
+            $filtered[] = $item;
+        }
+    }
+
+    usort($filtered, function($a, $b) {
+        return floatval($b['standing']) <=> floatval($a['standing']);
+    });
+
+    return $filtered;
+}
+
+// Keep only pilots that have parsed data for the given mode ('contacts' or 'standings')
+function build_pilot_data($pilots, $mode = 'contacts') {
+    $result = [];
+    foreach ($pilots as $p) {
+        $parsed = ($mode === 'contacts')
+            ? parse_contacts($p['contacts'])
+            : parse_faction_standings($p['standings']);
+        if (!empty($parsed)) {
+            $p['_parsed'] = $parsed;
+            $p['_count']  = count($parsed);
+            $result[] = $p;
+        }
+    }
+    return $result;
+}
+
+// Pilot card header (portrait, name, GF flag, corp, alliance, trade field, pocket)
+function render_pilot_header($pilot) {
+    $portrait   = get_pilot_portrait_url($pilot['toon_number'], 128);
+    $name       = htmlspecialchars($pilot['toon_name']);
+    $corp       = htmlspecialchars($pilot['corporation_name'] ?? 'N/A');
+    $pocket     = $pilot['pocket6'] ?? 'CLEAN';
+    $trade      = $pilot['tradefield'] ?? 'n/a';
+    $gf         = intval($pilot['gf'] ?? 0);
+    $allianceID = intval($pilot['allianceID'] ?? 0);
+
+    // GF flag: red if 1, gray if 0
+    if ($gf === 1) {
+        $gf_display = '<span class="badge badge-danger gf-flag" title="GF Flag Active"><i class="fas fa-flag"></i></span>';
+    } else {
+        $gf_display = '<span class="badge badge-secondary gf-flag" title="GF Flag Inactive"><i class="fas fa-flag"></i></span>';
+    }
+
+    $trade_display = (!empty($trade) && $trade !== 'n/a')
+        ? '<span class="trade-tag">' . htmlspecialchars($trade) . '</span>'
+        : '<small class="text-muted">-</small>';
+
+    // No evewho links in the header
+    $alliance_display = $allianceID > 0
+        ? '<div class="small alliance-name">Alliance: ' . $allianceID . '</div>'
+        : '';
+
+    return '
+        <div class="text-center">
+            <img src="' . $portrait . '" alt="' . $name . '" class="rounded mb-2 pilot-header-img" loading="lazy">
+            <h5 class="mb-1 text-white">' . $name . ' ' . $gf_display . '</h5>
+            <div class="small corp-name">' . $corp . '</div>
+            ' . $alliance_display . '
+            <div class="small mb-1">' . $trade_display . '</div>
+            <span class="pocket-badge-dip" style="background-color:' . get_pocket_color($pocket) . ';color:' . get_pocket_text($pocket) . ';">' . htmlspecialchars($pocket) . '</span>
+        </div>';
+}
+
+// Nested table: contacts
+function render_contacts_table($contacts) {
+    if (empty($contacts)) {
+        return '<div class="text-muted small font-italic p-2">No contacts with non-zero standing</div>';
+    }
+
+    $html = '<table class="table table-sm table-bordered dip-nested mb-0">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Standing</th>
+            </tr>
+        </thead>
+        <tbody>';
+
+    foreach ($contacts as $c) {
+        $standing       = floatval($c['standing']);
+        $standing_class = $standing > 0 ? 'rep-pos' : 'rep-neg';
+        $standing_icon  = $standing > 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+        $contact_id     = intval($c['contact_id'] ?? 0);
+        $contact_type   = $c['contact_type'] ?? 'character';
+
+        $id_link = evewho_link($contact_id, $contact_type, $contact_id);
+
+        $html .= '<tr>
+            <td>' . $id_link . '</td>
+            <td>' . htmlspecialchars($contact_type) . '</td>
+            <td class="standing-num ' . $standing_class . '"><i class="fas ' . $standing_icon . ' fa-xs"></i> ' . number_format($standing, 2) . '</td>
+        </tr>';
+    }
+
+    $html .= '</tbody></table>';
+    return $html;
+}
+
+// Nested table: faction standings
+function render_faction_standings_table($standings) {
+    if (empty($standings)) {
+        return '<div class="text-muted small font-italic p-2">No faction standings</div>';
+    }
+
+    $html = '<table class="table table-sm table-bordered dip-nested mb-0">
+        <thead>
+            <tr>
+                <th>Faction</th>
+                <th>Standing</th>
+            </tr>
+        </thead>
+        <tbody>';
+
+    foreach ($standings as $s) {
+        $standing       = floatval($s['standing']);
+        $standing_class = $standing > 0 ? 'rep-pos' : ($standing < 0 ? 'rep-neg' : 'rep-neu');
+        $standing_icon  = $standing > 0 ? 'fa-arrow-up' : ($standing < 0 ? 'fa-arrow-down' : 'fa-minus');
+        $faction_name   = get_faction_name(intval($s['from_id'] ?? 0));
+
+        $html .= '<tr>
+            <td>' . htmlspecialchars($faction_name) . '</td>
+            <td class="standing-num ' . $standing_class . '"><i class="fas ' . $standing_icon . ' fa-xs"></i> ' . number_format($standing, 2) . '</td>
+        </tr>';
+    }
+
+    $html .= '</tbody></table>';
+    return $html;
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
-// TAB — REPUTATION: diplomatic control
+// TAB — NPC STANDINGS: diplomatic control (NPC corps)
 // ══════════════════════════════════════════════════════════════════════════════
-function renderTabReputation() {
+function renderTabNpcStandings() {
     global $link, $self;
     $f_owner  = $_POST['owner_email']        ?? '';
     $f_pilot  = $_POST['pilot_name']         ?? '';
@@ -69,7 +327,7 @@ function renderTabReputation() {
     ob_start();
     ?>
     <!-- Filter bar -->
-    <form action="<?php echo $self; ?>?tab=reputation" method="POST" class="form-row align-items-end mb-4 p-3 rounded" style="background:#16191c;border-bottom:2px solid #007bff;">
+    <form action="<?php echo $self; ?>?tab=npc" method="POST" class="form-row align-items-end mb-4 p-3 rounded" style="background:#16191c;border-bottom:2px solid #007bff;">
         <div class="form-group col-6 col-md-2 mb-2">
             <label class="filter-label"><i class="fas fa-user-tie mr-1"></i>Owner</label>
             <select name="owner_email" class="form-control form-control-sm eve-select">
@@ -116,7 +374,7 @@ function renderTabReputation() {
         </div>
         <div class="form-group col-12 col-md-3 mb-2 d-flex align-items-end" style="gap:8px;">
             <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search mr-1"></i> Filter</button>
-            <a href="<?php echo $self; ?>?tab=reputation" class="btn btn-outline-secondary btn-sm"><i class="fas fa-sync-alt mr-1"></i> Clear</a>
+            <a href="<?php echo $self; ?>?tab=npc" class="btn btn-outline-secondary btn-sm"><i class="fas fa-sync-alt mr-1"></i> Clear</a>
             <span class="total-badge ml-2"><i class="fas fa-list mr-1"></i><?php echo $total_rows; ?> records</span>
         </div>
     </form>
@@ -171,9 +429,128 @@ function renderTabReputation() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// TAB — CONTACTS: all pilots with non-zero contact standings
+// ══════════════════════════════════════════════════════════════════════════════
+function renderTabContacts() {
+    global $link;
+    $all_pilots      = fetch_all_pilots($link);
+    $contacts_pilots = build_pilot_data($all_pilots, 'contacts');
+    ob_start();
+    ?>
+    <h2 class="section-note">
+        <i class="fas fa-users mr-2"></i>Contacts Breakdown — All Pilots with Non-Zero Standings (sorted by DOB)
+        <span class="total-badge ml-2"><i class="fas fa-list mr-1"></i><?php echo count($contacts_pilots); ?> pilots</span>
+    </h2>
+
+    <?php if (empty($contacts_pilots)): ?>
+        <div class="text-center py-5 text-muted"><i class="fas fa-satellite mr-2"></i>No pilots with contacts found in the database.</div>
+    <?php else: ?>
+        <div class="table-responsive rounded shadow">
+            <table class="table table-bordered pilot-matrix" id="contactsTable">
+                <thead>
+                    <tr>
+                        <?php foreach ($contacts_pilots as $pilot): ?>
+                            <th class="pilot-col">
+                                <?php echo render_pilot_header($pilot); ?>
+                                <div class="text-center mt-2">
+                                    <span class="total-badge">
+                                        <i class="fas fa-address-book mr-1"></i><?php echo $pilot['_count']; ?> contacts
+                                    </span>
+                                </div>
+                            </th>
+                        <?php endforeach; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <?php foreach ($contacts_pilots as $pilot): ?>
+                            <td class="pilot-col">
+                                <div class="nested-table-container">
+                                    <?php echo render_contacts_table($pilot['_parsed']); ?>
+                                </div>
+                            </td>
+                        <?php endforeach; ?>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+
+    <div class="mt-4 text-center text-muted small">
+        <i class="fas fa-database mr-1"></i>Auto-loaded <?php echo count($all_pilots); ?> pilots from database
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TAB — FACTION STANDINGS: faction standings comparison across all pilots
+// ══════════════════════════════════════════════════════════════════════════════
+function renderTabFactions() {
+    global $link;
+    $all_pilots       = fetch_all_pilots($link);
+    $standings_pilots = build_pilot_data($all_pilots, 'standings');
+    ob_start();
+    ?>
+    <h2 class="section-note">
+        <i class="fas fa-flag mr-2"></i>Faction Standings Distribution Comparison — All Pilots (sorted by DOB)
+        <span class="total-badge ml-2"><i class="fas fa-list mr-1"></i><?php echo count($standings_pilots); ?> pilots</span>
+    </h2>
+
+    <?php if (empty($standings_pilots)): ?>
+        <div class="text-center py-5 text-muted"><i class="fas fa-satellite mr-2"></i>No pilots with faction standings found in the database.</div>
+    <?php else: ?>
+        <div class="table-responsive rounded shadow">
+            <table class="table table-bordered pilot-matrix" id="standingsTable">
+                <thead>
+                    <tr>
+                        <?php $colIndex = 0; ?>
+                        <?php foreach ($standings_pilots as $pilot): ?>
+                            <th class="pilot-col standings-col" data-col-index="<?php echo $colIndex; ?>">
+                                <?php echo render_pilot_header($pilot); ?>
+                                <div class="text-center mt-2">
+                                    <span class="total-badge">
+                                        <i class="fas fa-flag mr-1"></i><?php echo $pilot['_count']; ?> factions
+                                    </span>
+                                </div>
+                                <div class="text-center">
+                                    <button type="button" class="hide-col-btn" onclick="hideStandingsColumn(<?php echo $colIndex; ?>)" title="Hide this column">
+                                        <i class="fas fa-eye-slash mr-1"></i>Hide
+                                    </button>
+                                </div>
+                            </th>
+                            <?php $colIndex++; ?>
+                        <?php endforeach; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <?php $colIndex = 0; ?>
+                        <?php foreach ($standings_pilots as $pilot): ?>
+                            <td class="pilot-col standings-col" data-col-index="<?php echo $colIndex; ?>">
+                                <div class="nested-table-container">
+                                    <?php echo render_faction_standings_table($pilot['_parsed']); ?>
+                                </div>
+                            </td>
+                            <?php $colIndex++; ?>
+                        <?php endforeach; ?>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+
+    <div class="mt-4 text-center text-muted small">
+        <i class="fas fa-database mr-1"></i>Auto-loaded <?php echo count($all_pilots); ?> pilots from database
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // OUTPUT
 // ══════════════════════════════════════════════════════════════════════════════
-echo ui_header("EVE Online - CREW Reputation");
+echo ui_header("EVE Online - CREW Diplomacy");
 echo crew_navbar();
 ?>
 <!DOCTYPE html>
@@ -181,7 +558,7 @@ echo crew_navbar();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>EVE Online - CREW Reputation</title>
+    <title>EVE Online - CREW Diplomacy</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
@@ -270,6 +647,80 @@ echo crew_navbar();
 
         /* ── TAB CONTENT ── */
         .tab-content-eve { padding: 25px 20px; }
+
+        /* ── CONTACTS / FACTION STANDINGS: SECTION HEADER ── */
+        .section-note {
+            color: #adb5bd;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding: 0.7rem 1rem;
+            background: #16191c;
+            border-left: 4px solid #007bff;
+            border-radius: 3px;
+        }
+
+        /* ── CONTACTS / FACTION STANDINGS: PILOT MATRIX ── */
+        .pilot-matrix { background-color: #16191c; margin-bottom: 0; color: #ced4da; }
+        .pilot-matrix > thead > tr > th {
+            background-color: #212529;
+            border-color: #2d3238;
+            border-bottom: 2px solid #007bff;
+            padding: 14px 10px;
+        }
+        .pilot-matrix > tbody > tr > td { border-color: #2d3238; padding: 0.5rem; }
+        .pilot-col { min-width: 240px; max-width: 320px; vertical-align: top !important; }
+
+        .pilot-header-img {
+            width: 128px; height: 128px; object-fit: cover;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: transform 0.2s ease;
+        }
+        .pilot-header-img:hover { transform: scale(1.05); }
+        .gf-flag { font-size: 0.65rem; padding: 0.25rem 0.4rem; vertical-align: middle; }
+        .corp-name { color: #6c757d; margin-bottom: 0.2rem; }
+        .alliance-name { color: #17a2b8; margin-bottom: 0.2rem; }
+
+        /* Nested tables (contacts / faction standings) */
+        .nested-table-container { max-height: 500px; overflow-y: auto; border-radius: 3px; }
+        .nested-table-container::-webkit-scrollbar { width: 6px; }
+        .nested-table-container::-webkit-scrollbar-track { background: #0b0c0e; }
+        .nested-table-container::-webkit-scrollbar-thumb { background: #343a40; border-radius: 3px; }
+        .dip-nested { background-color: #16191c; color: #ced4da; font-size: 0.78rem; }
+        .dip-nested thead th {
+            background-color: #212529;
+            color: #adb5bd;
+            border-color: #2d3238;
+            border-bottom: 2px solid #007bff;
+            white-space: nowrap;
+            position: sticky; top: 0; z-index: 1;
+        }
+        .dip-nested td { border-color: #2d3238; padding: 0.4rem 0.5rem; vertical-align: middle; }
+        .dip-nested tbody tr:nth-of-type(odd) { background-color: rgba(45, 50, 56, 0.3); }
+        .standing-num { font-family: 'Consolas', monospace; font-weight: bold; }
+
+        /* EVEWho links */
+        .evewho-link { color: #5aa9ff; text-decoration: none; transition: color 0.2s ease; }
+        .evewho-link:hover { color: #007bff; text-decoration: underline; }
+        .evewho-link i { font-size: 0.6rem; opacity: 0.7; }
+
+        /* Hide column button */
+        .hide-col-btn {
+            margin-top: 0.5rem;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border: 1px solid #343a40;
+            background: transparent;
+            color: #6c757d;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .hide-col-btn:hover { background-color: #dc3545; color: #fff; border-color: #dc3545; }
+
+        @media (max-width: 768px) {
+            .pilot-col { min-width: 200px; max-width: 260px; }
+        }
     </style>
 </head>
 <body>
@@ -278,8 +729,18 @@ echo crew_navbar();
 <div class="eve-tabs">
     <ul class="nav">
         <li class="nav-item">
-            <a class="nav-link <?php echo ($active_tab == 'reputation') ? 'active' : ''; ?>" href="?tab=reputation">
-                <i class="fas fa-passport"></i> Reputation
+            <a class="nav-link <?php echo ($active_tab == 'contacts') ? 'active' : ''; ?>" href="?tab=contacts">
+                <i class="fas fa-address-book"></i> Contacts
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php echo ($active_tab == 'factions') ? 'active' : ''; ?>" href="?tab=factions">
+                <i class="fas fa-flag"></i> Faction Standings
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link <?php echo ($active_tab == 'npc') ? 'active' : ''; ?>" href="?tab=npc">
+                <i class="fas fa-passport"></i> NPC Standings
             </a>
         </li>
     </ul>
@@ -289,9 +750,15 @@ echo crew_navbar();
 <div class="tab-content-eve">
     <?php
     switch ($active_tab) {
-        case 'reputation':
+        case 'factions':
+            echo renderTabFactions();
+            break;
+        case 'npc':
+            echo renderTabNpcStandings();
+            break;
+        case 'contacts':
         default:
-            echo renderTabReputation();
+            echo renderTabContacts();
     }
     ?>
 </div>
@@ -311,6 +778,17 @@ $(document).ready(function() {
         });
     }
 });
+
+/**
+ * Hide a column in the Faction Standings table by index.
+ * Hides both the header (th) and the data cell (td) with the matching data-col-index.
+ */
+function hideStandingsColumn(colIndex) {
+    var cells = document.querySelectorAll('#standingsTable .standings-col[data-col-index="' + colIndex + '"]');
+    cells.forEach(function(cell) {
+        cell.style.display = 'none';
+    });
+}
 </script>
 </body>
 </html>
