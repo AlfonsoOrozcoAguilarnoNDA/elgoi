@@ -78,7 +78,7 @@ $tiles2 = [
 	showTile("experimental/contacts_and_factions.php", "fa-address-book", "secondary"),		
 	showTile("mimonitor.php", "fa-microchip", "secondary"),
 	showTile("experimental/portraits.php", "fa-portrait", "secondary"),
-	showTile("experimental/interactions.php", "fa-passport", "primary"),
+	showTile("crew/interactions.php", "fa-passport", "primary"),
 	showTile("experimental/shipstest.php", "fa-warehouse", "secondary"),
 	showTile("specific/oldversion.php", "fa-undo", "secondary"),
     showTile("experimental/thesix.php", "fa-users", "primary")    
