@@ -83,6 +83,19 @@ function _rows($link, string $sql): array {
     return $data;
 }
 
+function fetch_rows($link, string $sql): array {
+    $data = [];
+    $result = mysqli_query($link, $sql);
+    if ($result === false) {
+        return $data;
+    }
+    while ($row = mysqli_fetch_assoc($result)) {
+        $data[] = $row;
+    }
+    mysqli_free_result($result);
+    return $data;
+}
+
 /** Ships per pilot (sum of quantity). Only pilots with more than one ship. */
 function fetch_ship_summary($link): array {
     $sql = "
