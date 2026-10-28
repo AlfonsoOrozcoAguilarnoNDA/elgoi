@@ -68,42 +68,42 @@ function get_substate_badge(?string $substate): string {
     );
 }
 
-// ─── DATA FETCHING ─────────────────────────────────────────────────
+// ─── DATA ING ─────────────────────────────────────────────────
 
-function fetch_rows($link, string $sql): array {
+function _rows($link, string $sql): array {
     $data = [];
     $result = mysqli_query($link, $sql);
     if ($result === false) {
         return $data;
     }
-    while ($row = mysqli_fetch_assoc($result)) {
+    while ($row = mysqli__assoc($result)) {
         $data[] = $row;
     }
     mysqli_free_result($result);
     return $data;
 }
 
-/** Ships per pilot (sum of quantity), including pilots with zero ships. */
+/** Ships per pilot (sum of quantity). Only pilots with more than one ship. */
 function fetch_ship_summary($link): array {
     $sql = "
         SELECT
             p.toon_number,
             p.toon_name,
             p.pocket6,
-            COALESCE(t.ship_count, 0) AS ship_count
+            t.ship_count
         FROM PILOTS p
-        LEFT JOIN (
+        INNER JOIN (
             SELECT a.toon_number, SUM(a.quantity) AS ship_count
             FROM EVE_ASSETS a
             INNER JOIN EVE_SHIPS s ON a.type_description = s.ShipName
             GROUP BY a.toon_number
+            HAVING SUM(a.quantity) > 1
         ) t ON t.toon_number = p.toon_number
         WHERE p.toon_number != " . CONTROL_TOON . "
-        ORDER BY ship_count DESC, p.toon_name ASC
+        ORDER BY t.ship_count DESC, p.toon_name ASC
     ";
     return fetch_rows($link, $sql);
 }
-
 function fetch_ready_ships($link): array {
     $sql = "
         SELECT
