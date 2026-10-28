@@ -462,7 +462,7 @@ $base_url     = get_base_url();
                                 $update_url = $base_url . '/specific/oldversion.php?module=190&number=' . urlencode((string)$row['toon_number']);
                             ?>
                             <tr>
-                                <td class="text-center text-muted"><?php echo --$csh; ?> </td>
+                                <td class="text-center text-muted"><?php $csh++; echo $csh; ?> </td>
                                 <td><strong><?= h($row['toon_name']) ?></strong></td>
                                 <td><?= get_pocket6_badge($row['pocket6'] ?? '') ?></td>
                                 <td class="text-center" data-order="<?= (int)$row['ship_count'] ?>">
