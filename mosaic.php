@@ -80,7 +80,7 @@ $tiles2 = [
 	showTile("experimental/kimitest4.php", "fa-chart-pie", "secondary"),		
 	
 	showTile("experimental/portraits.php", "fa-portrait", "secondary"),	
-	showTile("experimental/shipstest.php", "fa-warehouse", "secondary"),
+	showTile("experimental/hangar.php", "fa-warehouse", "secondary"),
 	showTile("industry/calc_p1.php", "fa-calculator", "info"),	
     showTile("experimental/thesix.php", "fa-users", "primary")    
 ];
