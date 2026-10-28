@@ -420,18 +420,22 @@ $base_url     = get_base_url();
         </div>
     </div>
 
-    <!-- Summary: ships per pilot -->
+     <!-- Summary: ships per pilot -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="eve-card">
                 <div class="eve-card-header d-flex justify-content-between align-items-center">
                     <span><i class="fas fa-users text-warning me-2"></i>Ships per Pilot</span>
-                    <span class="text-muted small">Sorted by ship count (descending)</span>
+                    <span class="text-muted small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Only pilots with more than one ship are shown — sorted by ship count (descending)
+                    </span>
                 </div>
                 <div class="p-0">
                     <table class="table table-dark-custom table-hover mb-0" id="table-summary" style="width:100%">
                         <thead>
                             <tr>
+                                <th class="text-center">#</th>
                                 <th>Pilot</th>
                                 <th>Pocket6</th>
                                 <th class="text-center">Ships</th>
@@ -443,6 +447,7 @@ $base_url     = get_base_url();
                                 $update_url = $base_url . '/specific/oldversion.php?module=190&number=' . urlencode((string)$row['toon_number']);
                             ?>
                             <tr>
+                                <td class="text-center text-muted"></td>
                                 <td><strong><?= h($row['toon_name']) ?></strong></td>
                                 <td><?= get_pocket6_badge($row['pocket6'] ?? '') ?></td>
                                 <td class="text-center" data-order="<?= (int)$row['ship_count'] ?>">
@@ -462,7 +467,7 @@ $base_url     = get_base_url();
             </div>
         </div>
     </div>
-
+    
     <!-- Filters -->
     <div class="row mb-4">
         <div class="col-12">
