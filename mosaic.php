@@ -46,7 +46,7 @@ $tiles = [
 	showTile("crew/apex_roster.php", "fa-users", "primary"),
 	showTile("crew/longtermplan.php", "fa-map", "primary"),
     showTile("crew/skill_inspector.php", "fa-clipboard-check", "primary"),	
-    showTile("crew/28_days_control.php", "fa-user-clock", "danger"),
+    showTile("crew/28_days.php", "fa-user-clock", "danger"),
     showTile("crew/career_plan.php", "fa-sitemap", "dark"),
     showTile("crew/compare.php", "fa-balance-scale", "light"),
 	showTile("specific/get_market.php", "fa-chart-line", "success"),
