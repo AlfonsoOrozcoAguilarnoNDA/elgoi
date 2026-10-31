@@ -61,7 +61,7 @@ $tiles = [
     showTile("industry/inventory.php", "fa-gem", "warning"),
     
 	showTile("industry/slots_and_ceo.php", "fa-user-tie", "info"),
-	showTile("experimental/unsafe_station.php", "fa-truck-loading", "danger"),
+	showTile("specific/unsafe_place.php", "fa-truck-loading", "danger"),
     showTile("experimental/hangar.php", "fa-warehouse", "secondary"),
     //showTile("combat/pvp.php", "fa-crosshairs", "danger")    
 	showTile("crew/interactions.php", "fa-passport", "primary") ,
