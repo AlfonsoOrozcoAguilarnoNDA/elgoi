@@ -200,6 +200,7 @@ $table .="</table>Tf B $tforge";
 $pass .= $table . pseudonotes() . more8().Alfaomega("Omega").alfaomega("Alpha");
 $pass .= gridships();
 
+$pass .= gridminerals("Tranquil Ships","'Cororant','Catalyst','Corax','Coercer','Punisher','Kestrel','Condor','Maller','Omen'");
 $pass .= gridminerals("Filaments","'Tranquil Exotic Filament','Tranquil Dark Filament','Tranquil Electrical Filament','Tranquil Gamma Filament','Tranquil Firestorm Filament','Calm Exotic Filament','Calm Dark Filament','Calm Electrical Filament','Calm Gamma Filament','Calm Firestorm Filament','Agitated Exotic Filament','Agitated Dark Filament','Agitated Electrical Filament','Agitated Gamma Filament','Agitated Firestorm Filament','Fierce Exotic Filament','Fierce Dark Filament','Fierce Electrical Filament','Fierce Gamma Filament','Fierce Firestorm Filament'");
 $pass .= gridminerals("minerals","'tritanium','Isogen','Mexallon','Nocxium','Zydrine','Megacyte','Pyerite','Metal Scraps'");
 $pass .= gridminerals("Planetary T0","'Microorganisms','Carbon Compounds','Planktic Colonies','Non-CS Crystals','Ionic Solutions','Autotrophs','Reactive Gas','Noble Gas','Suspended Plasma','Noble Metals','Complex Organisms','Base Metals','Felsic Magma','Heavy Metals','Aqueous Liquids'");
