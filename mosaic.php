@@ -78,6 +78,7 @@ $tiles2 = [
 	
 	showTile("experimental/whereare.php", "fa-globe", "success"),
 	showTile("experimental/kimitest4.php", "fa-chart-pie", "secondary"),		
+	showTile("experimental/mash.php", "fa-chart-pie", "warning"),		
 	
 	showTile("experimental/portraits.php", "fa-portrait", "secondary"),		
 	showTile("specific/less_than_5m.php", "fa-id-badge", "primary"),
